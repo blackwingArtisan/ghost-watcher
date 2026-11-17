@@ -1,0 +1,32 @@
+{
+  "name": "ghost-watcher",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A haunted skeleton for watching the part of a web page you care about, plus two apps built from it.",
+  "license": "MIT",
+  "author": "Stubborn Otter Software",
+  "type": "module",
+  "workspaces": [
+    "template",
+    "apps/bonus-watch",
+    "apps/listing-watch"
+  ],
+  "engines": {
+    "node": ">=20.11"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "npm run typecheck && npm run test:unit && npm run test:e2e",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "bonus": "npm run demo -w @ghost-watcher/bonus-watch",
+    "listing": "npm run demo -w @ghost-watcher/listing-watch"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "^22.19.0",
+    "tsx": "^4.20.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.12"
+  }
+}

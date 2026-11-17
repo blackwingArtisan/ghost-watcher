@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Type-check and unit test on save",
+      "description": "Whenever a TypeScript or JavaScript source file is saved, type-check the workspace and run the Vitest suite so a broken normalizer, rule or adapter is caught before the next edit.",
+      "trigger": "PostFileSave",
+      "matcher": "\\.(ts|js)$",
+      "action": {
+        "type": "command",
+        "command": "npm run typecheck && npm run test:unit"
+      },
+      "timeout": 120
+    }
+  ]
+}

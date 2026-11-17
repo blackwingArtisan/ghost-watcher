@@ -1,0 +1,52 @@
+/** An app built on the skeleton: a name, a look, and a set of watches. */
+import { assertUniqueIds, type Watch } from './watch';
+
+export interface Theme {
+  /** Main glow color for restless ghosts and highlights (CSS color). */
+  accent: string;
+  /** Secondary color for links and quiet highlights. */
+  accentSecondary: string;
+  /** Background tint for the night sky. */
+  sky: string;
+  /** The moon's color; tint it to set the mood. */
+  moon?: string;
+  /** Emoji-free one-word motif shown in the header crest, e.g. `Crypt`. */
+  crest?: string;
+}
+
+export interface AppCopy {
+  /** Plural noun for watches in this app, e.g. `bonus pages`. */
+  watchNoun: string;
+  /** Shown when nothing has stirred yet. */
+  quiet: string;
+  /** Footer line, also appended to alert emails. */
+  disclaimer?: string;
+}
+
+export interface GhostApp {
+  id: string;
+  name: string;
+  tagline: string;
+  version: string;
+  /** Public page describing the watcher, used in the User-Agent so site operators can identify it. */
+  contactUrl: string;
+  theme: Theme;
+  copy: AppCopy;
+  watches: Watch[];
+  /** Default alert recipients (invented addresses in the demos). */
+  alertTo: string[];
+}
+
+export const DEFAULT_THEME: Theme = {
+  accent: '#7ef0d0',
+  accentSecondary: '#b9a4ff',
+  sky: '#120f22',
+  moon: '#f3ecd2',
+  crest: 'Watch',
+};
+
+export function defineApp(app: Omit<GhostApp, 'theme'> & { theme?: Partial<Theme> }): GhostApp {
+  if (!/^[a-z0-9-]+$/.test(app.id)) throw new Error(`App id "${app.id}" must be lowercase letters, digits and dashes.`);
+  assertUniqueIds(app.watches);
+  return { ...app, theme: { ...DEFAULT_THEME, ...app.theme } };
+}

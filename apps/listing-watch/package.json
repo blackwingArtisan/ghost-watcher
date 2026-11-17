@@ -1,0 +1,17 @@
+{
+  "name": "@ghost-watcher/listing-watch",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "author": "Stubborn Otter Software",
+  "type": "module",
+  "scripts": {
+    "fixtures": "tsx fixtures/serve.ts",
+    "serve": "tsx src/main.ts serve",
+    "check": "tsx src/main.ts check",
+    "demo": "tsx src/main.ts demo"
+  },
+  "dependencies": {
+    "@ghost-watcher/template": "0.1.0"
+  }
+}

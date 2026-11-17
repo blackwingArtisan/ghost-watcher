@@ -1,0 +1,176 @@
+# Ghost Watcher
+
+**Haunt the part of a web page you care about.** Ghost Watcher is a skeleton for building small,
+polite page-change watchers. You name the regions of a page that matter (a bonus amount, a deadline,
+the fine print, a table of listings), and a ghost checks them on a schedule. It ignores the noise:
+timestamps, rotating banners, reordered lists, `$300` becoming `$300.00`. When something real
+changes, the ghost wakes up and tells you in one plain sentence:
+
+> Bonus went up from $300 to $400 (+$100).
+> Fine print now says "A $12 monthly service fee applies unless you keep a $1,500 daily balance."
+> New listing: 2 bd in Old Mill at 418 Bramble Row, Apt 3 for $1,950/mo.
+
+This repo holds one reusable template and two apps built from it, each in its own folder:
+
+| Folder | What it is |
+| --- | --- |
+| [`template/`](template/) | The skeleton: watch definitions, polite fetching, semantic diff, rules, alerts, storage, the haunted dashboard and the CLI |
+| [`apps/bonus-watch/`](apps/bonus-watch/) | **The Bonus Crypt** watches bank and card sign-up bonus pages for changes to the amount, deposit, deadline and fine print |
+| [`apps/listing-watch/`](apps/listing-watch/) | **Haunted Listings** watches rental listings and city building permits, and only speaks up about items that match your filters |
+
+## Who it's for
+
+- **Bonus hunters**, who track a dozen bank offers and miss the week a $300 bonus becomes $400, or
+  the day "no monthly fee" quietly disappears from the fine print.
+- **Renters and neighbors**, who want to hear about the 2-bedroom under $2,100 in their
+  neighborhood, or the demolition permit on their street, without refreshing three sites a day.
+- **Developers**, who need a small, honest watcher for any page and want the robots.txt handling,
+  diffing and alerting already done.
+
+## What works
+
+- **Two complete apps on one skeleton.** Each app is a single `src/app.ts` of watch definitions,
+  rules, copy and colors. Everything else comes from `@ghost-watcher/template`.
+- **Polite fetching.** robots.txt is parsed per RFC 9309 (longest match wins, `*` and `$`
+  wildcards, Crawl-delay) and cached. Disallowed pages are never requested. Every request sends an
+  honest User-Agent with a contact URL. Each URL has a minimum check interval, each host gets one
+  request at a time, and errors trigger exponential back-off.
+- **Semantic diff.** Values are normalized by kind (money, number, percent, date, URL, text) before
+  comparing. Lists are matched by identity, so reordering is not a change. The first check records
+  a baseline and never alerts.
+- **Rules that read like intent.** `wentUp`, `wentDown`, `changed`, `appeared` and `disappeared`
+  (optionally matching a phrase), plus `newItem`, `itemRemoved` and `itemChanged`, with filters
+  such as `where.atMost('price', 2100)`. Each rule has a loudness: whisper, moan or shriek.
+- **Plain-English alerts.** The outbox writes each alert as an `.eml` file, an HTML preview and an
+  index line. It works with no accounts. Amazon SES is an opt-in adapter.
+- **A haunted dashboard.** Each watch is a ghost on a tombstone. It sleeps while nothing changes,
+  glows when something does, and fades when robots.txt says no or the page's layout has changed.
+  Click a ghost to open the séance: what is on the page now, what it said before, and a word-level
+  diff of the fine print. From there you can **Check now** or **Lay to rest**, or summon every ghost at once. The
+  dashboard works from the keyboard, respects reduced motion, and is readable on a phone.
+- **Tests that drive the real thing.** Unit tests cover every module. CLI tests run the real
+  `check` command against a local fixture site. Playwright drives both dashboards in a browser.
+  Every test runs against `127.0.0.1`; none touch a live site.
+
+## How to run
+
+You need Node.js 20.11 or newer.
+
+```sh
+npm install
+npm run bonus      # The Bonus Crypt at http://127.0.0.1:3130 (fixture bank site on :3131)
+npm run listing    # Haunted Listings at http://127.0.0.1:3132 (fixture city site on :3133)
+```
+
+`demo` starts the app's local fixture site and the dashboard against it. To try it:
+
+1. Click **Summon every ghost** to record the first sighting (a baseline, so no alerts yet).
+2. Advance the fixture site to its next version: `curl -X POST http://127.0.0.1:3131/__fixture/advance`
+   (use `:3133` for listings).
+3. Click **Summon every ghost** again. The ghosts whose pages really changed start to glow, and the
+   alert letters appear in the **Spirit mail** feed.
+
+Each app also has a command line:
+
+```sh
+cd apps/bonus-watch
+npx tsx src/main.ts list                    # the watches and their rules
+npx tsx src/main.ts check                   # check every watch once (respects intervals)
+npx tsx src/main.ts check --force --json    # check now, machine-readable
+npx tsx src/main.ts serve --port 3130       # dashboard plus a polite scheduler against BONUS_SITE_ORIGIN
+```
+
+Runtime data (snapshots, status, alerts and the outbox) goes to `.ghost-data/` in the app folder.
+It is git-ignored.
+
+## How to test
+
+```sh
+npm test               # type-check, then unit and CLI tests, then Playwright end to end
+npm run test:unit      # Vitest only
+npm run test:e2e       # Playwright only (run `npx playwright install chromium` once first)
+```
+
+Playwright starts the fixture sites and dashboards itself on ports 3134 to 3137.
+
+## Architecture
+
+```mermaid
+flowchart LR
+  subgraph App["apps/* (one app.ts)"]
+    W[watches + rules + copy]
+  end
+  subgraph Template["@ghost-watcher/template"]
+    R[Runner] --> F[Fetcher port<br/>PoliteFetcher]
+    F --> RB[robots.txt cache<br/>per-host lock, Crawl-delay]
+    R --> X[extract<br/>cheerio]
+    X --> N[normalize]
+    N --> D[semantic diff]
+    D --> RU[rules + summaries]
+    RU --> S[AlertSink port]
+    R --> ST[BlobStore port<br/>via GhostStore]
+    SV[dashboard server] --> R
+    CLI[cli: check / serve / demo] --> R
+  end
+  W --> R
+  F -->|honest User-Agent| Site[(watched site)]
+  S --> O[outbox .eml + .html]
+  S -.opt-in.-> SES[Amazon SES]
+  ST --> FS[local files]
+  ST -.opt-in.-> S3[Amazon S3]
+```
+
+One check runs these steps: check the interval and back-off → fetch (robots.txt first) → extract
+the watched regions → normalize → diff against the last snapshot → evaluate the rules → write
+plain-English summaries → deliver one alert message → save the snapshot and status. A page with
+none of the watched regions counts as an error ("the layout may have changed"). It never produces
+a false alert.
+
+The dashboard is server-rendered by `node:http` with no framework and no build step. The same
+`render.js` runs on the server and in the browser for live refreshes, and a strict Content Security
+Policy is set on every page.
+
+## Adapters: local vs real
+
+Every external service sits behind a port. The free local adapter is the default. A real adapter
+is selected by environment variable and loaded only when selected.
+
+| Port | Local (default) | Real (opt-in) | Select with |
+| --- | --- | --- | --- |
+| Storage | `FileBlobStore` under `.ghost-data/` (`MemoryBlobStore` for tests) | `S3BlobStore` (AWS SDK v3) | `GHOST_STORE=file\|memory\|s3`, `GHOST_S3_BUCKET`, `GHOST_S3_PREFIX`, `AWS_REGION` |
+| Alerts | `OutboxAlertSink` (`.eml`, HTML preview, `outbox.jsonl`), `ConsoleAlertSink` | `SesEmailAlertSink` (SES v2) | `GHOST_ALERTS=outbox,console,ses` (comma-separated), `GHOST_SES_FROM`, `GHOST_ALERT_TO` |
+| Fetching | `PoliteFetcher` over `fetch` | the same fetcher, pointed at real sites | `GHOST_CONTACT_URL`, `GHOST_HOST_GAP_MS`, `GHOST_TIMEOUT_MS` |
+| Clock | `systemClock` | `manualClock` in tests | none |
+
+The S3 and SES adapters are written and type-checked, and they are tested with fake clients. They
+have never been run against AWS. A misconfigured selection fails at startup with a message that
+names the missing variable.
+
+**Deploy target (free, not deployed):** a Render free web service running
+`npm run serve -w @ghost-watcher/bonus-watch` (or the listing app). Free instances sleep and do not
+keep files across restarts. For durable state, use the S3 adapter. Set `GHOST_CONTACT_URL` to a
+real page before pointing the watcher at live sites.
+
+## Built with Kiro
+
+Kiro planned this repo before any code was written. Everything it used and produced is in
+[`.kiro/`](.kiro/):
+
+- [`.kiro/steering/`](.kiro/steering/): product, tech and structure steering files, always included.
+- [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): requirements in EARS notation,
+  the design, and the task list. Kiro generated all three. Every task is now checked off, with
+  implementation notes.
+- [`.kiro/hooks/`](.kiro/hooks/): a hook that type-checks and runs the unit tests on every save, and
+  one that runs the full suite when an agent turn ends.
+
+[`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the exact prompt, the files produced, the
+errors hit along the way, and the one requirement that was revised by hand.
+
+## Disclaimer
+
+The banks, buildings, people and addresses in the fixtures are invented. The Bonus Crypt reports
+what a page says. It is not financial advice.
+
+## License
+
+MIT © 2026 Stubborn Otter Software

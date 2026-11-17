@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Full suite when the agent stops",
+      "description": "When an agent turn ends, run the whole suite (type-check, unit and Playwright end-to-end against the local fixture sites) so no turn finishes on a red build.",
+      "trigger": "Stop",
+      "action": {
+        "type": "command",
+        "command": "npm test"
+      },
+      "timeout": 300
+    }
+  ]
+}
