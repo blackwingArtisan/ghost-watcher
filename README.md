@@ -10,6 +10,10 @@ changes, the ghost wakes up and tells you in one plain sentence:
 > Fine print now says "A $12 monthly service fee applies unless you keep a $1,500 daily balance."
 > New listing: 2 bd in Old Mill at 418 Bramble Row, Apt 3 for $1,950/mo.
 
+![The Bonus Crypt dashboard: four ghosts on tombstones, two glowing after their bonus pages changed, one turned away by robots.txt, and the Spirit mail feed of one-sentence alerts](docs/bonus-crypt.png)
+
+![A séance in Haunted Listings: the listings on the page, which ones are new, the rules that make the ghost stir, and the haunting log](docs/haunted-listings-seance.png)
+
 This repo holds one reusable template and two apps built from it, each in its own folder:
 
 | Folder | What it is |
@@ -49,7 +53,8 @@ This repo holds one reusable template and two apps built from it, each in its ow
   diff of the fine print. From there you can **Check now** or **Lay to rest**, or summon every ghost at once. The
   dashboard works from the keyboard, respects reduced motion, and is readable on a phone.
 - **Tests that drive the real thing.** Unit tests cover every module. CLI tests run the real
-  `check` command against a local fixture site. Playwright drives both dashboards in a browser.
+  `check` command against a local fixture site. Playwright drives both dashboards in a browser,
+  including phone width, keyboard-only use and reduced motion.
   Every test runs against `127.0.0.1`; none touch a live site.
 
 ## How to run
