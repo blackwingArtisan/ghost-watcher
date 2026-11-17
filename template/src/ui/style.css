@@ -202,6 +202,13 @@ body[data-restless='true'] .moon {
   padding: 34px 28px 12px;
 }
 
+.masthead__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
 .masthead__crest {
   width: 84px;
   filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent) 60%, transparent));
@@ -298,6 +305,41 @@ h1 {
 }
 body[data-busy='true'] .masthead .btn--glow {
   cursor: progress;
+}
+.btn--night {
+  border-color: color-mix(in srgb, var(--moon) 45%, transparent);
+  background: rgba(8, 6, 20, 0.55);
+  color: var(--moon);
+}
+.btn--night:hover {
+  background: rgba(8, 6, 20, 0.8);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--moon) 30%, transparent);
+}
+.night-hint {
+  margin: 0;
+  max-width: 22ch;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--ink-dim);
+}
+/* A brief dusk sweeps over the sky while the fixture site moves on a night. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 0%, transparent 20%, rgba(2, 1, 8, 0.75));
+  opacity: 0;
+  transition: opacity 0.45s ease;
+  z-index: 50;
+}
+body[data-night='true']::after {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  body::after {
+    transition: none;
+  }
 }
 
 /* ---------- layout ---------- */

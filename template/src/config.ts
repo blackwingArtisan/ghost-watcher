@@ -103,6 +103,41 @@ async function makeSink(env: Env, dataDir: string): Promise<{ sink: AlertSink; o
   return { sink, ...(outbox ? { outbox } : {}), label: kinds.join(' + ') };
 }
 
+const RESERVED_SUFFIXES = ['.example', '.test', '.invalid', '.localhost'];
+const RESERVED_DOMAINS = ['example.com', 'example.net', 'example.org'];
+
+/** True for documentation-only hostnames (RFC 2606 and RFC 6761), which belong to no real operator. */
+export function isReservedHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  return (
+    RESERVED_DOMAINS.some((d) => host === d || host.endsWith(`.${d}`)) ||
+    RESERVED_SUFFIXES.some((suffix) => host.endsWith(suffix))
+  );
+}
+
+/** True for contact URLs on documentation-only domains, which no site operator could actually visit. */
+export function isPlaceholderContact(contactUrl: string): boolean {
+  try {
+    return isReservedHost(new URL(contactUrl).hostname);
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * True when a watch visits a real third-party site: anything that is not this machine (the local
+ * fixture sites) and not a documentation-only domain.
+ */
+export function visitsThirdParty(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    const loopback = host === 'localhost' || host === '[::1]' || /^127(\.\d{1,3}){3}$/.test(host);
+    return !loopback && !isReservedHost(host);
+  } catch {
+    return false;
+  }
+}
+
 export interface LoadOptions {
   env?: Env;
   cwd?: string;
@@ -120,6 +155,13 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
   const contactUrl = env.GHOST_CONTACT_URL ?? baseApp.contactUrl;
   if (!contactUrl) throw new ConfigError('Set GHOST_CONTACT_URL: the watcher must identify itself to the sites it visits.');
   const userAgent = buildUserAgent({ version: baseApp.version, contactUrl });
+  const remote = baseApp.watches.find((w) => visitsThirdParty(w.url));
+  if (isPlaceholderContact(contactUrl) && remote) {
+    throw new ConfigError(
+      `"${remote.name}" watches ${new URL(remote.url).host}, but the contact URL is still the placeholder ${contactUrl}. ` +
+        'Set GHOST_CONTACT_URL to a page you control so the site operator can reach you.',
+    );
+  }
 
   const intervalOverride = env.GHOST_INTERVAL_MINUTES;
   const app: GhostApp = {

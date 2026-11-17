@@ -739,3 +739,45 @@ before any page fetch, so that it never accesses disallowed paths.
 #### REQ-NF-05: Runtime data is git-ignored
 
 1. THE SYSTEM SHALL write runtime data to `<app>/.ghost-data/` and SHALL git-ignore that directory.
+
+## 5. Requirements Added After Review
+
+These were added by hand after a review of a clean clone. See `KIRO-LOG.md`.
+
+#### REQ-DASH-SEC-01: The dashboard only takes orders from itself
+
+**User Story:** As someone running a watcher on my laptop, I want other web pages to be unable to
+   drive my dashboard, so that a malicious page cannot make the watcher fetch on its behalf.
+
+**Acceptance Criteria:**
+1. WHEN a request names a Host that is not `localhost`, a loopback address or a host listed in
+   `GHOST_ALLOWED_HOSTS`, THE SYSTEM SHALL answer 403 and SHALL NOT run any check.
+2. WHEN a POST request carries an `Origin` that differs from the dashboard's own origin, THE SYSTEM
+   SHALL answer 403 and SHALL NOT run any check.
+3. WHEN a POST request carries `Sec-Fetch-Site` other than `same-origin` or `none`, THE SYSTEM SHALL
+   answer 403.
+4. WHEN a POST request carries no `Origin` (a command-line client on the same machine), THE SYSTEM
+   SHALL accept it if the Host is allowed.
+
+#### REQ-FETCH-SEC-01: The contact URL must be reachable before visiting real sites
+
+**User Story:** As a site operator, I want the watcher's User-Agent to name a page I can actually
+   visit, so that I can reach whoever runs it.
+
+**Acceptance Criteria:**
+1. IF any watch points at a host that is neither loopback nor a documentation-only domain AND the
+   contact URL is on a documentation-only domain (RFC 2606), THEN THE SYSTEM SHALL refuse to start
+   and SHALL name `GHOST_CONTACT_URL` in the error.
+
+#### REQ-DEMO-01: The demo shows a change in one click
+
+**User Story:** As a first-time visitor, I want to see a ghost wake up within seconds, so that I
+   understand the product without reading instructions.
+
+**Acceptance Criteria:**
+1. WHEN an app starts in `demo` mode, THE SYSTEM SHALL record a baseline for every watch before
+   serving the dashboard.
+2. WHILE in `demo` mode, THE SYSTEM SHALL show a **Let a night pass** control that advances the
+   local fixture site to its next version and then checks every watch.
+3. WHILE not in `demo` mode, THE SYSTEM SHALL NOT show that control and SHALL answer 404 to its endpoint.
+

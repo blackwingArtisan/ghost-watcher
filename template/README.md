@@ -81,7 +81,8 @@ await runCli(process.argv.slice(2), { buildApp, defaultPort: 3138, siteOriginVar
 
 This gives you `check [--force] [--watch <id>] [--json]`, `serve [--port <n>] [--fresh]` and
 `list`. Pass `startFixtures` and `defaultFixturePort` as well to get `demo`, which starts your
-fixture site and serves the dashboard against it.
+fixture site, records a baseline for every watch, and serves the dashboard against it with a
+**Let a night pass** button that moves the fixture site to its next version and checks again.
 
 ### 3. Build a fixture site
 
@@ -129,7 +130,8 @@ their `test/` folders and the root `e2e/` folder.
 | `runner.ts` | The check pipeline, interval gate, back-off and single-flight checks |
 | `store/` | `BlobStore` port (memory, file, S3) and `GhostStore` (snapshots, status, alerts, acknowledgements) |
 | `alerts/` | `AlertSink` port (outbox, console, fan-out, SES) and the email renderer |
-| `config.ts` | Environment-driven adapter selection (`loadDeps`) |
+| `config.ts` | Environment-driven adapter selection (`loadDeps`); refuses a placeholder contact URL for real sites |
+| `guard.ts` | Dashboard request guard: loopback or `GHOST_ALLOWED_HOSTS` Host only, same-origin POSTs only |
 | `server.ts`, `view.ts`, `ui/` | The dashboard: JSON API, view model, shared renderer, client script and theme |
 | `cli.ts` | `check`, `serve`, `demo`, `list` |
 

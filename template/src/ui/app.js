@@ -103,6 +103,25 @@ document.addEventListener('click', (event) => {
       toast('Laid to rest. The ghost settles down.');
       await refresh();
     });
+  } else if (action === 'next-night') {
+    target.setAttribute('disabled', '');
+    document.body.dataset.night = 'true';
+    document.querySelectorAll('.ghost').forEach((card) => ((/** @type {HTMLElement} */ (card)).dataset.checking = 'true'));
+    void withBusy(async () => {
+      try {
+        const night = await api('/api/demo/next-night', { method: 'POST' });
+        if (!night.moved) {
+          toast('The fixture site has no more nights to show. Restart the demo to begin again.');
+        } else {
+          const changed = night.results.filter((/** @type {any} */ r) => r.status === 'changed').length;
+          toast(`Night ${night.version - 1} passes. ${changed ? `${changed} ghost${changed === 1 ? '' : 's'} restless.` : 'All quiet.'}`);
+        }
+        await refresh();
+      } finally {
+        target.removeAttribute('disabled');
+        setTimeout(() => (document.body.dataset.night = 'false'), 900);
+      }
+    });
   } else if (action === 'check-all') {
     target.setAttribute('disabled', '');
     document.querySelectorAll('.ghost').forEach((card) => ((/** @type {HTMLElement} */ (card)).dataset.checking = 'true'));

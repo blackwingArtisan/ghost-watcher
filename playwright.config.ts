@@ -2,7 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * End-to-end tests drive each app's real dashboard in a browser against its local fixture site.
- * Ports 3134-3137 keep e2e runs clear of the dev ports (3130-3133).
+ * Ports 3134-3139 keep e2e runs clear of the dev ports (3130-3133); 3138-3139 run bonus-watch in
+ * `demo` mode, where the app starts its own fixture site and takes the first sighting itself.
  */
 const common = {
   GHOST_INTERVAL_MINUTES: '0',
@@ -45,6 +46,12 @@ export default defineConfig({
       command: 'npx tsx apps/listing-watch/src/main.ts serve --fresh --port 3136',
       url: 'http://127.0.0.1:3136/healthz',
       env: { ...common, LISTING_SITE_ORIGIN: 'http://127.0.0.1:3137', GHOST_DATA_DIR: '.ghost-e2e/listing-watch' },
+      reuseExistingServer: false,
+    },
+    {
+      command: 'npx tsx apps/bonus-watch/src/main.ts demo --port 3138 --fixture-port 3139',
+      url: 'http://127.0.0.1:3138/healthz',
+      env: { GHOST_HOST_GAP_MS: '0', GHOST_DATA_DIR: '.ghost-e2e/bonus-demo', GHOST_FRESH: '1' },
       reuseExistingServer: false,
     },
   ],

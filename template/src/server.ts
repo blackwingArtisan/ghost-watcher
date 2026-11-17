@@ -7,8 +7,12 @@
  *   POST /api/ghosts/:id/check          check now (skips the interval; robots.txt still applies)
  *   POST /api/ghosts/:id/acknowledge    lay the ghost to rest
  *   POST /api/check-all                 check every watch now
+ *   POST /api/demo/next-night           demo mode only: advance the fixture site, then check every watch
  *   GET  /outbox/:file.html             preview of a letter in the local outbox
  *   GET  /healthz                       liveness
+ *
+ * Every request must name an expected Host (loopback, or one listed in `allowedHosts`), and every
+ * POST must come from the dashboard's own origin. See `guard.ts`.
  */
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -16,6 +20,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { GhostDeps } from './config';
+import { allowedHostSet, checkRequest } from './guard';
 import { dashboardState, ghostDetail } from './view';
 // The renderer is a plain ES module shared with the browser (no build step).
 import { renderPage } from './ui/render.js';
@@ -60,6 +65,20 @@ function json(res: ServerResponse, status: number, value: unknown): void {
 export interface DashboardOptions {
   /** Extra CSS variables merged over the app theme. */
   themeOverrides?: Record<string, string>;
+  /**
+   * Hostnames, besides localhost and loopback addresses, that the dashboard answers to (for example
+   * the public hostname of a deployed instance). Requests naming any other Host are refused.
+   */
+  allowedHosts?: readonly string[];
+  /**
+   * Demo mode only: moves the local fixture site to its next version, so a visitor can watch a
+   * change happen from the dashboard. Returns the new version and whether anything moved.
+   */
+  demo?: DemoControls;
+}
+
+export interface DemoControls {
+  nextNight(): { version: number; moved: boolean };
 }
 
 export function themeVariables(deps: GhostDeps): Record<string, string> {
@@ -74,15 +93,19 @@ export function themeVariables(deps: GhostDeps): Record<string, string> {
 
 export function createDashboardServer(deps: GhostDeps, options: DashboardOptions = {}): Server {
   const theme = { ...themeVariables(deps), ...options.themeOverrides };
+  const allowedHosts = allowedHostSet(options.allowedHosts);
 
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
     const path = url.pathname;
     const method = req.method ?? 'GET';
 
+    const verdict = checkRequest(req, allowedHosts);
+    if (!verdict.ok) return json(res, 403, { error: verdict.reason });
+
     if (method === 'GET' && path === '/') {
       const state = await dashboardState(deps);
-      send(res, 200, renderPage(state, { css: '/ui/style.css', theme }), 'text/html; charset=utf-8', {
+      send(res, 200, renderPage(state, { css: '/ui/style.css', theme, demo: Boolean(options.demo) }), 'text/html; charset=utf-8', {
         'Cache-Control': 'no-store',
         'Content-Security-Policy':
           "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; frame-ancestors 'none'",
@@ -118,6 +141,13 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
     if (method === 'POST' && path === '/api/check-all') {
       const results = await deps.runner.checkAll({ force: true });
       return json(res, 200, { results: results.map(publicResult) });
+    }
+
+    if (method === 'POST' && path === '/api/demo/next-night') {
+      if (!options.demo) return json(res, 404, { error: 'Not found' });
+      const night = options.demo.nextNight();
+      const results = night.moved ? await deps.runner.checkAll({ force: true }) : [];
+      return json(res, 200, { ...night, results: results.map(publicResult) });
     }
 
     const ghostRoute = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge))?$/.exec(path);

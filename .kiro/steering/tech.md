@@ -34,6 +34,13 @@ the local adapter. Tests never construct a real cloud client and never touch the
 - Minimum interval between checks of the same URL defaults to 6 hours; honor `Crawl-delay`.
 - User-Agent: `GhostWatcher/<version> (+<contact url>)`.
 - Timeouts on every request; at most one request per host at a time.
+- The contact URL must be a page a site operator can visit; placeholder domains are only for the
+  local fixture sites.
+
+## Dashboard safety
+
+- The dashboard answers only to loopback Host headers plus `GHOST_ALLOWED_HOSTS`.
+- State-changing requests must come from the dashboard's own origin.
 
 ## Code style
 

@@ -12,12 +12,12 @@ fire on every timestamp and rotating banner, so people mute them.
 
 ## 2. The Bonus Crypt (60 s)
 
-- Click **Summon every ghost**. Each ghost records a first sighting. No alerts fire, because a
-  baseline is not a change.
+- The demo has already taken each ghost's first sighting. No alerts fired, because a baseline is
+  not a change.
 - Point out the ghost behind bars: robots.txt asks watchers to stay out of the members area, so
   Ghost Watcher never requests it. Every visit sends an honest User-Agent with a contact URL.
-- Advance the fixture bank (`curl -X POST http://127.0.0.1:3131/__fixture/advance`) and summon
-  again. Lanternfield and Mossgate glow. Bramblewick sleeps: its page was only reformatted.
+- Click **Let a night pass**. The invented bank site changes its terms overnight and every ghost
+  looks again. Lanternfield and Mossgate glow. Bramblewick sleeps: its page was only reformatted.
 - Read the Spirit mail: "Bonus went up from $300 to $400 (+$100)." Open **Read the letter** to
   show the email that would be sent.
 - Open the Lanternfield séance to show the word-level diff of the fine print, then **Lay to rest**.
@@ -26,7 +26,7 @@ fire on every timestamp and rotating banner, so people mute them.
 
 - Same skeleton, different app: one `app.ts` with list watches and filters (2+ bedrooms, at most
   $2,100, Old Mill or Larkspur Heights).
-- Advance the city fixture and summon. Several listings appear or change, but only the two you would
+- Click **Let a night pass**. Several listings appear or change, but only the two you would
   actually take raise alerts: a new 2 bd in Old Mill at $1,950, and a price cut into budget.
 - Permits: a demolition and a 36-unit new build alert once each. The electrical permit stays quiet.
 

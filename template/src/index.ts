@@ -15,8 +15,9 @@ export { OutboxAlertSink, ConsoleAlertSink, FanOutAlertSink, toEml, type OutboxE
 export { renderAlertMessage } from './alerts/render';
 export { Runner, backoffMs, nextEligibleAt, type CheckResult, type CheckOptions } from './runner';
 export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } from './app';
-export { loadDeps, ConfigError, type GhostDeps, type Env } from './config';
-export { createDashboardServer, listen } from './server';
+export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env } from './config';
+export { createDashboardServer, listen, type DashboardOptions } from './server';
+export { checkRequest, allowedHostSet, parseHostList, hostnameOf, LOOPBACK_HOSTS, type GuardVerdict } from './guard';
 export { dashboardState, ghostDetail, ghostView, type DashboardState, type GhostView, type GhostDetail } from './view';
 export { runCli, parseFlags, describeResult, type CliOptions } from './cli';
 // Cloud adapters (opt-in). Importing them loads the AWS SDK, so they are exported from their own paths

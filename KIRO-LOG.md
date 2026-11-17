@@ -101,3 +101,24 @@ CLI waited and retried, and the run finished successfully. Request IDs from the 
 - `test-on-save.json`: on `PostFileSave` of any `.ts` or `.js` file, runs
   `npm run typecheck && npm run test:unit`.
 - `full-suite-on-stop.json`: on `Stop`, runs `npm test` (type-check, unit and end-to-end).
+
+Both files follow the hook schema in the Kiro documentation (https://kiro.dev/docs/hooks/, checked
+2026-11-16): one JSON file per hook group in `.kiro/hooks/`, with `"version": "v1"`, a `hooks`
+array, PascalCase `trigger` names (`PostFileSave`, `Stop`), an optional `matcher` regular
+expression against the file path, and an `action` of type `command`. This is the format that Kiro
+IDE 1.0 and Kiro CLI V3 load automatically. The older IDE 0.x `*.kiro.hook` files with `when` and
+`then` keys are superseded by it. The commands themselves were run by hand during the build (they
+are the same `npm` scripts the test suite uses).
+
+## Changes after review
+
+A review of a clean clone raised three points, handled by hand without further Kiro calls:
+
+- **Cross-origin writes.** The dashboard now refuses requests whose Host header is not loopback or
+  listed in `GHOST_ALLOWED_HOSTS`, and refuses POSTs with a cross-site `Origin` or
+  `Sec-Fetch-Site`. Added as REQ-DASH-SEC-01 and task 20.1 in the spec.
+- **Placeholder contact URL.** The watcher refuses to start when a watch points at a real
+  third-party site while the contact URL is still on a documentation-only domain. Added as
+  REQ-FETCH-SEC-01 and task 20.2.
+- **First impression.** `demo` mode now takes the baseline at startup and adds a **Let a night
+  pass** button, so the first click already shows a change. Added as REQ-DEMO-01 and task 20.3.

@@ -433,6 +433,15 @@ while the check runs.
 **Accessibility and theme:** the haunted theme is applied via CSS with readable contrast; all controls
 are keyboard operable; a `prefers-reduced-motion` media query disables glow animation and motion.
 
+**Request guard (added after review):** every request passes `checkRequest` in `guard.ts` first. The
+Host header must be loopback or listed in `GHOST_ALLOWED_HOSTS` (blocks DNS rebinding), and every
+POST must carry no `Origin` or the dashboard's own origin, and no cross-site `Sec-Fetch-Site`.
+Refusals are 403 with a JSON reason, before any check runs.
+
+**Demo controls (added after review):** in `demo` mode the CLI records a baseline for every watch
+before listening, and passes `demo.nextNight()` to the server. `POST /api/demo/next-night` advances
+the fixture site, then runs `checkAll({ force: true })`, so one click shows a change.
+
 ## 10. Error Handling
 
 - All cross-boundary results use discriminated unions (`ok` / `skipped` / `error`) per REQ-NF-03; the

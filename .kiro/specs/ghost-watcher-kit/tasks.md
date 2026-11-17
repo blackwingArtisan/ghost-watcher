@@ -210,6 +210,17 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 - [x] 19.5 Confirm the default run uses only local adapters with no environment variables beyond the
        required `GHOST_CONTACT_URL`. (REQ-NF-04, REQ-FETCH-02)
 
+## 20. After review
+
+- [x] 20.1 Add `template/src/guard.ts` (Host allow-list and same-origin check for POSTs), wire it into
+       the dashboard server and the CLI (`GHOST_ALLOWED_HOSTS`), with unit, HTTP and Playwright
+       tests. (REQ-DASH-SEC-01)
+- [x] 20.2 Refuse to start when a real third-party site is watched with a placeholder contact URL,
+       with unit tests. (REQ-FETCH-SEC-01)
+- [x] 20.3 In `demo` mode, take the baseline at startup and add the **Let a night pass** control
+       (`POST /api/demo/next-night`), with a Playwright test against a demo instance on ports
+       3138-3139. (REQ-DEMO-01)
+
 ## Implementation notes
 
 Every task above is implemented and covered by `npm test`. Where the build differs from the

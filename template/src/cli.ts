@@ -11,6 +11,7 @@ import { resolve } from 'node:path';
 import type { GhostApp } from './app';
 import { loadDeps, type Env } from './config';
 import type { CheckResult } from './runner';
+import { parseHostList } from './guard';
 import { createDashboardServer, listen } from './server';
 import type { FixtureServer } from './testing/fixture-server';
 
@@ -128,7 +129,26 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
   }
 
   if (flags.command === 'serve' || flags.command === 'demo') {
-    const server = createDashboardServer(deps);
+    const site = fixtures;
+    if (flags.command === 'demo') {
+      // Take the first sighting now, so the visitor's first click already shows a change.
+      const baseline = await deps.runner.checkAll({ force: true });
+      out(`First sighting taken for ${baseline.filter((r) => r.status === 'baseline').length} of ${baseline.length} pages.`);
+    }
+    const server = createDashboardServer(deps, {
+      allowedHosts: [...parseHostList(env.GHOST_ALLOWED_HOSTS), ...parseHostList(env.RENDER_EXTERNAL_HOSTNAME)],
+      ...(site
+        ? {
+            demo: {
+              nextNight: () => {
+                const before = site.version;
+                const version = site.advance();
+                return { version, moved: version !== before };
+              },
+            },
+          }
+        : {}),
+    });
     const url = await listen(server, flags.port ?? Number(env.PORT ?? options.defaultPort), env.HOST ?? '127.0.0.1');
     out(`${deps.app.name} is haunting ${deps.app.watches.length} pages at ${url}`);
     out(`User-Agent: ${deps.describe.userAgent}`);

@@ -52,6 +52,9 @@ This repo holds one reusable template and two apps built from it, each in its ow
   Click a ghost to open the séance: what is on the page now, what it said before, and a word-level
   diff of the fine print. From there you can **Check now** or **Lay to rest**, or summon every ghost at once. The
   dashboard works from the keyboard, respects reduced motion, and is readable on a phone.
+- **Safe to leave running.** The dashboard answers only to `localhost` and loopback Host headers
+  (plus any listed in `GHOST_ALLOWED_HOSTS`), which stops DNS-rebinding pages. Every POST must come
+  from the dashboard's own origin, so another web page cannot make the ghosts go out and fetch.
 - **Tests that drive the real thing.** Unit tests cover every module. CLI tests run the real
   `check` command against a local fixture site. Playwright drives both dashboards in a browser,
   including phone width, keyboard-only use and reduced motion.
@@ -67,13 +70,17 @@ npm run bonus      # The Bonus Crypt at http://127.0.0.1:3130 (fixture bank site
 npm run listing    # Haunted Listings at http://127.0.0.1:3132 (fixture city site on :3133)
 ```
 
-`demo` starts the app's local fixture site and the dashboard against it. To try it:
+`demo` starts the app's local fixture site, takes the first sighting of every page (a baseline,
+so no alerts yet), and opens the dashboard against it. To try it:
 
-1. Click **Summon every ghost** to record the first sighting (a baseline, so no alerts yet).
-2. Advance the fixture site to its next version: `curl -X POST http://127.0.0.1:3131/__fixture/advance`
-   (use `:3133` for listings).
-3. Click **Summon every ghost** again. The ghosts whose pages really changed start to glow, and the
-   alert letters appear in the **Spirit mail** feed.
+1. Open the dashboard. Every ghost is resting, and one is behind bars because robots.txt keeps it out.
+2. Click **Let a night pass**. The invented fixture site moves to its next version and every ghost
+   looks again. The ghosts whose pages really changed start to glow, and the alert letters appear
+   in the **Spirit mail** feed. Each app has two nights of changes.
+
+The button exists only in `demo` mode. Outside the browser, the same step is
+`curl -X POST http://127.0.0.1:3131/__fixture/advance` (`:3133` for listings) followed by
+**Summon every ghost**.
 
 Each app also has a command line:
 
@@ -96,7 +103,7 @@ npm run test:unit      # Vitest only
 npm run test:e2e       # Playwright only (run `npx playwright install chromium` once first)
 ```
 
-Playwright starts the fixture sites and dashboards itself on ports 3134 to 3137.
+Playwright starts the fixture sites and dashboards itself on ports 3134 to 3139 (3138-3139 run one app in `demo` mode).
 
 ## Architecture
 
@@ -145,6 +152,7 @@ is selected by environment variable and loaded only when selected.
 | Storage | `FileBlobStore` under `.ghost-data/` (`MemoryBlobStore` for tests) | `S3BlobStore` (AWS SDK v3) | `GHOST_STORE=file\|memory\|s3`, `GHOST_S3_BUCKET`, `GHOST_S3_PREFIX`, `AWS_REGION` |
 | Alerts | `OutboxAlertSink` (`.eml`, HTML preview, `outbox.jsonl`), `ConsoleAlertSink` | `SesEmailAlertSink` (SES v2) | `GHOST_ALERTS=outbox,console,ses` (comma-separated), `GHOST_SES_FROM`, `GHOST_ALERT_TO` |
 | Fetching | `PoliteFetcher` over `fetch` | the same fetcher, pointed at real sites | `GHOST_CONTACT_URL`, `GHOST_HOST_GAP_MS`, `GHOST_TIMEOUT_MS` |
+| Dashboard access | loopback hosts only | a deployed hostname | `GHOST_ALLOWED_HOSTS` (comma-separated; Render's `RENDER_EXTERNAL_HOSTNAME` is added automatically) |
 | Clock | `systemClock` | `manualClock` in tests | none |
 
 The S3 and SES adapters are written and type-checked, and they are tested with fake clients. They
@@ -153,8 +161,12 @@ names the missing variable.
 
 **Deploy target (free, not deployed):** a Render free web service running
 `npm run serve -w @ghost-watcher/bonus-watch` (or the listing app). Free instances sleep and do not
-keep files across restarts. For durable state, use the S3 adapter. Set `GHOST_CONTACT_URL` to a
-real page before pointing the watcher at live sites.
+keep files across restarts. For durable state, use the S3 adapter.
+
+**Contact URL.** The demo apps identify themselves with a placeholder contact URL on `example.com`,
+which is fine for the local fixture sites. The watcher refuses to start if any watch points at a
+real third-party site while the contact URL is still on a documentation-only domain, so set
+`GHOST_CONTACT_URL` to a page you control before watching live sites.
 
 ## Built with Kiro
 
@@ -166,7 +178,8 @@ Kiro planned this repo before any code was written. Everything it used and produ
   the design, and the task list. Kiro generated all three. Every task is now checked off, with
   implementation notes.
 - [`.kiro/hooks/`](.kiro/hooks/): a hook that type-checks and runs the unit tests on every save, and
-  one that runs the full suite when an agent turn ends.
+  one that runs the full suite when an agent turn ends. Both use Kiro's `v1` hook file format
+  (`PostFileSave` and `Stop` triggers), which Kiro IDE 1.0 and CLI V3 load from `.kiro/hooks/*.json`.
 
 [`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the exact prompt, the files produced, the
 errors hit along the way, and the one requirement that was revised by hand.

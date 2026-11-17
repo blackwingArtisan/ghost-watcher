@@ -207,7 +207,7 @@ ${lists}
 <section><h4>Haunting log</h4><ul class="log">${alerts}</ul></section>`;
 }
 
-/** Full first paint, rendered on the server. @param {any} state @param {{ css: string; theme: Record<string, string> }} assets */
+/** Full first paint, rendered on the server. @param {any} state @param {{ css: string; theme: Record<string, string>; demo?: boolean }} assets */
 export function renderPage(state, assets) {
   const themeVars = Object.entries(assets.theme)
     .map(([k, v]) => `--${k}:${esc(v)};`)
@@ -236,7 +236,13 @@ export function renderPage(state, assets) {
     <p class="stats" id="stats" aria-live="polite">${renderStats(state)}</p>
   </div>
   <div class="masthead__actions">
-    <button type="button" class="btn btn--glow" data-action="check-all">Summon every ghost</button>
+    <button type="button" class="btn btn--glow" data-action="check-all">Summon every ghost</button>${
+      assets.demo
+        ? `
+    <button type="button" class="btn btn--night" data-action="next-night" aria-describedby="night-hint">Let a night pass</button>
+    <p class="night-hint" id="night-hint">Demo: the invented fixture site changes overnight, then every ghost looks again.</p>`
+        : ''
+    }
   </div>
 </header>
 <main class="layout">
