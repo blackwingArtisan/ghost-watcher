@@ -171,6 +171,8 @@ Kiro planned this repo before any code was written. Everything it used and produ
 [`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the exact prompt, the files produced, the
 errors hit along the way, and the one requirement that was revised by hand.
 
+A three-minute walkthrough for a demo video is in [`docs/demo-script.md`](docs/demo-script.md).
+
 ## Disclaimer
 
 The banks, buildings, people and addresses in the fixtures are invented. The Bonus Crypt reports
