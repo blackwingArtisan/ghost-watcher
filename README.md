@@ -45,6 +45,12 @@ This repo holds one reusable template and two apps built from it, each in its ow
 - **Rules that read like intent.** `wentUp`, `wentDown`, `changed`, `appeared` and `disappeared`
   (optionally matching a phrase), plus `newItem`, `itemRemoved` and `itemChanged`, with filters
   such as `where.atMost('price', 2100)`. Each rule has a loudness: whisper, moan or shriek.
+- **The Ghost of Terms Past.** On a ghost's first sighting it reads the page's archived copies from
+  the Internet Archive's Wayback Machine (one per month, newest six) and runs them through the
+  same extract, diff and rules. The séance opens with the page's history instead of a blank:
+  "Mar 4: Bonus $500. Jun 11: Bonus went down from $500 to $300 (-$200)." Past changes are shown,
+  never sent as alerts. In `demo` mode the fixture site stands in for the archive, and the adapter's
+  tests replay real recorded Wayback responses.
 - **Plain-English alerts.** The outbox writes each alert as an `.eml` file, an HTML preview and an
   index line. It works with no accounts. Amazon SES is an opt-in adapter.
 - **A haunted dashboard.** Each watch is a ghost on a tombstone. It sleeps while nothing changes,
@@ -174,6 +180,7 @@ is selected by environment variable and loaded only when selected.
 | Storage | `FileBlobStore` under `.ghost-data/` (`MemoryBlobStore` for tests) | `S3BlobStore` (AWS SDK v3) | `GHOST_STORE=file\|memory\|s3`, `GHOST_S3_BUCKET`, `GHOST_S3_PREFIX`, `AWS_REGION` |
 | Alerts | `OutboxAlertSink` (`.eml`, HTML preview, `outbox.jsonl`), `ConsoleAlertSink` | `SesEmailAlertSink` (SES v2) | `GHOST_ALERTS=outbox,console,ses` (comma-separated), `GHOST_SES_FROM`, `GHOST_ALERT_TO` |
 | Fetching | `PoliteFetcher` over `fetch` | the same fetcher, pointed at real sites | `GHOST_CONTACT_URL`, `GHOST_HOST_GAP_MS`, `GHOST_TIMEOUT_MS` |
+| History | off (`demo` uses the fixture site's stand-in archive) | `WaybackHistorySource` (Internet Archive CDX API, free, no key) | `GHOST_HISTORY=wayback`, `GHOST_HISTORY_BASE`, `GHOST_HISTORY_LIMIT` |
 | Dashboard access | loopback hosts only | a deployed hostname | `GHOST_ALLOWED_HOSTS` (comma-separated; Render's `RENDER_EXTERNAL_HOSTNAME` is added automatically) |
 | Clock | `systemClock` | `manualClock` in tests | none |
 

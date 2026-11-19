@@ -109,6 +109,10 @@ export const shopSite: FixtureSite = {
 `GET /__fixture/log`. The log lists every request and its User-Agent, so tests can prove a
 disallowed path was never requested.
 
+Add `past: [{ version: 0, capturedAt: '2026-06-11T09:30:44Z' }]` and the same server also stands in
+for the Wayback Machine (`/__wayback/cdx/search/cdx` and `/__wayback/web/<timestamp>id_/<url>`), so
+`demo` mode fills the Ghost of Terms Past without leaving the machine.
+
 ### 4. Test it
 
 Unit-test the watches by extracting two fixture versions and evaluating the rules. Then drive the
@@ -127,7 +131,9 @@ their `test/` folders and the root `e2e/` folder.
 | `summary.ts` | One-sentence explanations, sentence-level pairing for long text, word-level diff |
 | `robots.ts` | RFC 9309 robots.txt parsing and matching |
 | `fetcher.ts` | `PoliteFetcher`: robots.txt cache, honest User-Agent, per-host lock, Crawl-delay, timeouts, size cap |
-| `runner.ts` | The check pipeline, interval gate, back-off and single-flight checks |
+| `runner.ts` | The check pipeline, interval gate, back-off and single-flight checks; counts visits where the page moved but no rule cared |
+| `noise.ts` | Visible page text and its fingerprint, for the ignored-noise count and the noise-ratio comparison |
+| `history.ts` | `HistorySource` port, the Wayback Machine (CDX) adapter, and the Ghost of Terms Past timeline built from archived copies |
 | `store/` | `BlobStore` port (memory, file, S3) and `GhostStore` (snapshots, status, alerts, acknowledgements) |
 | `alerts/` | `AlertSink` port (outbox, console, fan-out, SES) and the email renderer |
 | `config.ts` | Environment-driven adapter selection (`loadDeps`); picks the User-Agent contact and refuses a missing or placeholder contact URL for real sites |

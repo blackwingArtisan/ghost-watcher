@@ -8,6 +8,9 @@
  *   GHOST_ALERT_TO         comma-separated recipients (defaults to the app's invented demo address)
  *   GHOST_CONTACT_URL      contact URL sent in the User-Agent (overrides the app's optional one; required
  *                          for real sites, unnecessary when every watch is on a loopback or reserved host)
+ *   GHOST_HISTORY          none (default) | wayback: on a first sighting, read archived copies of the page
+ *   GHOST_HISTORY_BASE     archive origin (default https://web.archive.org; demo mode uses its fixture site)
+ *   GHOST_HISTORY_LIMIT    archived copies to read per page, at most one a month (default 6)
  *   GHOST_INTERVAL_MINUTES override every watch's minimum check interval
  *   GHOST_HOST_GAP_MS      minimum gap between requests to one host (default 1000)
  *   GHOST_TIMEOUT_MS       request timeout (default 15000)
@@ -16,6 +19,7 @@ import { join, relative, resolve } from 'node:path';
 import type { GhostApp } from './app';
 import { systemClock, type Clock } from './clock';
 import { PoliteFetcher, buildUserAgent, type Fetcher } from './fetcher';
+import { WAYBACK_BASE, WaybackHistorySource, type HistorySource } from './history';
 import { ConsoleAlertSink, FanOutAlertSink, OutboxAlertSink } from './alerts/sinks';
 import type { AlertSink } from './alerts/types';
 import { FileBlobStore, MemoryBlobStore, type BlobStore } from './store/blob';
@@ -34,7 +38,8 @@ export interface GhostDeps {
   outbox?: OutboxAlertSink;
   clock: Clock;
   runner: Runner;
-  describe: { store: string; alerts: string; userAgent: string };
+  history?: HistorySource;
+  describe: { store: string; alerts: string; userAgent: string; history: string };
 }
 
 export class ConfigError extends Error {
@@ -102,6 +107,29 @@ async function makeSink(env: Env, dataDir: string): Promise<{ sink: AlertSink; o
   if (sinks.length === 0) throw new ConfigError('GHOST_ALERTS selects no alert sink.');
   const sink = sinks.length === 1 ? (sinks[0] as AlertSink) : new FanOutAlertSink(sinks);
   return { sink, ...(outbox ? { outbox } : {}), label: kinds.join(' + ') };
+}
+
+function makeHistory(env: Env, userAgent: string, hasContact: boolean): { history?: HistorySource; label: string } {
+  const kind = env.GHOST_HISTORY ?? 'none';
+  if (kind === 'none' || kind === '') return { label: 'off' };
+  if (kind !== 'wayback') throw new ConfigError(`GHOST_HISTORY must be none or wayback, got "${kind}".`);
+  const base = env.GHOST_HISTORY_BASE?.trim() || WAYBACK_BASE;
+  if (visitsThirdParty(base) && !hasContact) {
+    throw new ConfigError(
+      `GHOST_HISTORY=wayback asks ${new URL(base).host} for archived copies, so the watcher must identify itself. ` +
+        'Set GHOST_CONTACT_URL to a page you control.',
+    );
+  }
+  const limit = int(env, 'GHOST_HISTORY_LIMIT', 6);
+  const remote = visitsThirdParty(base);
+  const history = new WaybackHistorySource({
+    userAgent,
+    base,
+    limit,
+    gapMs: remote ? 1000 : 0,
+    ...(remote ? {} : { label: 'the stand-in Wayback Machine' }),
+  });
+  return { history, label: `${history.label} (${limit} copies max)` };
 }
 
 const RESERVED_SUFFIXES = ['.example', '.test', '.invalid', '.localhost'];
@@ -194,7 +222,8 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
   const { blobs, label: storeLabel } = await makeBlobStore(env, app, dataDir);
   const store = new GhostStore(blobs);
   const { sink, outbox, label: alertLabel } = await makeSink(env, dataDir);
-  const runner = new Runner({ app, fetcher, store, sink, clock });
+  const { history, label: historyLabel } = makeHistory(env, userAgent, Boolean(contactUrl));
+  const runner = new Runner({ app, fetcher, store, sink, clock, ...(history ? { history } : {}) });
 
   return {
     app,
@@ -205,6 +234,7 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
     ...(outbox ? { outbox } : {}),
     clock,
     runner,
-    describe: { store: storeLabel, alerts: alertLabel, userAgent },
+    ...(history ? { history } : {}),
+    describe: { store: storeLabel, alerts: alertLabel, userAgent, history: historyLabel },
   };
 }

@@ -14,6 +14,21 @@ export type { Alert, AlertMessage, AlertSink, DeliveryReceipt } from './alerts/t
 export { OutboxAlertSink, ConsoleAlertSink, FanOutAlertSink, toEml, type OutboxEntry } from './alerts/sinks';
 export { renderAlertMessage } from './alerts/render';
 export { pageText, pageFingerprint, hashText } from './noise';
+export {
+  WaybackHistorySource,
+  WAYBACK_BASE,
+  buildPastTimeline,
+  cdxQueryUrl,
+  describeValues,
+  parseCdx,
+  pastChangeCount,
+  waybackTimestampToIso,
+  type HistorySource,
+  type PastCapture,
+  type PastEntry,
+  type PastTimeline,
+  type WaybackOptions,
+} from './history';
 export { Runner, backoffMs, nextEligibleAt, type CheckResult, type CheckOptions } from './runner';
 export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } from './app';
 export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env } from './config';

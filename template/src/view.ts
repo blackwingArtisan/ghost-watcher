@@ -1,6 +1,7 @@
 /** View models for the dashboard and its JSON API. */
 import type { Alert } from './alerts/types';
 import type { GhostDeps } from './config';
+import type { PastTimeline } from './history';
 import { displayValue, type MaybeValue } from './normalize';
 import { describeRule } from './rules';
 import { nextEligibleAt } from './runner';
@@ -59,6 +60,8 @@ export interface GhostDetail extends GhostView {
   lists: ListView[];
   alerts: Array<Alert & { acknowledged: boolean; letter: string | null }>;
   snapshots: string[];
+  /** The Ghost of Terms Past: the page's archived history, read on the first sighting. */
+  past: PastTimeline | null;
 }
 
 export interface FeedEntry {
@@ -79,6 +82,7 @@ export interface DashboardState {
     userAgent: string;
     store: string;
     alerts: string;
+    history: string;
     /** True when the dashboard runs in demo mode (the server sets it). */
     demo?: boolean;
   };
@@ -184,6 +188,7 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
       userAgent: deps.describe.userAgent,
       store: deps.describe.store,
       alerts: deps.describe.alerts,
+      history: deps.describe.history,
     },
     ghosts,
     feed: feed.slice(0, 30),
@@ -192,12 +197,13 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
 }
 
 export async function ghostDetail(deps: GhostDeps, watch: Watch): Promise<GhostDetail> {
-  const [view, history, alerts, unread, letters] = await Promise.all([
+  const [view, history, alerts, unread, letters, past] = await Promise.all([
     ghostView(deps, watch),
     deps.store.history(watch.id, 2),
     deps.store.alerts(watch.id),
     deps.store.unacknowledged(watch.id),
     letterIndex(deps),
+    deps.store.pastTimeline(watch.id),
   ]);
   const [current, previous] = history;
   const fields: FieldRow[] = watch.fields.map((field) => {
@@ -236,5 +242,6 @@ export async function ghostDetail(deps: GhostDeps, watch: Watch): Promise<GhostD
     lists,
     alerts: alerts.slice(0, 40).map((alert) => ({ ...alert, acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null })),
     snapshots: history.map((s) => s.takenAt),
+    past,
   };
 }

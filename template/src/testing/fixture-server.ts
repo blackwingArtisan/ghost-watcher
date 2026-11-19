@@ -8,6 +8,12 @@
  *   POST /__fixture/outage?on=1    answer 503 for every page (robots.txt keeps working)
  *   GET  /__fixture/log            every request received, with its User-Agent
  *   GET  /__fixture/state          current version and outage flag
+ *
+ * Sites with `past` versions also stand in for the Internet Archive's Wayback Machine, with the same
+ * request and response shapes, so the Ghost of Terms Past can be demonstrated and tested offline:
+ *
+ *   GET  /__wayback/cdx/search/cdx?url=<url>&output=json&limit=-N   capture list (CDX JSON)
+ *   GET  /__wayback/web/<timestamp>id_/<url>                        one archived copy
  */
 import { createServer, type Server } from 'node:http';
 
@@ -32,6 +38,24 @@ export interface FixtureSite {
   pages: FixturePage[];
   /** Highest version any page knows about. */
   versions: number;
+  /**
+   * Archived copies served by the stand-in Wayback endpoints: each renders every page at `version`
+   * (zero or below, before the live site's version 1) as it looked at `capturedAt`.
+   */
+  past?: Array<{ version: number; capturedAt: string }>;
+}
+
+/** `2026-06-11T09:30:44Z` to `20260611093044`. */
+function waybackStamp(iso: string): string {
+  return iso.replace(/\.\d+Z$/, 'Z').replace(/[-:TZ]/g, '').slice(0, 14);
+}
+
+function pagePathOf(target: string): string | null {
+  try {
+    return new URL(/^https?:\/\//i.test(target) ? target : `http://${target}`).pathname;
+  } catch {
+    return null;
+  }
 }
 
 export interface RequestRecord {
@@ -111,6 +135,28 @@ export async function startFixtureServer(site: FixtureSite, options: { port?: nu
         return reply(200, JSON.stringify({ outage }), 'application/json');
       }
       return reply(404, 'Unknown fixture action', 'text/plain');
+    }
+
+    if (method === 'GET' && url.pathname === '/__wayback/cdx/search/cdx') {
+      const path = pagePathOf(url.searchParams.get('url') ?? '');
+      const page = path ? pages.get(path) : undefined;
+      const original = `http://${req.headers.host ?? 'fixture.local'}${path ?? '/'}`;
+      let rows = page ? (site.past ?? []).map((p) => [waybackStamp(p.capturedAt), original, '200']) : [];
+      rows.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+      const limit = Number(url.searchParams.get('limit') ?? '0');
+      if (limit < 0) rows = rows.slice(limit);
+      else if (limit > 0) rows = rows.slice(0, limit);
+      const body = rows.length > 0 ? [['timestamp', 'original', 'statuscode'], ...rows] : [];
+      return reply(200, JSON.stringify(body), 'application/json');
+    }
+    const archived = /^\/__wayback\/web\/(\d{14})(?:id_)?\/(.+)$/.exec(url.pathname);
+    if (method === 'GET' && archived) {
+      const past = (site.past ?? []).find((p) => waybackStamp(p.capturedAt) === archived[1]);
+      const path = pagePathOf(archived[2] ?? '');
+      const page = path ? pages.get(path) : undefined;
+      if (!past || !page) return reply(404, '<h1>Not in the archive</h1>');
+      requestNumber += 1;
+      return reply(200, page.render({ version: past.version, requestNumber, now: new Date(past.capturedAt) }));
     }
 
     if (method !== 'GET' && method !== 'HEAD') return reply(405, 'Method not allowed', 'text/plain');

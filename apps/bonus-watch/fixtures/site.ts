@@ -6,6 +6,11 @@
  * Version 2: Lanternfield raises its bonus, lowers the deposit and extends the deadline; Mossgate adds
  *            an annual fee and a 48-month eligibility clause; Bramblewick only reformats its page.
  * Version 3: Bramblewick's offer ends; Lanternfield's fine print adds a monthly fee clause.
+ *
+ * Archived copies (served by the stand-in Wayback endpoints for the Ghost of Terms Past):
+ * Version -1 (March 2026): Lanternfield $500, Bramblewick $200 at 4.10% APY, Mossgate 80,000 points.
+ * Version 0 (June 2026):   Lanternfield cuts to $300, Bramblewick raises to $250, Mossgate cuts to
+ *                          60,000 points; deadlines move.
  */
 import type { FixtureSite, PageContext, WorthKnowing } from '@ghost-watcher/template/testing';
 
@@ -53,11 +58,19 @@ ${body}
 </html>`;
 }
 
+/** Picks the value for a version: archived (-1, 0), live baseline (1), and later nights (2+). */
+function byVersion<T>(v: number, values: { past?: T; june?: T; now: T; later?: T }): T {
+  if (v <= -1 && values.past !== undefined) return values.past;
+  if (v <= 0 && values.june !== undefined) return values.june;
+  if (v >= 2 && values.later !== undefined) return values.later;
+  return values.now;
+}
+
 function lanternfield(ctx: PageContext): string {
   const v = ctx.version;
-  const bonus = v >= 2 ? '$400' : '$300';
-  const deposit = v >= 2 ? '$2,500' : '$5,000';
-  const deadline = v >= 2 ? 'February 28, 2027' : 'January 15, 2027';
+  const bonus = byVersion(v, { past: '$500', now: '$300', later: '$400' });
+  const deposit = byVersion(v, { now: '$5,000', later: '$2,500' });
+  const deadline = byVersion(v, { past: 'April 30, 2026', june: 'September 30, 2026', now: 'January 15, 2027', later: 'February 28, 2027' });
   const fine = [
     'Offer available to new personal checking customers only.',
     `Open an Everyday Checking account and receive qualifying direct deposits totaling ${deposit} or more within 90 days of account opening.`,
@@ -97,6 +110,10 @@ function bramblewick(ctx: PageContext): string {
   }
   // Version 2 changes only formatting: whitespace, date style, number grouping and markup order.
   const reformatted = v === 2;
+  const bonus = byVersion(v, { past: '$200', now: '$250' });
+  const minimum = byVersion(v, { past: '$10,000', now: '$15,000' });
+  const ends = byVersion(v, { past: 'Jun 30, 2026', june: 'Sep 30, 2026', now: 'Dec 31, 2026' });
+  const apy = byVersion(v, { past: '4.10%', june: '3.95%', now: '3.85%' });
   return chrome(
     'High-Yield Savings',
     'Bramblewick Federal Credit Union',
@@ -105,11 +122,11 @@ function bramblewick(ctx: PageContext): string {
   <h1>High-Yield Savings</h1>
   <div class="bonus-box">
     <span class="label">New member bonus</span>
-    <span class="amount">${reformatted ? '$&nbsp;250.00' : '$250'}</span>
+    <span class="amount">${reformatted ? '$&nbsp;250.00' : bonus}</span>
   </div>
-  <p>Keep a balance of <span class="min">${reformatted ? '$15000' : '$15,000'}</span> for 60 days.</p>
-  <p>Offer ends <span class="ends">${reformatted ? '12/31/2026' : 'Dec 31, 2026'}</span>.</p>
-  <table class="rates"><tr><th>Balance</th><th>APY</th></tr><tr><td>$0 and up</td><td class="apy">${reformatted ? '3.85 %' : '3.85%'}</td></tr></table>
+  <p>Keep a balance of <span class="min">${reformatted ? '$15000' : minimum}</span> for 60 days.</p>
+  <p>Offer ends <span class="ends">${reformatted ? '12/31/2026' : ends}</span>.</p>
+  <table class="rates"><tr><th>Balance</th><th>APY</th></tr><tr><td>$0 and up</td><td class="apy">${reformatted ? '3.85 %' : apy}</td></tr></table>
   <div class="terms" id="terms"><p>${
     reformatted
       ? 'Rates are variable and may change after the account is opened.\n\n      Membership eligibility applies.   Bonus is reported as interest on IRS Form 1099-INT.'
@@ -123,6 +140,9 @@ function bramblewick(ctx: PageContext): string {
 function mossgate(ctx: PageContext): string {
   const v = ctx.version;
   const fee = v >= 2 ? '$95' : '$0';
+  const points = byVersion(v, { past: '80,000', now: '60,000' });
+  const spend = byVersion(v, { past: '$5,000', now: '$4,000' });
+  const applyBy = byVersion(v, { past: '2026-05-31', june: '2026-09-30', now: '2026-12-15' });
   const clause =
     v >= 2
       ? ' Bonus not available if you have opened any Mossgate card in the past 48 months.'
@@ -133,12 +153,12 @@ function mossgate(ctx: PageContext): string {
     '#5a2d6e',
     `<section class="offer card-offer">
   <h1>Nightfall Rewards Card</h1>
-  <p class="big"><span id="points">60,000</span> bonus points</p>
-  <p>after you spend <span id="spend">$4,000</span> on purchases in the first 3 months.</p>
+  <p class="big"><span id="points">${points}</span> bonus points</p>
+  <p>after you spend <span id="spend">${spend}</span> on purchases in the first 3 months.</p>
   <ul>
     <li>Annual fee: <span id="annual-fee">${fee}</span></li>
     <li>3x points at restaurants and costume shops</li>
-    <li>Apply by <span id="apply-by">2026-12-15</span></li>
+    <li>Apply by <span id="apply-by">${applyBy}</span></li>
   </ul>
   <div class="terms" id="card-terms"><p>Points are awarded 8 weeks after the spending requirement is met. Purchases exclude balance transfers and cash advances.${clause}</p></div>
 </section>`,
@@ -159,6 +179,10 @@ function cinderhollow(ctx: PageContext): string {
 export const bonusSite: FixtureSite = {
   name: 'bonus-watch',
   versions: 3,
+  past: [
+    { version: -1, capturedAt: '2026-03-04T15:12:09Z' },
+    { version: 0, capturedAt: '2026-06-11T09:30:44Z' },
+  ],
   robots: `# Invented bank fixture site
 User-agent: *
 Disallow: /members/

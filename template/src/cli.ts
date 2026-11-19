@@ -97,6 +97,10 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
     fixtures = await options.startFixtures(flags.fixturePort ?? options.defaultFixturePort ?? 0);
     if (options.siteOriginVar) env[options.siteOriginVar] = fixtures.origin;
     env.GHOST_INTERVAL_MINUTES ??= '0';
+    // The fixture site also stands in for the Internet Archive, so the first sighting fills the
+    // Ghost of Terms Past without leaving this machine.
+    env.GHOST_HISTORY ??= 'wayback';
+    env.GHOST_HISTORY_BASE ??= `${fixtures.origin}/__wayback`;
     out(`Fixture site (invented pages) at ${fixtures.origin}  (POST ${fixtures.origin}/__fixture/advance to change it)`);
   }
 
@@ -152,7 +156,7 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
     const url = await listen(server, flags.port ?? Number(env.PORT ?? options.defaultPort), env.HOST ?? '127.0.0.1');
     out(`${deps.app.name} is haunting ${deps.app.watches.length} pages at ${url}`);
     out(`User-Agent: ${deps.describe.userAgent}`);
-    out(`Snapshots: ${deps.describe.store} | Alerts: ${deps.describe.alerts}`);
+    out(`Snapshots: ${deps.describe.store} | Alerts: ${deps.describe.alerts} | History: ${deps.describe.history}`);
 
     const tickSeconds = Number(env.GHOST_TICK_SECONDS ?? 300);
     let timer: NodeJS.Timeout | undefined;

@@ -1030,6 +1030,62 @@ body[data-night='true']::after {
   background: rgba(255, 255, 255, 0.03);
   font-size: 0.88rem;
 }
+/* Ghost of Terms Past: a vertical timeline of archived copies */
+.past__list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0 0 0 4px;
+  display: grid;
+  gap: 0;
+}
+.past__entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  padding: 0 0 14px;
+}
+.past__entry::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 14px;
+  bottom: 0;
+  border-left: 2px dotted color-mix(in srgb, var(--accent-2) 40%, transparent);
+}
+.past__entry:last-child::before {
+  display: none;
+}
+.past__dot {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  border-radius: 50%;
+  border: 2px solid var(--accent-2);
+  background: var(--sky);
+}
+.past__entry[data-severity='moan'] .past__dot,
+.past__entry[data-severity='whisper'] .past__dot {
+  background: var(--accent-2);
+}
+.past__entry[data-severity='shriek'] .past__dot {
+  border-color: var(--shriek);
+  background: var(--shriek);
+  box-shadow: 0 0 10px var(--shriek);
+}
+.past__entry[data-kind='now'] .past__dot {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+.past__when {
+  margin: 0;
+  font: 400 0.74rem/1.4 var(--mono);
+  color: var(--ink-dim);
+}
+.past__line {
+  margin: 2px 0 0;
+  font-size: 0.9rem;
+}
 .seance__list li[data-new='true'] {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);

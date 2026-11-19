@@ -7,6 +7,7 @@ import type { Clock } from './clock';
 import { diff, isEmptyDiff, type Diff, type Snapshot } from './diff';
 import { extract } from './extract';
 import type { Fetcher } from './fetcher';
+import { buildPastTimeline, pastChangeCount, type HistorySource, type PastTimeline } from './history';
 import { pageFingerprint } from './noise';
 import { evaluateRules } from './rules';
 import { renderAlertMessage } from './alerts/render';
@@ -41,6 +42,8 @@ export interface RunnerDeps {
   store: GhostStore;
   sink: AlertSink;
   clock: Clock;
+  /** Optional: archived copies of each page, read once on its first sighting (the Ghost of Terms Past). */
+  history?: HistorySource;
 }
 
 export interface CheckOptions {
@@ -139,7 +142,14 @@ export class Runner {
     status.consecutiveErrors = 0;
 
     if (!previous) {
-      Object.assign(status, { lastOutcome: 'baseline', lastMessage: 'First sighting recorded. The ghost now knows this page.' });
+      const past = await this.lookBack(watch, snapshot);
+      const found = past ? pastChangeCount(past) : 0;
+      Object.assign(status, {
+        lastOutcome: 'baseline',
+        lastMessage: found
+          ? `First sighting recorded. The Ghost of Terms Past found ${found} earlier change${found === 1 ? '' : 's'}.`
+          : 'First sighting recorded. The ghost now knows this page.',
+      });
       await store.saveSnapshot(snapshot);
       await store.saveStatus(status);
       return { status: 'baseline', watchId: watch.id, snapshot, pageMoved: false };
@@ -201,6 +211,22 @@ export class Runner {
       const deliveryError = error instanceof Error ? error.message : String(error);
       return { status: 'changed', watchId: watch.id, snapshot, diff: changes, alerts, pageMoved: true, deliveryError };
     }
+  }
+
+  /** Reads archived copies once, on the first sighting. An unreachable archive never fails the check. */
+  private async lookBack(watch: Watch, snapshot: Snapshot): Promise<PastTimeline | null> {
+    const { history, store, clock } = this.deps;
+    if (!history) return null;
+    const lookedAt = clock.now().toISOString();
+    let timeline: PastTimeline;
+    try {
+      timeline = buildPastTimeline(watch, await history.captures(watch.url), snapshot, history.label, lookedAt);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : String(error);
+      timeline = { source: history.label, lookedAt, captures: 0, entries: [], note: `Could not read ${history.label}: ${reason}` };
+    }
+    await store.savePastTimeline(watch.id, timeline);
+    return timeline;
   }
 
   private async fail(status: WatchStatus, watch: Watch, message: string): Promise<CheckResult> {

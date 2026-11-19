@@ -6,6 +6,7 @@ import type { Snapshot } from '../diff';
 import type { ListItem } from '../extract';
 import { upgradeStoredValue, type LegacyMoneyValue, type MaybeValue } from '../normalize';
 import type { Alert } from '../alerts/types';
+import type { PastTimeline } from '../history';
 import type { BlobStore } from './blob';
 
 export type LastOutcome = 'baseline' | 'unchanged' | 'changed' | 'blocked' | 'error';
@@ -110,6 +111,15 @@ export class GhostStore {
     const existing = await this.alerts(watchId);
     const merged = [...alerts.slice().reverse(), ...existing].slice(0, this.alertLimit);
     await this.writeJson(`alerts/${watchId}.json`, merged);
+  }
+
+  /** The Ghost of Terms Past timeline, recorded on the first sighting. */
+  pastTimeline(watchId: string): Promise<PastTimeline | null> {
+    return this.readJson<PastTimeline>(`past/${watchId}.json`);
+  }
+
+  savePastTimeline(watchId: string, timeline: PastTimeline): Promise<void> {
+    return this.writeJson(`past/${watchId}.json`, timeline);
   }
 
   async acknowledge(watchId: string, at: string): Promise<WatchStatus> {

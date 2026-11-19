@@ -12,6 +12,19 @@ test('demo mode: the first sighting is already taken, and one click lets a night
   await expect(lanternfield).toHaveAttribute('data-state', 'dormant');
   await expect(page.locator('#ghost-cinderhollow-members')).toHaveAttribute('data-state', 'blocked');
 
+  // The Ghost of Terms Past filled the séance from archived copies at the first sighting.
+  await expect(lanternfield.locator('.ghost__msg')).toHaveText('First sighting recorded. The Ghost of Terms Past found 2 earlier changes.');
+  await lanternfield.locator('.ghost__hit').click();
+  const past = page.locator('#seance .past');
+  await expect(past.getByRole('heading', { name: /Ghost of Terms Past/ })).toBeVisible();
+  await expect(past.locator('.past__entry')).toHaveCount(3);
+  await expect(past.locator('.past__entry[data-kind="change"]')).toContainText('Jun 11, 2026');
+  await expect(past.locator('.past__entry[data-kind="change"]')).toContainText('Bonus went down from $500 to $300 (-$200).');
+  const archived = await past.locator('.past__entry[data-kind="first"] a').getAttribute('href');
+  expect(archived).toMatch(/\/__wayback\/web\/20260304151209\//);
+  expect(await (await page.request.get(archived as string)).text()).toContain('$500 bonus');
+  await page.keyboard.press('Escape');
+
   // The first thing to click is the glowing button, and the empty feed says so.
   const night = page.getByRole('button', { name: 'Let a night pass' });
   await expect(night).toBeVisible();

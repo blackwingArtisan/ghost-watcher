@@ -29,6 +29,30 @@ export function ago(iso, nowIso) {
   return `${Math.round(seconds / 86400)} days ago`;
 }
 
+/** "Jun 11, 2026" @param {string} iso */
+export function calendarDate(iso) {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+}
+
+/** The Ghost of Terms Past: what the ghost would have said, had it been watching. @param {any} past */
+export function renderPast(past) {
+  if (!past) return '';
+  const title = `<h4>Ghost of Terms Past <span class="muted">(from ${esc(past.source)})</span></h4>`;
+  if (!past.entries.length) return `<section class="past" data-empty="true">${title}<p class="muted small">${esc(past.note || 'No earlier copies.')}</p></section>`;
+  const words = { first: 'Earliest copy', change: 'Changed', now: 'First sighting' };
+  const items = past.entries
+    .map(
+      (/** @type {any} */ e) => `<li class="past__entry" data-kind="${esc(e.kind)}" data-severity="${esc(e.severity || '')}">
+  <span class="past__dot" aria-hidden="true"></span>
+  <div><p class="past__when"><time datetime="${esc(e.at)}">${esc(calendarDate(e.at))}</time> · ${esc(words[/** @type {keyof typeof words} */ (e.kind)] || e.kind)}${
+    e.archiveUrl ? ` · <a href="${esc(e.archiveUrl)}" target="_blank" rel="noopener noreferrer">archived copy</a>` : ''
+  }</p>${e.lines.map((/** @type {string} */ line) => `<p class="past__line">${esc(line)}</p>`).join('')}</div>
+</li>`,
+    )
+    .join('');
+  return `<section class="past">${title}<p class="muted small">What this ghost would have told you, had it been watching. Read from ${past.captures} archived ${past.captures === 1 ? 'copy' : 'copies'} through the same rules; never sent as alerts.</p><ol class="past__list">${items}</ol></section>`;
+}
+
 /** @param {string} iso */
 export function clockTime(iso) {
   const d = new Date(iso);
@@ -231,6 +255,7 @@ export function renderDetail(detail, nowIso) {
   <button type="button" class="btn" data-action="ack" data-id="${esc(detail.id)}" ${detail.unread ? '' : 'disabled'}>Lay to rest${detail.unread ? ` (${detail.unread})` : ''}</button>
 </div>
 ${fields}
+${renderPast(detail.past)}
 ${lists}
 <section><h4>What makes it stir</h4><ul class="rules">${rules}</ul></section>
 <section><h4>Haunting log</h4><ul class="log">${alerts}</ul></section>`;
@@ -285,7 +310,7 @@ export function renderPage(state, assets) {
 </main>
 <footer class="foot">
   <p>We knock politely: <code>${esc(state.app.userAgent)}</code> · robots.txt honored · ${esc(state.ghosts[0]?.interval ?? '')}</p>
-  <p>Snapshots: ${esc(state.app.store)} · Alerts: ${esc(state.app.alerts)}${state.app.disclaimer ? ` · ${esc(state.app.disclaimer)}` : ''}</p>
+  <p>Snapshots: ${esc(state.app.store)} · Alerts: ${esc(state.app.alerts)} · History: ${esc(state.app.history)}${state.app.disclaimer ? ` · ${esc(state.app.disclaimer)}` : ''}</p>
 </footer>
 <dialog class="seance" id="seance" aria-labelledby="seance-title"><div class="seance__body" id="seance-body"></div><form method="dialog"><button class="seance__close" aria-label="Close séance">×</button></form></dialog>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
