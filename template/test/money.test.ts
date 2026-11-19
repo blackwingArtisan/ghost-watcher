@@ -13,6 +13,8 @@ import {
   valuesEqual,
   type LegacyMoneyValue,
 } from '../src/normalize';
+import { comparePact, PACT_VERSION, type Pact } from '../src/pact';
+import { snapshotSha256 } from '../src/receipts';
 import { evaluateRules, matchesFilter } from '../src/rules';
 import { MemoryBlobStore } from '../src/store/blob';
 import { GhostStore } from '../src/store/ghost-store';
@@ -211,5 +213,56 @@ describe('legacy snapshots with decimal money', () => {
     const changes = diff(latest ?? undefined, current);
     expect(changes.fields).toEqual([]);
     expect(changes.lists).toEqual([]);
+  });
+});
+
+describe('money against a sealed pact stays in integer cents', () => {
+  const watch = defineWatch({
+    id: 'fees',
+    name: 'Fees',
+    url: 'https://example.com/fees',
+    fields: [{ name: 'fee', label: 'Fee', selector: '.f', kind: 'money', better: 'lower' }],
+    rules: [rules.wentUp('fee', { minDelta: 0.2 }), rules.wentDown('fee', { minDelta: 0.2 })],
+  });
+  const extraction = (fee: string): Extraction => ({ fields: { fee: money(fee) }, lists: {} });
+  const pactAt = (fee: string): Pact => {
+    const snapshot = { watchId: 'fees', url: watch.url, takenAt: '2026-10-10T09:00:00.000Z', ...extraction(fee) };
+    return {
+      version: PACT_VERSION,
+      watchId: 'fees',
+      watchName: 'Fees',
+      url: watch.url,
+      sealedAt: '2026-10-10T14:00:00.000Z',
+      snapshotTakenAt: snapshot.takenAt,
+      sha256: snapshotSha256(snapshot),
+      archive: { archiveUrl: null, archivedAt: null, archivedBy: null },
+      snapshot,
+    };
+  };
+  const judge = (promised: string, previous: string, tonight: string) => {
+    const current = extraction(tonight);
+    const nightly = diff(extraction(previous), current);
+    return comparePact(watch, pactAt(promised), current, nightly, evaluateRules(watch, nightly));
+  };
+
+  it('(PACT 5.8) a pact of $0.10 and a page of $0.30 differ by exactly 20 cents, which meets a $0.20 minDelta', () => {
+    const since = diff(pactAt('$0.10').snapshot, extraction('$0.30'));
+    expect(since.fields[0]?.delta).toBe(20);
+    expect(Number.isInteger(since.fields[0]?.delta)).toBe(true);
+    const found = judge('$0.10', '$0.25', '$0.30');
+    expect(found).toHaveLength(1);
+    expect(found[0]?.summary).toBe('Since you applied on Oct 10, 2026: Fee went up from $0.10 to $0.30 (+$0.20).');
+    expect(found[0]?.pact?.tone).toBe('bad');
+  });
+
+  it('(PACT 5.8) $0.29 against a pact of $0.10 stays under a $0.20 minDelta', () => {
+    expect(judge('$0.10', '$0.28', '$0.29')).toEqual([]);
+  });
+
+  it('(PACT 5.8) $4.35 in a pact reference is 435 cents, never 434.99999999999994', () => {
+    const found = judge('$4.35', '$4.35', '$1.15');
+    expect(found[0]?.pact?.promised).toEqual({ kind: 'money', amountMinor: 435, currency: 'USD', display: '$4.35' });
+    expect(found[0]?.pact?.note).toBe('On Oct 10, 2026, the day you applied, Fee was $4.35; it is now $1.15 (-$3.20).');
+    expect(found[0]?.pact?.tone).toBe('good');
   });
 });

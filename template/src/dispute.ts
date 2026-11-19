@@ -13,7 +13,8 @@
  */
 import type { Alert } from './alerts/types';
 import { displayValue, type MaybeValue } from './normalize';
-import { finish, textChange } from './summary';
+import { pactVariant } from './pact';
+import { finish, letterDate, textChange } from './summary';
 import type { Watch } from './watch';
 
 /** One product and issue pair from the CFPB complaint form. */
@@ -61,12 +62,26 @@ export interface DisputePack {
   complaint: ComplaintCategory & { url: string; whatHappened: string; desiredResolution: string };
   /** Blanks the reader fills in before sending, in the order they appear. */
   blanks: string[];
+  /** Present only when the alert was judged against a sealed pact. */
+  pact?: PackPact;
 }
 
-/** "Jun 11, 2026", in UTC so a pack reads the same on every machine. */
-export function letterDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+/** The pact facts a pack quotes as Exhibit A. */
+export interface PackPact {
+  variant: 'dispute' | 'match';
+  relation: 'differs' | 'restored';
+  /** `letterDate` of the day the pact was sealed, e.g. `Oct 10, 2026`. */
+  appliedDate: string;
+  sha256: string;
+  archiveUrl: string | null;
+  archivedBy: string | null;
+  /** Why there is no archived copy. */
+  note: string | null;
+  seeded: boolean;
+  checkCommand: string;
 }
+
+export { letterDate };
 
 /** Deposit accounts unless the watch is tagged as a card. */
 export function complaintCategory(watch: Pick<Watch, 'tags'> | undefined): ComplaintCategory {
@@ -89,7 +104,14 @@ function quoteLines(label: string, before: MaybeValue | undefined, after: MaybeV
   };
 }
 
-const BLANKS = ['[Your name]', '[Your address]', '[Date you applied]', '[Last 4 digits of the account]'];
+const DATE_BLANK = '[Date you applied]';
+const BLANKS = ['[Your name]', '[Your address]', DATE_BLANK, '[Last 4 digits of the account]'];
+
+function archivedCopy(archiveUrl: string | null, archivedBy: string | null, archivedAt: string | null, note: string | null): string {
+  return archiveUrl
+    ? `archived copy held by ${archivedBy ?? 'a public web archive'}: ${archiveUrl}${archivedAt ? ` (captured ${letterDate(archivedAt)})` : ''}`
+    : `no public archived copy was made (${note ?? 'archiving was off'})`;
+}
 
 /**
  * Builds the dispute pack for one alert, or null when the alert kept no receipt (only shrieks and
@@ -100,13 +122,37 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
   if (!receipt) return null;
   const field = watch?.fields.find((f) => f.name === alert.field);
   const label = field?.label ?? alert.field ?? alert.list ?? 'Offer';
-  const quoted = quoteLines(label, alert.before, alert.after);
-  const beforeDate = letterDate(receipt.before.takenAt);
+  const sealed = alert.pact;
+  const applied = sealed ? letterDate(sealed.sealedAt) : DATE_BLANK;
+  const differs = sealed?.relation === 'differs';
+  const variant = pactVariant(alert);
+  const packPact: PackPact | undefined = sealed
+    ? {
+        variant,
+        relation: sealed.relation,
+        appliedDate: applied,
+        sha256: sealed.sha256,
+        archiveUrl: sealed.archive.archiveUrl,
+        archivedBy: sealed.archive.archivedBy,
+        note: sealed.archive.note ?? null,
+        seeded: sealed.seeded === 'demo',
+        checkCommand: `shasum -a 256 .ghost-data/store/pacts/${alert.watchId}/${sealed.sha256}.json`,
+      }
+    : undefined;
+  const exhibitLines = packPact
+    ? [
+        `Exhibit A, the page on ${applied}: ${archivedCopy(packPact.archiveUrl, packPact.archivedBy, sealed?.archive.archivedAt ?? null, packPact.note)}`,
+        `Exhibit A SHA-256: ${packPact.sha256}`,
+      ]
+    : [];
+
+  const quoted =
+    sealed?.relation === 'differs' ? quoteLines(label, sealed.promised, alert.after) : quoteLines(label, alert.before, alert.after);
+  const beforeDate = sealed?.relation === 'differs' ? applied : letterDate(receipt.before.takenAt);
   const afterDate = letterDate(receipt.after.takenAt);
-  const kind = alert.stealth ? 'Bait and switch' : 'Shriek';
+  const kind = alert.stealth ? 'Bait and switch' : variant === 'match' && differs ? 'Better terms' : 'Shriek';
   const category = complaintCategory(watch);
   const offer = alert.watchName;
-
   const archiveLine = receipt.archiveUrl
     ? `An archived copy of the page after the change, held by ${receipt.archivedBy ?? 'a public web archive'}: ${receipt.archiveUrl}${
         receipt.archivedAt ? ` (captured ${letterDate(receipt.archivedAt)})` : ''
@@ -118,14 +164,14 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
   ];
   const stealthLine = alert.stealth ? `\nThe headline offer did not change, but the terms did. ${alert.stealth}\n` : '';
 
-  const body = [
+  const plainBody = [
     '[Your name]',
     '[Your address]',
     '',
     `To: ${offer} customer care`,
     `Re: ${offer}, account ending [Last 4 digits of the account]`,
     '',
-    `I applied for ${offer} on [Date you applied], relying on the terms published at ${alert.url}.`,
+    `I applied for ${offer} on ${applied}, relying on the terms published at ${alert.url}.`,
     'Those terms have since changed. I recorded the page before and after the change.',
     '',
     `What the page said on ${beforeDate}:`,
@@ -146,8 +192,51 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
     .join('\n')
     .replace(/\n{3,}/g, '\n\n');
 
-  const whatHappened = [
-    `I applied for ${offer} on [Date you applied] under the terms on the bank's page (${alert.url}).`,
+
+  const pactBody = (): string =>
+    [
+      '[Your name]',
+      '[Your address]',
+      '',
+      `To: ${offer} customer care`,
+      `Re: ${offer}, account ending [Last 4 digits of the account]`,
+      '',
+      `I applied for ${offer} on ${applied}, relying on the terms published at ${alert.url}.`,
+      variant === 'match'
+        ? 'Since then the page has improved its terms. I sealed a record of the page on the day I applied and recorded it again after the improvement.'
+        : 'Those terms have since changed. I sealed a record of the page on the day I applied and recorded it again after the change.',
+      '',
+      `What the page promised on ${applied}, the day I applied:`,
+      ...quoted.before.map((line) => `  ${line}`),
+      '',
+      `What the page says on ${afterDate}:`,
+      ...quoted.after.map((line) => `  ${line}`),
+      stealthLine,
+      'Records of both versions:',
+      ...exhibitLines.map((line) => `  - ${line}`),
+      `  - ${archiveLine}`,
+      `  - SHA-256 of my record of the page on ${afterDate}: ${receipt.after.sha256}`,
+      '',
+      ...(variant === 'match'
+        ? [
+            'Since I applied as a customer, I would like my account to receive the improved terms now on offer. Please let me know in writing within 30 days whether you will match them.',
+            '',
+            'Thank you,',
+          ]
+        : [
+            'Please honor the terms that were published on the day I applied, including any sign-up bonus they promised, and confirm in writing within 30 days. If we cannot resolve this, I will file a complaint with the Consumer Financial Protection Bureau and include these records.',
+            '',
+            'Sincerely,',
+          ]),
+      '[Your name]',
+    ]
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n');
+
+  const body = differs ? pactBody() : plainBody;
+
+  const plainWhatHappened = [
+    `I applied for ${offer} on ${applied} under the terms on the bank's page (${alert.url}).`,
     'The bank later changed those terms.',
     finish(`On ${beforeDate} the page said ${quoted.before.join('; ')}`),
     finish(`On ${afterDate} it said ${quoted.after.join('; ')}`),
@@ -157,6 +246,49 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
   ]
     .filter(Boolean)
     .join(' ');
+  const pactWhatHappened = [
+    `I applied for ${offer} on ${applied} under the terms on the bank's page (${alert.url}).`,
+    variant === 'match'
+      ? 'The bank later improved those terms but has not applied them to my application.'
+      : 'The bank later changed those terms.',
+    finish(`On ${applied}, the day I applied, the page promised ${quoted.before.join('; ')}`),
+    finish(`On ${afterDate} it said ${quoted.after.join('; ')}`),
+    alert.stealth ? `The headline offer stayed the same, so the change was easy to miss. ${alert.stealth}` : '',
+    packPact?.archiveUrl ? `A public archived copy of the page on the day I applied: ${packPact.archiveUrl}.` : '',
+    receipt.archiveUrl ? `A public archived copy of the changed page: ${receipt.archiveUrl}.` : '',
+    `I kept records of both versions (SHA-256 ${packPact?.sha256} and ${receipt.after.sha256}) and can provide them.`,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const whatHappened = differs ? pactWhatHappened : plainWhatHappened;
+
+  const exhibitRows: EvidenceRow[] = packPact
+    ? [
+        { label: `Exhibit A: the page on ${applied}`, value: differs ? quoted.before.join(' / ') : packPact.appliedDate },
+        { label: 'Exhibit A archived copy', value: packPact.archiveUrl ?? `none: ${packPact.note ?? 'archiving was off'}` },
+        { label: 'Exhibit A SHA-256', value: packPact.sha256 },
+        { label: 'Check Exhibit A', value: packPact.checkCommand },
+      ]
+    : [];
+  const evidence: EvidenceRow[] = differs
+    ? [
+        { label: 'Page', value: alert.url },
+        ...exhibitRows,
+        { label: `Now (${afterDate})`, value: quoted.after.join(' / ') },
+        { label: 'Archived copy now', value: receipt.archiveUrl ?? `none: ${receipt.note ?? 'archiving was off'}` },
+        { label: 'SHA-256 now', value: receipt.after.sha256 },
+        { label: 'Check the hashes', value: `shasum -a 256 .ghost-data/store/snapshots/${alert.watchId}/history/*.json` },
+      ]
+    : [
+        { label: 'Page', value: alert.url },
+        { label: `Before (${beforeDate})`, value: quoted.before.join(' / ') },
+        { label: `After (${afterDate})`, value: quoted.after.join(' / ') },
+        { label: 'Archived copy', value: receipt.archiveUrl ?? `none: ${receipt.note ?? 'archiving was off'}` },
+        { label: 'SHA-256 before', value: receipt.before.sha256 },
+        { label: 'SHA-256 after', value: receipt.after.sha256 },
+        { label: 'Check the hashes', value: `shasum -a 256 .ghost-data/store/snapshots/${alert.watchId}/history/*.json` },
+        ...exhibitRows,
+      ];
 
   return {
     alertId: alert.id,
@@ -168,22 +300,21 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
     after: quoted.after,
     beforeDate,
     afterDate,
-    letter: { subject: `Request to honor the advertised terms of ${offer}`, body },
-    evidence: [
-      { label: 'Page', value: alert.url },
-      { label: `Before (${beforeDate})`, value: quoted.before.join(' / ') },
-      { label: `After (${afterDate})`, value: quoted.after.join(' / ') },
-      { label: 'Archived copy', value: receipt.archiveUrl ?? `none: ${receipt.note ?? 'archiving was off'}` },
-      { label: 'SHA-256 before', value: receipt.before.sha256 },
-      { label: 'SHA-256 after', value: receipt.after.sha256 },
-      { label: 'Check the hashes', value: `shasum -a 256 .ghost-data/store/snapshots/${alert.watchId}/history/*.json` },
-    ],
+    letter: {
+      subject: variant === 'match' && differs ? `Request to match the improved terms of ${offer}` : `Request to honor the advertised terms of ${offer}`,
+      body,
+    },
+    evidence,
     complaint: {
       ...category,
       url: CFPB_COMPLAINT_URL,
       whatHappened,
-      desiredResolution: `Honor the terms of ${offer} that were published on the day I applied, including any promised sign-up bonus.`,
+      desiredResolution:
+        variant === 'match' && differs
+          ? `Apply the improved terms of ${offer} now on offer to my application.`
+          : `Honor the terms of ${offer} that were published on the day I applied, including any promised sign-up bonus.`,
     },
-    blanks: BLANKS,
+    blanks: sealed ? BLANKS.filter((blank) => blank !== DATE_BLANK) : BLANKS,
+    ...(packPact ? { pact: packPact } : {}),
   };
 }

@@ -11,52 +11,52 @@ injected `Clock` or stored ISO strings, money in integer cents, apps import only
 
 ## Session A: the domain and the store (with Vitest)
 
-- [ ] 1. Add the types. In new `template/src/pact.ts`: `PACT_VERSION`, `DEMO_PACT_AGE_DAYS = 40`,
+- [x] 1. Add the types. In new `template/src/pact.ts`: `PACT_VERSION`, `DEMO_PACT_AGE_DAYS = 40`,
       `PactArchive`, `PactRecord`, `Pact`, `PactReading`, `AlertPact`. Add `pact?: AlertPact` to
       `Alert` (`alerts/types.ts`) and `Finding` (`rules.ts`, type only), and `pacts?: boolean` to
       `AppCopy` (`app.ts`). (PACT 3.1, 5.2, 11.5)
-- [ ] 2. Add the store methods to `GhostStore`: `pactRecord`, `pact`, `savePact`, `deletePact`, with the
+- [x] 2. Add the store methods to `GhostStore`: `pactRecord`, `pact`, `savePact`, `deletePact`, with the
       write order and the hash-named snapshot document from design §3. `pact` verifies the hash on the
       stored bytes, then applies `upgradeSnapshot`. (PACT 2.4, 2.5, 3.1, 3.2, 3.5, 3.6, 3.7, 4.1, 4.2, 4.3, 4.6)
-- [ ] 3. Write `template/test/pact-store.test.ts`: round trip on `MemoryBlobStore`, on `FileBlobStore`
+- [x] 3. Write `template/test/pact-store.test.ts`: round trip on `MemoryBlobStore`, on `FileBlobStore`
       with a fresh `GhostStore` over the same temp dir, and on `S3BlobStore` with a fake client; the
       file's SHA-256 equals the record's hash; `historyLimit` pruning keeps the pact; `clear` removes
       it; a legacy money snapshot is upgraded; corrupt cases (bad JSON, missing field, missing
       snapshot, flipped byte). (PACT 3.1–3.7, 4.1–4.3)
-- [ ] 4. Add `template/src/sealing.ts` with `sealPact`, `breakPact` and the `SealResult` type: latest
+- [x] 4. Add `template/src/sealing.ts` with `sealPact`, `breakPact` and the `SealResult` type: latest
       snapshot, `snapshotSha256`, clock time, one archiver call, failure and no-archiver notes,
       `exists` without confirmation, replace, break, no fetch. (PACT 1.1–1.9, 2.1–2.7, 4.5, 4.6)
-- [ ] 5. Write `template/test/pact-seal.test.ts` with `manualClock`, a resolving and a rejecting fake
+- [x] 5. Write `template/test/pact-seal.test.ts` with `manualClock`, a resolving and a rejecting fake
       `PageArchiver`, and a blob store that fails the `pact.json` write: every criterion of
       requirements 1 and 2, a corrupt pact replaced without confirmation, a corrupt pact broken, and
       the archiver called exactly once. (PACT 1.1–1.9, 2.1–2.7, 4.5, 4.6)
-- [ ] 6. Implement the pure comparison in `pact.ts`: `comparePact` (design §5.2), `pactNote` (§5.4)
+- [x] 6. Implement the pure comparison in `pact.ts`: `comparePact` (design §5.2), `pactNote` (§5.4)
       and `pactVariant` (§5.5). Reuse `diff`, `evaluateRules`, `toneOf` and `displayValue`; no clock,
       no float money. (PACT 5.1–5.10, 7.1, 7.2, 7.6)
-- [ ] 7. Write `template/test/pact-compare.test.ts` and extend `template/test/money.test.ts`: attach
+- [x] 7. Write `template/test/pact-compare.test.ts` and extend `template/test/money.test.ts`: attach
       versus restored versus no change tonight; a $10 step under `minDelta: 50` firing on the fifth
       night; a stealth edit against the pact; whitespace, date-format and tracking-parameter noise
       raising nothing; tone from `better` for a bonus and for a fee; list findings untouched; no pact
       returns the findings unchanged; the $0.10 to $0.30 and $4.35 cases in integer cents. (PACT 5.1–5.10, 5.12, 7.6)
-- [ ] 8. Wire the runner: after `evaluateRules`, read `store.pact`, call `comparePact` for a `sealed`
+- [x] 8. Wire the runner: after `evaluateRules`, read `store.pact`, call `comparePact` for a `sealed`
       reading, copy `finding.pact` onto the alert, keep `needsReceipt` and `takeReceipt` as they are,
       and treat `none` and `corrupt` as no pact. (PACT 4.4, 5.1, 5.11, 5.12)
-- [ ] 9. Extend `pact-compare.test.ts` with runner integration (manual clock, stubbed `Fetcher`, memory
+- [x] 9. Extend `pact-compare.test.ts` with runner integration (manual clock, stubbed `Fetcher`, memory
       store): three nights of small drift, the alert's pact reference, a receipt on a pact shriek, a
       corrupt pact leaving the check green, and an alert stream identical to a run with no pact. (PACT 4.4, 5.3, 5.4, 5.11, 5.12)
-- [ ] 10. Extend `template/src/dispute.ts` for `alert.pact`: the optional `DisputePack.pact` member,
+- [x] 10. Extend `template/src/dispute.ts` for `alert.pact`: the optional `DisputePack.pact` member,
       the filled application date, the three remaining blanks, Exhibit A evidence rows, both letter
       templates (design §7.2 and §7.3), the match subject, the match complaint text, and the
       `restored` case. A pack without `alert.pact` is untouched. (PACT 6.1–6.9, 7.1–7.6)
-- [ ] 11. Write `template/test/pact-dispute.test.ts`: pack fields and blanks with a pact; Exhibit A with
+- [x] 11. Write `template/test/pact-dispute.test.ts`: pack fields and blanks with a pact; Exhibit A with
       and without an archived copy; `restored`; a golden no-pact pack deep-equal to today's output;
       both letter bodies word for word with the invented names; a lower annual fee giving the match
       letter; stealth and `bad` tone giving the dispute letter; determinism. (PACT 6.1–6.9, 7.1–7.6)
-- [ ] 12. Export the new API from `template/src/index.ts` (`sealPact`, `breakPact`, `seedDemoPacts`
+- [x] 12. Export the new API from `template/src/index.ts` (`sealPact`, `breakPact`, `seedDemoPacts`
       once it exists, `comparePact`, `pactNote`, `pactVariant`, `DEMO_PACT_AGE_DAYS`, the types), and
       add a source-hygiene test that `pact.ts`, `sealing.ts` and `dispute.ts` contain neither
       `Date.now(` nor `new Date()`. (PACT 8.6, 11.4)
-- [ ] 13. Check task for Session A. Run `npm run typecheck`, `npm run test:unit` and
+- [x] 13. Check task for Session A. Run `npm run typecheck`, `npm run test:unit` and
       `GHOST_E2E_PORT=3840 npx playwright test`; all three must pass with the existing e2e specs
       unchanged. Also confirm no `package.json` changed. (PACT 11.1, 11.2)
 

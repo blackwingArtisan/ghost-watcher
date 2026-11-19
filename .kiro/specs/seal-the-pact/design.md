@@ -587,18 +587,25 @@ existing specs so it runs last in the serial run):
 Final checks for each build session: `npm run typecheck`, `npm run test:unit`,
 `GHOST_E2E_PORT=3840 npx playwright test`.
 
-## 13. Open design questions
+## 13. Open design questions (decided)
+
+Decided by the developer: all four defaults below are kept as written. Display-host rewriting for
+the demo pack is a separate item and out of scope for this spec.
 
 1. **Hosts in the demo pack.** The brief says display hosts follow the existing fixture display rules.
    The code has no separate display-host helper. The pack today quotes `alert.url` as stored
    (`http://127.0.0.1:<port>/...` in the demo) and the archiver's own label ("the stand-in Wayback
    Machine"). This design reuses both and adds no rewriting. Confirm that this is the rule meant.
+   **Decision:** Keep the default: no host rewriting; the pack quotes `alert.url` as stored and the archiver's own label.
 2. **Seeded pact and archive.** The seeded pact has no archived copy, so Exhibit A in the demo shows
    "none: Demo pact ..." plus the hash. Using the stand-in archive would look better but would label a
    copy taken today as a copy from 40 days ago.
+   **Decision:** Keep the default: the seeded pact has no archived copy.
 3. **Stale reading.** Sealing uses the latest stored snapshot and does not force a check. If the page
    moved since the last visit, the séance shows the reading's age but the seal still says "today".
    An option is to run a forced check first; it adds a fetch to a button that should be instant.
+   **Decision:** Keep the default: sealing uses the latest stored snapshot and forces no check.
 4. **Embedded pact reference.** Alerts keep a copy of the pact facts, so an alert raised before the
    reader sealed gets no pact-dated pack. Looking the pact up at pack time would change that, at the
    cost of packs that change when a pact is replaced.
+   **Decision:** Keep the default: alerts embed a copy of the pact facts.

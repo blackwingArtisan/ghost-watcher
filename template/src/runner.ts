@@ -5,11 +5,12 @@
 import type { GhostApp } from './app';
 import type { Clock } from './clock';
 import { diff, isEmptyDiff, type Diff, type Snapshot } from './diff';
-import { extract } from './extract';
+import { extract, type Extraction } from './extract';
 import type { Fetcher } from './fetcher';
 import { buildPastTimeline, pastChangeCount, type HistorySource, type PastTimeline } from './history';
 import { pageFingerprint } from './noise';
-import { evaluateRules } from './rules';
+import { comparePact } from './pact';
+import { evaluateRules, type Finding } from './rules';
 import { needsReceipt, takeReceipt, type PageArchiver } from './receipts';
 import { renderAlertMessage } from './alerts/render';
 import type { Alert, AlertSink, DeliveryReceipt } from './alerts/types';
@@ -161,8 +162,9 @@ export class Runner {
       return { status: 'baseline', watchId: watch.id, snapshot, pageMoved: false };
     }
 
-    const findings = evaluateRules(watch, changes);
+    const nightly = evaluateRules(watch, changes);
     if (!isEmptyDiff(changes)) await store.saveSnapshot(snapshot);
+    const findings = await this.judgeAgainstPact(watch, extraction, changes, nightly);
     if (findings.length === 0) {
       const watchedMoved = !isEmptyDiff(changes);
       if (pageMoved || watchedMoved) status.ignoredChanges = (status.ignoredChanges ?? 0) + 1;
@@ -196,6 +198,7 @@ export class Runner {
       ...(finding.item ? { item: finding.item } : {}),
       ...(finding.stealth ? { stealth: finding.stealth } : {}),
       ...(finding.tone ? { tone: finding.tone } : {}),
+      ...(finding.pact ? { pact: finding.pact } : {}),
       ...(receipt && (finding.severity === 'shriek' || finding.stealth) ? { receipt } : {}),
     }));
     await store.appendAlerts(watch.id, alerts);
@@ -220,6 +223,20 @@ export class Runner {
     } catch (error) {
       const deliveryError = error instanceof Error ? error.message : String(error);
       return { status: 'changed', watchId: watch.id, snapshot, diff: changes, alerts, pageMoved: true, deliveryError };
+    }
+  }
+
+  /**
+   * Judges a changed check against the sealed pact too. No pact, or one that cannot be read, leaves
+   * the findings as they are: a damaged pact never fails a check.
+   */
+  private async judgeAgainstPact(watch: Watch, extraction: Extraction, changes: Diff, findings: Finding[]): Promise<Finding[]> {
+    if (isEmptyDiff(changes)) return findings;
+    try {
+      const reading = await this.deps.store.pact(watch.id);
+      return reading.status === 'sealed' ? comparePact(watch, reading.pact, extraction, changes, findings) : findings;
+    } catch {
+      return findings;
     }
   }
 

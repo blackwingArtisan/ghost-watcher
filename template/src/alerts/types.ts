@@ -1,5 +1,6 @@
 import type { ListItem } from '../extract';
 import type { MaybeValue } from '../normalize';
+import type { AlertPact } from '../pact';
 import type { Receipt } from '../receipts';
 import type { RuleKind, Severity, Tone } from '../watch';
 
@@ -25,6 +26,8 @@ export interface Alert {
   tone?: Exclude<Tone, 'neutral'>;
   /** Proof of the change, kept for shrieks and bait and switches: snapshot hashes and an archived copy. */
   receipt?: Receipt;
+  /** The pact this change was judged against: when it was sealed, what it promised, and how this differs. */
+  pact?: AlertPact;
 }
 
 /** Everything one check run found on one watch, rendered for delivery. */

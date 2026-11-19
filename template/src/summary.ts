@@ -36,7 +36,7 @@ function quote(text: string, max = 140): string {
   return `"${clean}"`;
 }
 
-function formatDelta(change: FieldChange): string {
+export function formatDelta(change: FieldChange): string {
   if (change.delta === undefined || change.after === null) return '';
   const sign = change.delta > 0 ? '+' : '-';
   const size = Math.abs(change.delta);
@@ -52,6 +52,11 @@ function formatDelta(change: FieldChange): string {
     default:
       return ` (${sign}${size.toLocaleString('en-US')})`;
   }
+}
+
+/** "Jun 11, 2026", in UTC so a date reads the same on every machine. */
+export function letterDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 
 /** Ends a sentence with a period unless it already ends with punctuation (inside a quote or not). */

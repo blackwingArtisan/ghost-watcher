@@ -5,6 +5,7 @@
 import type { Diff, FieldChange, ListChange } from './diff';
 import type { ListItem } from './extract';
 import { compareMinorToMajor, compareToTarget, textOf, type MaybeValue } from './normalize';
+import type { AlertPact } from './pact';
 import { describeFieldChange, describeItem, finish, sentences } from './summary';
 import type { Better, FilterCondition, ListSpec, Rule, RuleKind, Severity, Tone, Watch } from './watch';
 
@@ -23,6 +24,8 @@ export interface Finding {
   stealth?: string;
   /** Good or bad news for the reader. Left out when the change has no clear direction. */
   tone?: Exclude<Tone, 'neutral'>;
+  /** Set when the finding was judged against a sealed pact (see `pact.ts`). */
+  pact?: AlertPact;
 }
 
 /** Good or bad news, from the direction a numeric value moved and which direction is better. */

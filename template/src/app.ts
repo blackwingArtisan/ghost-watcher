@@ -30,6 +30,11 @@ export interface AppCopy {
    * that kept a receipt. For apps that watch financial offers.
    */
   disputes?: boolean;
+  /**
+   * Offer "I applied today" on each ghost: seal the current page as a pact, then judge every later
+   * change against what the page promised that day. For apps that watch financial offers.
+   */
+  pacts?: boolean;
 }
 
 export interface GhostApp {

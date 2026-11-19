@@ -53,8 +53,22 @@ export {
   CFPB_COMPLAINT_URL,
   type ComplaintCategory,
   type DisputePack,
+  type PackPact,
   type EvidenceRow,
 } from './dispute';
+export {
+  comparePact,
+  pactNote,
+  pactVariant,
+  DEMO_PACT_AGE_DAYS,
+  PACT_VERSION,
+  type AlertPact,
+  type Pact,
+  type PactArchive,
+  type PactReading,
+  type PactRecord,
+} from './pact';
+export { sealPact, breakPact, type SealDeps, type SealOptions, type SealResult } from './sealing';
 export { Runner, backoffMs, nextEligibleAt, type CheckResult, type CheckOptions } from './runner';
 export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } from './app';
 export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env } from './config';

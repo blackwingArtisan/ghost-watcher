@@ -7,7 +7,8 @@ import type { ListItem } from '../extract';
 import { upgradeStoredValue, type LegacyMoneyValue, type MaybeValue } from '../normalize';
 import type { Alert } from '../alerts/types';
 import type { PastTimeline } from '../history';
-import { serializeJson } from '../receipts';
+import { PACT_VERSION, type Pact, type PactReading, type PactRecord } from '../pact';
+import { serializeJson, sha256Hex, snapshotSha256 } from '../receipts';
 import type { BlobStore } from './blob';
 
 export type LastOutcome = 'baseline' | 'unchanged' | 'changed' | 'blocked' | 'error';
@@ -35,6 +36,8 @@ export interface GhostStoreOptions {
   alertLimit?: number;
 }
 
+const pactKey = (watchId: string, name: string) => `pacts/${watchId}/${name}.json`;
+
 const stamp = (iso: string) => iso.replace(/[:.]/g, '-');
 
 type StoredValue = MaybeValue | LegacyMoneyValue;
@@ -48,6 +51,33 @@ function upgradeSnapshot(snapshot: Snapshot): Snapshot {
     lists[name] = items.map((item) => ({ ...item, values: upgrade(item.values) }));
   }
   return { ...snapshot, fields: upgrade(snapshot.fields), lists };
+}
+
+export type PactRecordReading =
+  | { status: 'none' }
+  | { status: 'sealed'; record: PactRecord }
+  | { status: 'corrupt'; reason: string };
+
+const SHA256 = /^[0-9a-f]{64}$/;
+const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+const nullableString = (value: unknown): boolean => value === null || typeof value === 'string';
+
+/** Checks the shape of a stored `pact.json`; returns the reason it is unreadable, or null. */
+function recordProblem(value: unknown, watchId: string): string | null {
+  if (!isObject(value)) return 'the pact record is not an object';
+  if (value.version !== PACT_VERSION) return 'the pact record has an unknown version';
+  for (const name of ['watchId', 'watchName', 'url', 'sealedAt', 'snapshotTakenAt', 'sha256']) {
+    if (typeof value[name] !== 'string') return `the pact record lacks "${name}"`;
+  }
+  if (value.watchId !== watchId) return 'the pact record belongs to another watch';
+  if (!SHA256.test(value.sha256 as string)) return 'the pact record has no valid SHA-256';
+  const archive = value.archive;
+  if (!isObject(archive) || !['archiveUrl', 'archivedAt', 'archivedBy'].every((name) => nullableString(archive[name]))) {
+    return 'the pact record lacks its archive facts';
+  }
+  if (archive.note !== undefined && typeof archive.note !== 'string') return 'the pact record has a bad archive note';
+  if (value.seeded !== undefined && value.seeded !== 'demo') return 'the pact record has a bad "seeded" mark';
+  return null;
 }
 
 export class GhostStore {
@@ -99,6 +129,63 @@ export class GhostStore {
       if (snapshot) snapshots.push(upgradeSnapshot(snapshot));
     }
     return snapshots;
+  }
+
+  /** The pact's record only (one read). Bad content is reported as `corrupt`, never thrown. */
+  async pactRecord(watchId: string): Promise<PactRecordReading> {
+    const text = await this.blobs.get(pactKey(watchId, 'pact'));
+    if (text === null) return { status: 'none' };
+    let value: unknown;
+    try {
+      value = JSON.parse(text);
+    } catch {
+      return { status: 'corrupt', reason: 'the pact record is not valid JSON' };
+    }
+    const problem = recordProblem(value, watchId);
+    return problem ? { status: 'corrupt', reason: problem } : { status: 'sealed', record: value as PactRecord };
+  }
+
+  /** The pact with its snapshot, after checking the hash on the stored bytes. */
+  async pact(watchId: string): Promise<PactReading> {
+    const reading = await this.pactRecord(watchId);
+    if (reading.status !== 'sealed') return reading;
+    const { record } = reading;
+    const text = await this.blobs.get(pactKey(watchId, record.sha256));
+    if (text === null) return { status: 'corrupt', reason: 'the pact snapshot is missing' };
+    if (sha256Hex(text) !== record.sha256) return { status: 'corrupt', reason: 'the pact snapshot does not match its SHA-256' };
+    let snapshot: unknown;
+    try {
+      snapshot = JSON.parse(text);
+    } catch {
+      return { status: 'corrupt', reason: 'the pact snapshot is not valid JSON' };
+    }
+    if (!isObject(snapshot) || !isObject(snapshot.fields) || !isObject(snapshot.lists) || typeof snapshot.takenAt !== 'string') {
+      return { status: 'corrupt', reason: 'the pact snapshot has the wrong shape' };
+    }
+    const pact: Pact = { ...record, snapshot: upgradeSnapshot(snapshot as unknown as Snapshot) };
+    return { status: 'sealed', pact };
+  }
+
+  /**
+   * Writes the snapshot document, then the record, then removes older snapshot documents. If the
+   * record write fails, the old record still points at its own untouched document.
+   */
+  async savePact(record: PactRecord, snapshot: Snapshot): Promise<void> {
+    if (record.sha256 !== snapshotSha256(snapshot)) throw new Error('The pact record does not match its snapshot.');
+    const snapshotKey = pactKey(record.watchId, record.sha256);
+    const recordKey = pactKey(record.watchId, 'pact');
+    await this.writeJson(snapshotKey, snapshot);
+    await this.writeJson(recordKey, record);
+    for (const key of await this.blobs.list(`pacts/${record.watchId}/`)) {
+      if (key !== snapshotKey && key !== recordKey) await this.blobs.delete(key);
+    }
+  }
+
+  /** Removes everything under the watch's pact path, readable or not. True when something was there. */
+  async deletePact(watchId: string): Promise<boolean> {
+    const keys = await this.blobs.list(`pacts/${watchId}/`);
+    for (const key of keys) await this.blobs.delete(key);
+    return keys.length > 0;
   }
 
   async status(watchId: string): Promise<WatchStatus> {
