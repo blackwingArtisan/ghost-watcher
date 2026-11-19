@@ -19,6 +19,7 @@ export function buildApp(env: Env = process.env): GhostApp {
       watchNoun: 'bonus pages',
       quiet: 'No bonus has stirred yet. Summon the ghosts to take a first look.',
       disclaimer: 'Reports what each page says. Not financial advice. Banks shown in the demo are invented.',
+      disputes: true,
     },
     watches: [
       defineWatch({

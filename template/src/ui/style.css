@@ -1646,6 +1646,36 @@ body[data-shriek='true'] .ghost[data-severity='shriek'][data-rising='true'] .gho
   display: none !important;
 }
 
+/* ---------- Haunted Listings: a dusk street, and the unit that lit up ---------- */
+
+[data-motif='house'] .sky {
+  background:
+    radial-gradient(ellipse 140% 45% at 50% 105%, rgba(255, 140, 70, 0.32), transparent 70%),
+    radial-gradient(ellipse 90% 35% at 20% 100%, rgba(214, 92, 120, 0.22), transparent 70%),
+    radial-gradient(ellipse 120% 80% at 80% -10%, color-mix(in srgb, var(--accent-2) 22%, transparent), transparent 60%),
+    linear-gradient(180deg, #0f0b1d 0%, #1e1433 48%, #3a1f3c 78%, #5a2c35 100%);
+}
+.reading--match {
+  grid-column: 1 / -1;
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, rgba(0, 0, 0, 0.25));
+}
+.reading--match dd {
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+.reading--match[data-tone='good'] dd::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 11px;
+  margin-right: 7px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  vertical-align: -1px;
+}
+
 /* ---------- Tonight's tally, under the graveyard ---------- */
 
 .crypt {

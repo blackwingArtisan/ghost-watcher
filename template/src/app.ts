@@ -23,6 +23,13 @@ export interface AppCopy {
   quiet: string;
   /** Footer line, also appended to alert emails. */
   disclaimer?: string;
+  /** What the alert feed is called on the dashboard. Default `Spirit mail`. */
+  feedName?: string;
+  /**
+   * Offer "Raise the dead" dispute packs (a letter to the bank and CFPB complaint text) for changes
+   * that kept a receipt. For apps that watch financial offers.
+   */
+  disputes?: boolean;
 }
 
 export interface GhostApp {

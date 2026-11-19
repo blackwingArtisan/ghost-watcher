@@ -18,6 +18,8 @@ export interface Reading {
   before?: string;
   /** Good or bad news, from the change that set `before`. */
   tone?: Tone;
+  /** A list item that matched the rules, shown across the whole card. */
+  match?: boolean;
 }
 
 export interface GhostView {
@@ -99,6 +101,8 @@ export interface DashboardState {
     watchNoun: string;
     quiet: string;
     disclaimer: string | null;
+    feedName: string;
+    disputes: boolean;
     userAgent: string;
     store: string;
     alerts: string;
@@ -191,6 +195,16 @@ export async function ghostView(deps: GhostDeps, watch: Watch): Promise<GhostVie
   }
   for (const list of watch.lists) {
     readings.push({ label: list.label ?? list.name, value: snapshot ? `${snapshot.lists[list.name]?.length ?? 0} on page` : '—' });
+    // The newest unread match is shown on the card itself, so the house says which unit lit up.
+    const match = unread.find((alert) => alert.list === list.name && alert.item);
+    if (match?.item) {
+      readings.push({
+        label: list.matchLabel ?? 'Newest match',
+        value: describeItem({ identity: list.identity, describe: list.brief ?? list.describe }, match.item),
+        ...(match.tone ? { tone: match.tone } : {}),
+        match: true,
+      });
+    }
   }
   const next = nextEligibleAt(watch, status);
   // A restless ghost keeps telling you what woke it, even after a quieter visit since.
@@ -298,6 +312,8 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
       watchNoun: app.copy.watchNoun,
       quiet: app.copy.quiet,
       disclaimer: app.copy.disclaimer ?? null,
+      feedName: app.copy.feedName ?? 'Spirit mail',
+      disputes: app.copy.disputes ?? false,
       userAgent: deps.describe.userAgent,
       store: deps.describe.store,
       alerts: deps.describe.alerts,

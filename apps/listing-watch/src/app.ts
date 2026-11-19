@@ -30,6 +30,7 @@ export function buildApp(env: Env = process.env): GhostApp {
       watchNoun: 'listings and permits',
       quiet: 'No new listing or permit has matched your filters yet.',
       disclaimer: 'Reports what each page lists. Places and companies in the demo are invented.',
+      feedName: 'Knocks at the door',
     },
     watches: [
       defineWatch({
@@ -46,6 +47,8 @@ export function buildApp(env: Env = process.env): GhostApp {
             itemSelector: 'article.listing',
             identity: ['id'],
             describe: '{beds} bd in {neighborhood} at {address} for {price}/mo',
+            brief: '{beds} bd {price} {neighborhood}',
+            matchLabel: 'Window lit',
             fields: {
               id: { selector: ':self', attribute: 'data-listing-id', kind: 'text' },
               address: { selector: '.address', kind: 'text' },
@@ -83,6 +86,8 @@ export function buildApp(env: Env = process.env): GhostApp {
             itemSelector: '#availability tr.unit',
             identity: ['unit'],
             describe: 'unit {unit}, {layout}, {rent}/mo, available {available}',
+            brief: 'unit {unit}, {layout}, {rent}/mo',
+            matchLabel: 'Window lit',
             fields: {
               unit: { selector: '.unit-no', kind: 'text' },
               layout: { selector: '.layout', kind: 'text' },
@@ -110,6 +115,8 @@ export function buildApp(env: Env = process.env): GhostApp {
             itemSelector: '#permits tr.permit',
             identity: ['number'],
             describe: '{type} at {address} ({valuation}): {description}',
+            brief: '{type} at {address} ({valuation})',
+            matchLabel: 'New filing',
             fields: {
               number: { selector: '.num', kind: 'text' },
               type: { selector: '.type', kind: 'text' },

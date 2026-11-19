@@ -2,6 +2,10 @@
 
 ## 2026-11-18
 
+- **Haunted Listings looks like its own app.** A dusk sky over the houses, a "Window lit" line on
+  the card naming the unit that matched ("2 bd $2,050 Larkspur Heights"), and its own feed name,
+  "Knocks at the door". Lists can set a short `brief` template and a `matchLabel` for the card.
+  Dispute packs are opt-in per app (`copy.disputes`), so only the Bonus Crypt offers bank letters.
 - **Open on the night.** In demo mode, `?night=1` lets the first night pass as the page loads, so a
   shared link opens on the red moon and the struck-through bonus. **Rewind to calm** (and
   `POST /api/demo/rewind`) returns the fixture site and the ghosts to the first sighting.

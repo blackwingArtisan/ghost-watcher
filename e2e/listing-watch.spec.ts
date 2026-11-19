@@ -44,6 +44,10 @@ test('listing-watch: only listings and permits that match the filters raise an a
   await expect(rentals).toHaveAttribute('data-state', 'restless');
   await expect(permits).toHaveAttribute('data-state', 'restless');
   await expect(page.locator('#ghost-old-mill-lofts')).toHaveAttribute('data-state', 'restless');
+  // The house shows which unit lit its window, and the feed has its own name and no bank letters.
+  await expect(rentals.locator('.reading--match')).toContainText(/Window lit\s*2 bd \$[\d,]+ (Old Mill|Larkspur Heights)/);
+  await expect(page.getByRole('heading', { level: 2, name: 'Knocks at the door' })).toBeVisible();
+  await expect(page.locator('#feed [data-action="dispute"]')).toHaveCount(0);
 
   const summaries = await outboxSummaries();
   // Matches: 2 bd in Old Mill under $2,100, and a price cut that brings a listing into budget.

@@ -204,7 +204,9 @@ export function noiseSummary(results) {
 export function renderGhostCard(ghost, nowIso) {
   const readings = (ghost.readings || [])
     .map((/** @type {any} */ r) =>
-      r.before !== undefined
+      r.match
+        ? `<div class="reading reading--match"${r.tone ? ` data-tone="${esc(r.tone)}"` : ''}><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`
+        : r.before !== undefined
         ? `<div class="reading" data-changed="true" data-tone="${esc(r.tone || 'neutral')}"><dt>${esc(r.label)}</dt><dd><del aria-label="was ${esc(r.before)}">${esc(r.before)}</del> <ins aria-label="now ${esc(r.value)}"${r.value === 'gone' ? ' data-gone="true"' : ''}>${esc(r.value)}</ins></dd></div>`
         : `<div class="reading"><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`,
     )
@@ -322,14 +324,14 @@ function renderLiveLetters(state) {
       return `<li class="feed__item" data-severity="${esc(a.severity)}" data-tone="${esc(a.tone || 'neutral')}" data-acknowledged="${entry.acknowledged}"${a.stealth ? ' data-stealth="true"' : ''}>
   <div class="feed__meta"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><button type="button" class="feed__watch" data-action="open" data-id="${esc(a.watchId)}">${esc(a.watchName)}</button><time datetime="${esc(a.createdAt)}">${esc(ago(a.createdAt, state.generatedAt))}</time></div>
   ${stealth}<p class="feed__summary">${esc(a.summary)}</p>
-  ${renderReceipt(a.receipt)}<div class="feed__actions">${letter}${renderRaiseButton(a)}</div>
+  ${renderReceipt(a.receipt)}<div class="feed__actions">${letter}${state.app.disputes ? renderRaiseButton(a) : ''}</div>
 </li>`;
     })
     .join('\n');
 }
 
-/** @param {any} detail @param {string} [nowIso] */
-export function renderDetail(detail, nowIso) {
+/** @param {any} detail @param {string} [nowIso] @param {{ disputes?: boolean }} [options] */
+export function renderDetail(detail, nowIso, options = {}) {
   const shortFields = detail.fields.filter((/** @type {any} */ f) => !f.long);
   const longFields = detail.fields.filter((/** @type {any} */ f) => f.long);
   const fieldRows = shortFields
@@ -363,7 +365,7 @@ export function renderDetail(detail, nowIso) {
   const alerts = detail.alerts.length
     ? detail.alerts
         .map(
-          (/** @type {any} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div>${a.stealth ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>` : ''}<p>${esc(a.summary)}</p>${renderReceipt(a.receipt)}${renderRaiseButton({ ...a, watchId: detail.id, watchName: detail.name })}<p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
+          (/** @type {any} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div>${a.stealth ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>` : ''}<p>${esc(a.summary)}</p>${renderReceipt(a.receipt)}${options.disputes ? renderRaiseButton({ ...a, watchId: detail.id, watchName: detail.name }) : ''}<p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
         )
         .join('')
     : '<li class="muted">No alerts yet. The ghost has nothing to report.</li>';
@@ -432,14 +434,14 @@ export function renderPage(state, assets) {
     }
   </div>
 </header>
-<a class="feed-pill" href="#feed-title" id="feed-pill">Spirit mail <span id="feed-pill-count">${state.feed.filter((/** @type {any} */ e) => !e.acknowledged).length}</span></a>
+<a class="feed-pill" href="#feed-title" id="feed-pill">${esc(state.app.feedName || 'Spirit mail')} <span id="feed-pill-count">${state.feed.filter((/** @type {any} */ e) => !e.acknowledged).length}</span></a>
 <main class="layout">
   <div class="crypt">
     <section class="graveyard" id="graveyard" aria-label="Watched pages">${renderGraveyard(state)}</section>
     <p class="tally" id="tally">${renderTally(state)}</p>
   </div>
   <aside class="feed" aria-labelledby="feed-title">
-    <h2 id="feed-title">Spirit mail</h2>
+    <h2 id="feed-title">${esc(state.app.feedName || 'Spirit mail')}</h2>
     <p class="muted small">Every alert, explained in one sentence. Letters are copies of what the outbox sent.</p>
     <ul class="feed__list" id="feed">${renderFeed(state)}</ul>
   </aside>

@@ -172,7 +172,7 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       const watch = deps.runner.watch(disputeRoute[1] ?? '');
       if (!watch) return json(res, 404, { error: 'No such ghost' });
       const alert = (await deps.store.alerts(watch.id)).find((a) => a.id === disputeRoute[2]);
-      const pack = alert ? disputePack(alert, watch) : null;
+      const pack = alert && deps.app.copy.disputes ? disputePack(alert, watch) : null;
       if (!pack) return json(res, 404, { error: 'No receipt was kept for that change' });
       return json(res, 200, pack);
     }

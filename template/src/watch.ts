@@ -62,6 +62,10 @@ export interface ListSpec {
    * e.g. `{beds} bd in {neighborhood} for {price}`.
    */
   describe?: string;
+  /** A shorter template for the card's newest-match line, e.g. `{beds} bd {price} {neighborhood}`. */
+  brief?: string;
+  /** Label for that line on the card. Default `Newest match`. */
+  matchLabel?: string;
 }
 
 export type FilterOp = 'eq' | 'neq' | 'lt' | 'lte' | 'gt' | 'gte' | 'contains' | 'in';

@@ -74,7 +74,7 @@ async function refresh() {
 async function openSeance(id, show = true) {
   openId = id;
   const detail = await api(`/api/ghosts/${encodeURIComponent(id)}`);
-  $('#seance-body').innerHTML = renderDetail(detail, state.generatedAt);
+  $('#seance-body').innerHTML = renderDetail(detail, state.generatedAt, { disputes: state.app.disputes });
   if (show && !dialog.open) dialog.showModal();
 }
 

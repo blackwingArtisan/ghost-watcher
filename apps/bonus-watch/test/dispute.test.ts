@@ -120,12 +120,15 @@ describe('bonus-watch: Raise the dead turns a receipt into a dispute pack', () =
     if (quiet) expect(disputePack(quiet, watch(quiet.watchId))).toBeNull();
     const withReceipt = alerts.filter((a) => a.receipt);
     const html = renderFeed({
-      app: { demo: true, quiet: '' },
+      app: { demo: true, quiet: '', disputes: true },
       feed: alerts.map((alert) => ({ alert, acknowledged: false, letter: null })),
       archive: [],
       generatedAt: new Date().toISOString(),
     });
     expect(html.match(/data-action="dispute"/g) ?? []).toHaveLength(withReceipt.length);
+    // Apps that do not watch financial offers (Haunted Listings) never offer a bank letter.
+    const listings = renderFeed({ app: { demo: true, quiet: '' }, feed: alerts.map((alert) => ({ alert, acknowledged: false, letter: null })), archive: [], generatedAt: new Date().toISOString() });
+    expect(listings).not.toContain('data-action="dispute"');
 
     const pack = disputePack(withReceipt[0] as Alert, watch((withReceipt[0] as Alert).watchId));
     const page = renderDispute(pack);
