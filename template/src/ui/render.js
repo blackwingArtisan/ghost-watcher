@@ -37,7 +37,7 @@ export function calendarDate(iso) {
 /** The Ghost of Terms Past: what the ghost would have said, had it been watching. @param {any} past */
 export function renderPast(past) {
   if (!past) return '';
-  const title = `<h4>Ghost of Terms Past <span class="muted">(from ${esc(past.source)})</span></h4>`;
+  const title = `<h3>Ghost of Terms Past <span class="muted">(from ${esc(past.source)})</span></h3>`;
   if (!past.entries.length) return `<section class="past" data-empty="true">${title}<p class="muted small">${esc(past.note || 'No earlier copies.')}</p></section>`;
   const words = { first: 'Earliest copy', change: 'Changed', now: 'First sighting' };
   const items = past.entries
@@ -220,7 +220,10 @@ export function renderGhostCard(ghost, nowIso) {
     ghost.state === 'restless' && ghost.loudest === 'shriek'
       ? '<svg class="ghost__crack" viewBox="0 0 60 90" aria-hidden="true" focusable="false"><path d="M34 0 L26 18 L36 30 L22 48 L31 60 L20 90"/><path d="M26 18 L14 24 M22 48 L10 52 M31 60 L42 70"/></svg>'
       : '';
-  const badge = ghost.unread > 0 ? `<span class="ghost__badge" data-severity="${esc(ghost.loudest)}" aria-label="${ghost.unread} unread">${ghost.unread}</span>` : '';
+  const badge =
+    ghost.unread > 0
+      ? `<span class="ghost__badge" data-severity="${esc(ghost.loudest)}" role="img" aria-label="${ghost.unread} unread ${ghost.unread === 1 ? 'change' : 'changes'}">${ghost.unread}</span>`
+      : '';
   const when = ghost.lastAttemptAt ? `Last visit ${esc(ago(ghost.lastAttemptAt, nowIso))}` : 'Never visited';
   return `<article class="ghost" id="ghost-${esc(ghost.id)}" data-ghost="${esc(ghost.id)}" data-state="${esc(ghost.state)}" data-severity="${esc(ghost.loudest || '')}" data-checking="${ghost.checking ? 'true' : 'false'}">
   <button class="ghost__hit" type="button" data-action="open" data-id="${esc(ghost.id)}" aria-label="Open séance for ${esc(ghost.name)}: ${esc(STATE_WORDS[/** @type {keyof typeof STATE_WORDS} */ (ghost.state)] || ghost.state)}${ghost.unread ? `, ${ghost.unread} unread` : ''}"></button>
@@ -233,7 +236,7 @@ export function renderGhostCard(ghost, nowIso) {
   <div class="ghost__stone">
     ${crack}${ribbon}
     <p class="ghost__state"><span class="dot"></span>${esc(STATE_WORDS[/** @type {keyof typeof STATE_WORDS} */ (ghost.state)] || ghost.state)}</p>
-    <h3 class="ghost__name">${esc(ghost.name)}</h3>
+    <h2 class="ghost__name">${esc(ghost.name)}</h2>
     <p class="ghost__sub">${esc(ghost.subtitle)}</p>
     <dl class="readings">${readings}</dl>
     <p class="ghost__msg">${esc(ghost.lastMessage)}</p>
@@ -263,6 +266,18 @@ export function renderStats(state) {
   if (lost) parts.push(`<span><b>${lost}</b> lost</span>`);
   parts.push(`<span>last séance ${esc(ago(last, state.generatedAt))}</span>`);
   return parts.join('<span class="sep" aria-hidden="true">✦</span>');
+}
+
+/**
+ * Tonight's tally, under the graveyard: letters sent, page changes slept through, doors respected.
+ * @param {any} state
+ */
+export function renderTally(state) {
+  const letters = state.feed.length;
+  const ignored = state.ghosts.reduce((sum, /** @type {any} */ g) => sum + (g.ignored || 0), 0);
+  const doors = state.ghosts.filter((/** @type {any} */ g) => g.state === 'blocked').length;
+  const plural = (/** @type {number} */ n, /** @type {string} */ one, /** @type {string} */ many) => `<b>${n}</b> ${n === 1 ? one : many}`;
+  return `<span class="tally__title">Tonight's tally</span><span>${plural(letters, 'letter sent', 'letters sent')}</span><span>${plural(ignored, 'page change slept through', 'page changes slept through')}</span><span>${plural(doors, 'door respected', 'doors respected')} (robots.txt)</span>`;
 }
 
 /**
@@ -332,13 +347,13 @@ export function renderDetail(detail, nowIso) {
             .map((/** @type {any} */ s) => (s.type === 'added' ? `<ins>${esc(s.text)}</ins>` : s.type === 'removed' ? `<del>${esc(s.text)}</del>` : esc(s.text)))
             .join(' ')
         : esc(f.now);
-      return `<section class="textblock" data-changed="${f.changed}"><h4>${esc(f.label)}${f.changed ? ' <span class="muted">(changes marked)</span>' : ''}</h4><p>${body}</p></section>`;
+      return `<section class="textblock" data-changed="${f.changed}"><h3>${esc(f.label)}${f.changed ? ' <span class="muted">(changes marked)</span>' : ''}</h3><p>${body}</p></section>`;
     })
     .join('');
   const fields = table + blocks;
   const lists = detail.lists
     .map(
-      (/** @type {any} */ l) => `<section class="seance__list"><h4>${esc(l.label)} <span class="muted">(${l.count} on page)</span></h4><ul>${l.items
+      (/** @type {any} */ l) => `<section class="seance__list"><h3>${esc(l.label)} <span class="muted">(${l.count} on page)</span></h3><ul>${l.items
         .slice(0, 12)
         .map((/** @type {any} */ i) => `<li data-new="${i.isNew}">${i.isNew ? '<span class="new-tag">new</span>' : ''}${esc(i.description)}</li>`)
         .join('')}</ul></section>`,
@@ -373,8 +388,8 @@ export function renderDetail(detail, nowIso) {
 ${fields}
 ${renderPast(detail.past)}
 ${lists}
-<section><h4>What makes it stir</h4><ul class="rules">${rules}</ul></section>
-<section><h4>Haunting log</h4><ul class="log">${alerts}</ul></section>`;
+<section><h3>What makes it stir</h3><ul class="rules">${rules}</ul></section>
+<section><h3>Haunting log</h3><ul class="log">${alerts}</ul></section>`;
 }
 
 /** Full first paint, rendered on the server. @param {any} state @param {{ css: string; theme: Record<string, string>; demo?: boolean }} assets */
@@ -410,6 +425,7 @@ export function renderPage(state, assets) {
         ? `
     <button type="button" class="btn btn--glow btn--beckon" data-action="next-night" aria-describedby="night-hint">Let a night pass</button>
     <button type="button" class="btn" data-action="check-all">Summon every ghost</button>
+    <button type="button" class="btn btn--rewind" data-action="rewind"${state.app.night ? '' : ' hidden'}>Rewind to calm</button>
     <p class="night-hint" id="night-hint">Demo: the invented fixture site changes overnight, then every ghost looks again. Press <kbd>N</kbd>.</p>`
         : `
     <button type="button" class="btn btn--glow" data-action="check-all">Summon every ghost</button>`
@@ -418,7 +434,10 @@ export function renderPage(state, assets) {
 </header>
 <a class="feed-pill" href="#feed-title" id="feed-pill">Spirit mail <span id="feed-pill-count">${state.feed.filter((/** @type {any} */ e) => !e.acknowledged).length}</span></a>
 <main class="layout">
-  <section class="graveyard" id="graveyard" aria-label="Watched pages">${renderGraveyard(state)}</section>
+  <div class="crypt">
+    <section class="graveyard" id="graveyard" aria-label="Watched pages">${renderGraveyard(state)}</section>
+    <p class="tally" id="tally">${renderTally(state)}</p>
+  </div>
   <aside class="feed" aria-labelledby="feed-title">
     <h2 id="feed-title">Spirit mail</h2>
     <p class="muted small">Every alert, explained in one sentence. Letters are copies of what the outbox sent.</p>

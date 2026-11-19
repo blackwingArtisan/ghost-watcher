@@ -97,6 +97,36 @@ test('demo mode: the first sighting is already taken, and one key press lets a n
   expect(state.version).toBe(2);
 });
 
+test('demo mode: ?night=1 opens on the night itself, and Rewind to calm goes back to the first sighting', async ({ page }) => {
+  await page.goto(DEMO);
+  const lanternfield = page.locator('#ghost-lanternfield-checking');
+  const rewind = page.getByRole('button', { name: 'Rewind to calm' });
+  // The first test left a night behind, so the dashboard offers to rewind it.
+  await expect(rewind).toBeVisible();
+  await rewind.click();
+  await expect(page.locator('#toast')).toContainText('Rewound to the first sighting.');
+  await expect(lanternfield).toHaveAttribute('data-state', 'dormant');
+  await expect(rewind).toBeHidden();
+  await expect(page.locator('#tally')).toContainText("Tonight's tally");
+  await expect(page.locator('#tally')).toContainText('0 letters sent');
+  const state = (await (await page.request.get(`${DEMO_FIXTURES}/__fixture/state`)).json()) as { version: number };
+  expect(state.version).toBe(1);
+
+  await page.goto(`${DEMO}/?night=1`);
+  await expect(page.locator('#toast')).toContainText('Night 1 passes.');
+  await expect(lanternfield).toHaveAttribute('data-state', 'restless');
+  await expect(lanternfield.locator('.reading[data-changed="true"] del').first()).toHaveText('$300');
+  await expect(rewind).toBeVisible();
+  // Spirit mail leads the night with its loudest letter: the bait and switch.
+  await expect(page.locator('#feed .feed__item').first()).toHaveAttribute('data-stealth', 'true');
+  await expect(page.locator('#tally')).toContainText('1 page change slept through');
+  await expect(page.locator('#tally')).toContainText('1 door respected (robots.txt)');
+  // A second load of the same link does not pass another night.
+  await page.goto(`${DEMO}/?night=1`);
+  await expect(lanternfield).toHaveAttribute('data-state', 'restless');
+  expect(((await (await page.request.get(`${DEMO_FIXTURES}/__fixture/state`)).json()) as { version: number }).version).toBe(2);
+});
+
 test('the dashboard refuses cross-origin writes and unknown hosts', async ({ request }) => {
   const hostile = await request.post(`${DEMO}/api/check-all`, { headers: { Origin: 'http://evil.example' } });
   expect(hostile.status()).toBe(403);
@@ -116,4 +146,6 @@ test('serve mode has no demo controls', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: 'Summon every ghost' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Let a night pass' })).toHaveCount(0);
   expect((await request.post('http://127.0.0.1:3134/api/demo/next-night')).status()).toBe(404);
+  await expect(page.getByRole('button', { name: 'Rewind to calm' })).toHaveCount(0);
+  expect((await request.post('http://127.0.0.1:3134/api/demo/rewind')).status()).toBe(404);
 });

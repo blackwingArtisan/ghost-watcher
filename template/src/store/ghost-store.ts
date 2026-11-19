@@ -73,6 +73,11 @@ export class GhostStore {
     return this.blobs.put(key, serializeJson(value));
   }
 
+  /** Forgets everything: snapshots, statuses, alerts and history. Demo mode uses it to rewind. */
+  async clear(): Promise<void> {
+    for (const key of await this.blobs.list('')) await this.blobs.delete(key);
+  }
+
   async latestSnapshot(watchId: string): Promise<Snapshot | null> {
     const snapshot = await this.readJson<Snapshot>(`snapshots/${watchId}/latest.json`);
     return snapshot ? upgradeSnapshot(snapshot) : null;

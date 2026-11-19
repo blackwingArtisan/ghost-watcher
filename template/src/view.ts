@@ -107,6 +107,8 @@ export interface DashboardState {
     motif: 'stone' | 'house';
     /** True when the dashboard runs in demo mode (the server sets it). */
     demo?: boolean;
+    /** Demo mode: nights passed since the first sighting. */
+    night?: number;
   };
   ghosts: GhostView[];
   feed: FeedEntry[];
@@ -245,6 +247,36 @@ async function archiveLetters(deps: GhostDeps): Promise<ArchiveLetter[]> {
   return letters.sort((a, b) => b.at.localeCompare(a.at)).slice(0, 6);
 }
 
+/** How loud a letter is in Spirit mail: a bait and switch leads, then shrieks, moans and whispers. */
+export function letterRank(alert: Pick<Alert, 'severity' | 'stealth'>): number {
+  return alert.stealth ? SEVERITY_ORDER.length : SEVERITY_ORDER.indexOf(alert.severity);
+}
+
+/** Letters this close together came from one round of visits (one night). */
+export const ROUND_GAP_MS = 5 * 60_000;
+
+/**
+ * Spirit mail order: newest round of visits first, and within a round the loudest letter first, so
+ * the bait and switch leads the night it was found rather than whichever ghost happened to look last.
+ */
+export function sortFeed(entries: FeedEntry[]): FeedEntry[] {
+  const byTime = [...entries].sort((a, b) => b.alert.createdAt.localeCompare(a.alert.createdAt) || a.alert.id.localeCompare(b.alert.id));
+  const rounds: FeedEntry[][] = [];
+  let previous: number | null = null;
+  for (const entry of byTime) {
+    const at = Date.parse(entry.alert.createdAt);
+    if (previous === null || previous - at > ROUND_GAP_MS) rounds.push([]);
+    (rounds[rounds.length - 1] as FeedEntry[]).push(entry);
+    previous = at;
+  }
+  return rounds.flatMap((round) =>
+    round
+      .map((entry, index) => ({ entry, index }))
+      .sort((a, b) => letterRank(b.entry.alert) - letterRank(a.entry.alert) || a.index - b.index)
+      .map(({ entry }) => entry),
+  );
+}
+
 export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
   const ghosts = await Promise.all(deps.app.watches.map((watch) => ghostView(deps, watch)));
   const letters = await letterIndex(deps);
@@ -256,7 +288,6 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
       feed.push({ alert, acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null });
     }
   }
-  feed.sort((a, b) => b.alert.createdAt.localeCompare(a.alert.createdAt) || a.alert.id.localeCompare(b.alert.id));
   const { app } = deps;
   return {
     app: {
@@ -275,7 +306,7 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
       motif: app.theme.motif ?? 'stone',
     },
     ghosts,
-    feed: feed.slice(0, 30),
+    feed: sortFeed(feed).slice(0, 30),
     archive: await archiveLetters(deps),
     generatedAt: deps.clock.now().toISOString(),
   };

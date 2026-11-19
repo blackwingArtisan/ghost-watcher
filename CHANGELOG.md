@@ -2,6 +2,22 @@
 
 ## 2026-11-18
 
+- **Open on the night.** In demo mode, `?night=1` lets the first night pass as the page loads, so a
+  shared link opens on the red moon and the struck-through bonus. **Rewind to calm** (and
+  `POST /api/demo/rewind`) returns the fixture site and the ghosts to the first sighting.
+- **Loudest letter first.** Spirit mail groups letters by round of visits, newest first, and within
+  a round puts a bait and switch ahead of shrieks, moans and whispers.
+- **Past vs live.** Archive ribbons are muted, outlined tags with a small tone dot, so only live
+  changes use full colour; every struck-through old value uses one neutral colour.
+- **Tonight's tally.** A strip under the graveyard counts letters sent, page changes slept through
+  and doors respected.
+- **Phones and accessibility.** Masthead buttons sit side by side, the toast rises from the bottom
+  (on every screen, so it never covers the app's name), and the Spirit mail pill hides while the
+  first stone's name is on screen. Stone names are `h2` and séance sections `h3`, so the heading
+  order is clean under axe's best-practice rules; small text is at least 13px; the unread badge has
+  an accessible name.
+- **Varied histories.** The invented bank pages now have different archive histories, so the
+  stones no longer all read "changed 2 times in 9 months".
 - **Raise the dead.** Every shriek and bait and switch that kept a receipt gets a "Raise the dead"
   button in Spirit mail and the haunting log. It opens a dispute pack: a letter to the bank quoting
   what the page said before and after the change, with dates, the archived copy and both SHA-256

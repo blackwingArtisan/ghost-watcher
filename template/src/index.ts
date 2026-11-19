@@ -60,7 +60,7 @@ export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } fro
 export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env } from './config';
 export { createDashboardServer, listen, type DashboardOptions } from './server';
 export { checkRequest, allowedHostSet, parseHostList, hostnameOf, LOOPBACK_HOSTS, type GuardVerdict } from './guard';
-export { dashboardState, ghostDetail, ghostView, type DashboardState, type GhostView, type GhostDetail } from './view';
+export { dashboardState, ghostDetail, ghostView, sortFeed, letterRank, ROUND_GAP_MS, type DashboardState, type GhostView, type GhostDetail } from './view';
 export { runCli, parseFlags, describeResult, type CliOptions } from './cli';
 // Cloud adapters (opt-in). Importing them loads the AWS SDK, so they are exported from their own paths
 // in `config.ts` and here only as types.

@@ -9,6 +9,7 @@
  *   GET  /api/ghosts/:id/alerts/:alert/dispute   the dispute pack for a change that kept a receipt
  *   POST /api/check-all                 check every watch now
  *   POST /api/demo/next-night           demo mode only: advance the fixture site, then check every watch
+ *   POST /api/demo/rewind               demo mode only: back to the first sighting
  *   GET  /outbox/:file.html             preview of a letter in the local outbox
  *   GET  /healthz                       liveness
  *
@@ -81,6 +82,10 @@ export interface DashboardOptions {
 
 export interface DemoControls {
   nextNight(): { version: number; moved: boolean };
+  /** Nights passed so far (0 at the first sighting). */
+  night(): number;
+  /** Back to the first sighting: the fixture site's first version and a fresh baseline. */
+  rewind(): Promise<void>;
 }
 
 export function themeVariables(deps: GhostDeps): Record<string, string> {
@@ -98,7 +103,7 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
   const allowedHosts = allowedHostSet(options.allowedHosts);
   const currentState = async () => {
     const state = await dashboardState(deps);
-    return options.demo ? { ...state, app: { ...state.app, demo: true } } : state;
+    return options.demo ? { ...state, app: { ...state.app, demo: true, night: options.demo.night() } } : state;
   };
 
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -147,6 +152,12 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
     if (method === 'POST' && path === '/api/check-all') {
       const results = await deps.runner.checkAll({ force: true });
       return json(res, 200, { results: results.map(publicResult) });
+    }
+
+    if (method === 'POST' && path === '/api/demo/rewind') {
+      if (!options.demo) return json(res, 404, { error: 'Not found' });
+      await options.demo.rewind();
+      return json(res, 200, { night: options.demo.night() });
     }
 
     if (method === 'POST' && path === '/api/demo/next-night') {

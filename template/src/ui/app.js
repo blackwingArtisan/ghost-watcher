@@ -1,5 +1,5 @@
 // Dashboard client: keeps the graveyard live, opens séances, and sends "check now" and "lay to rest".
-import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderStats } from './render.js';
+import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderStats, renderTally } from './render.js';
 
 const $ = (/** @type {string} */ sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 const initial = document.getElementById('initial-state');
@@ -14,6 +14,10 @@ function paint() {
   $('#graveyard').innerHTML = renderGraveyard(state);
   $('#feed').innerHTML = renderFeed(state);
   $('#stats').innerHTML = renderStats(state);
+  const tally = document.getElementById('tally');
+  if (tally) tally.innerHTML = renderTally(state);
+  const rewind = document.querySelector('[data-action="rewind"]');
+  if (rewind) /** @type {HTMLButtonElement} */ (rewind).hidden = !state.app.night;
   const pill = document.getElementById('feed-pill-count');
   if (pill) pill.textContent = String(state.feed.filter((/** @type {any} */ e) => !e.acknowledged).length);
   document.body.dataset.restless = String(state.ghosts.some((/** @type {any} */ g) => g.state === 'restless'));
@@ -181,6 +185,19 @@ document.addEventListener('click', (event) => {
         setTimeout(() => (document.body.dataset.night = 'false'), 900);
       }
     });
+  } else if (action === 'rewind') {
+    target.setAttribute('disabled', '');
+    void withBusy(async () => {
+      try {
+        await api('/api/demo/rewind', { method: 'POST' });
+        await refresh();
+        toast('Rewound to the first sighting. Press N to let the night pass again.');
+        const night = /** @type {HTMLElement | null} */ (document.querySelector('[data-action="next-night"]'));
+        night?.focus();
+      } finally {
+        target.removeAttribute('disabled');
+      }
+    });
   } else if (action === 'check-all') {
     target.setAttribute('disabled', '');
     document.querySelectorAll('.ghost').forEach((card) => ((/** @type {HTMLElement} */ (card)).dataset.checking = 'true'));
@@ -220,5 +237,31 @@ setInterval(() => {
   if (busy === 0 && document.visibilityState === 'visible') void refresh().catch(() => undefined);
 }, 15000);
 
+// Phones: the Spirit mail pill stays out of the way while the first stone's name is on screen.
+const pill = document.getElementById('feed-pill');
+if (pill && 'IntersectionObserver' in window) {
+  const watchFirstTitle = () => {
+    const title = document.querySelector('.ghost .ghost__name');
+    if (!title) return;
+    const observer = new IntersectionObserver((entries) => {
+      pill.dataset.hidden = String(entries.some((e) => e.isIntersecting));
+    });
+    observer.observe(title);
+    return observer;
+  };
+  let observer = watchFirstTitle();
+  new MutationObserver(() => {
+    observer?.disconnect();
+    observer = watchFirstTitle();
+  }).observe($('#graveyard'), { childList: true });
+}
+
 document.body.dataset.ready = 'true';
 paint();
+
+// `?night=1` opens on the night itself: the first sighting is already taken, so one night passes
+// on load and "Rewind to calm" goes back to the start.
+if (state.app.demo && !state.app.night && new URLSearchParams(location.search).get('night') === '1') {
+  const night = /** @type {HTMLButtonElement | null} */ (document.querySelector('[data-action="next-night"]'));
+  if (night && !night.disabled) night.click();
+}

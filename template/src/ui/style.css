@@ -391,8 +391,8 @@ kbd {
 }
 .night-hint {
   margin: 0;
-  max-width: 22ch;
-  font-size: 0.75rem;
+  max-width: 24ch;
+  font-size: 0.8125rem;
   line-height: 1.35;
   color: var(--ink-dim);
 }
@@ -735,10 +735,16 @@ body[data-night='true'] .moon {
   background: color-mix(in srgb, var(--accent) 10%, rgba(0, 0, 0, 0.2));
   animation: reading-flip 0.9s ease-out 1;
 }
-.reading del {
+/* Every struck-through old value looks the same, so colour is left to the news itself. */
+.reading del,
+.textblock del,
+.values tr[data-changed='true'] td.before {
   color: var(--ink-dim);
+  text-decoration: line-through;
   text-decoration-thickness: 2px;
-  text-decoration-color: var(--shriek);
+  text-decoration-color: color-mix(in srgb, var(--ink-dim) 80%, transparent);
+}
+.reading del {
   font-size: 0.8em;
 }
 .reading ins {
@@ -758,9 +764,6 @@ body[data-night='true'] .moon {
 }
 .reading[data-tone='bad'] ins {
   color: var(--shriek);
-}
-.reading[data-tone='bad'] del {
-  text-decoration-color: var(--ink-dim);
 }
 .reading ins[data-gone='true'] {
   font-style: italic;
@@ -791,12 +794,12 @@ body[data-night='true'] .moon {
   padding: 3px 9px;
   border-radius: 999px;
   border: 1px dashed color-mix(in srgb, var(--ink-dim) 45%, transparent);
-  font: 400 0.72rem/1.3 var(--sans);
+  font: 400 0.8125rem/1.3 var(--sans);
   color: var(--ink-dim);
 }
 .ghost__when {
   margin: 8px 0 0;
-  font: 400 0.72rem/1.2 var(--mono);
+  font: 400 0.8125rem/1.2 var(--mono);
   color: var(--ink-faint);
 }
 
@@ -1213,7 +1216,7 @@ body[data-night='true'] .moon {
   gap: 10px;
   margin: 18px 0 8px;
 }
-.seance h4 {
+.seance h3 {
   margin: 24px 0 8px;
   font: 500 0.72rem/1.2 var(--mono);
   letter-spacing: 0.2em;
@@ -1253,11 +1256,7 @@ body[data-night='true'] .moon {
   color: var(--accent);
   text-shadow: 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
 }
-.values tr[data-changed='true'] td.before {
-  color: var(--ink-faint);
-  text-decoration: line-through;
-  text-decoration-color: color-mix(in srgb, var(--shriek) 70%, transparent);
-}
+
 
 .seance__list ul,
 .rules,
@@ -1418,11 +1417,7 @@ body[data-night='true'] .moon {
   border-radius: 4px;
   padding: 0 3px;
 }
-.textblock del {
-  color: var(--ink-faint);
-  text-decoration-color: var(--shriek);
-  text-decoration-thickness: 2px;
-}
+
 
 /* ---------- footer and toast ---------- */
 
@@ -1437,11 +1432,12 @@ body[data-night='true'] .moon {
   margin: 4px 0;
 }
 
+/* The toast rises from the bottom, so it never covers the app's name or the stones' headlines. */
 .toast {
   position: fixed;
   left: 50%;
-  top: 18px;
-  transform: translate(-50%, -30px);
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  transform: translate(-50%, 30px);
   max-width: min(560px, calc(100vw - 32px));
   padding: 12px 18px;
   border-radius: 14px;
@@ -1474,38 +1470,45 @@ body[data-night='true'] .moon {
 
 /* ---------- the Ghost of Terms Past on the stone ---------- */
 
+/* Past news is a muted, outlined parchment tag; only live changes get full colour. */
 .ghost__ribbon {
   position: relative;
   z-index: 2;
   margin: -6px auto 10px;
   width: fit-content;
   max-width: 100%;
-  padding: 4px 12px;
+  padding: 3px 11px;
   border-radius: 6px;
+  border: 1px dashed color-mix(in srgb, #e9dcb4 55%, transparent);
   font: 600 0.8rem/1.3 var(--sans);
   color: var(--ink);
-  background: color-mix(in srgb, var(--accent-2) 26%, rgba(0, 0, 0, 0.35));
-  box-shadow: 0 6px 16px -8px rgba(0, 0, 0, 0.8);
+  background: rgba(10, 8, 20, 0.55);
   text-wrap: balance;
-}
-.ghost__ribbon[data-tone='bad'] {
-  background: var(--shriek);
-  color: #1a0d10;
-}
-.ghost__ribbon[data-tone='good'] {
-  background: var(--accent);
-  color: #0c0a16;
 }
 .ghost__ribbon-tag {
   display: block;
-  font: 600 0.6rem/1.3 var(--mono);
+  font: 600 0.62rem/1.3 var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  opacity: 0.85;
+  color: #e9dcb4;
+}
+.ghost__ribbon[data-tone='bad'] .ghost__ribbon-tag::before,
+.ghost__ribbon[data-tone='good'] .ghost__ribbon-tag::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: var(--shriek);
+}
+.ghost__ribbon[data-tone='good'] .ghost__ribbon-tag::before {
+  background: var(--accent);
 }
 .ghost__fickle {
   margin: 8px 0 0;
-  font: 400 0.74rem/1.35 var(--sans);
+  font: 400 0.8125rem/1.35 var(--sans);
   color: var(--ink-dim);
 }
 .ghost__fickle[data-label='very fickle'] {
@@ -1639,6 +1642,40 @@ body[data-shriek='true'] .ghost[data-severity='shriek'][data-rising='true'] .gho
   }
 }
 
+[hidden] {
+  display: none !important;
+}
+
+/* ---------- Tonight's tally, under the graveyard ---------- */
+
+.crypt {
+  min-width: 0;
+}
+.tally {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 22px;
+  margin: 18px 0 0;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--panel-edge);
+  background: var(--panel);
+  color: var(--ink-dim);
+  font-size: 0.9rem;
+}
+.tally b {
+  color: var(--ink);
+  font: 600 1.1rem/1 var(--mono);
+}
+.tally__title {
+  font: 400 1.25rem/1 var(--display);
+  color: var(--accent);
+}
+.btn--rewind {
+  border-style: dashed;
+}
+
 /* ---------- Raise the dead: the dispute pack ---------- */
 
 .feed__actions {
@@ -1696,13 +1733,6 @@ body[data-shriek='true'] .ghost[data-severity='shriek'][data-rising='true'] .gho
   padding-left: 18px;
   font-size: 0.86rem;
   overflow-wrap: anywhere;
-}
-.seance h3 {
-  margin: 22px 0 8px;
-  font: 600 0.82rem/1.3 var(--mono);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
 }
 .dispute__side h3 {
   margin: 0 0 6px;
@@ -1773,8 +1803,34 @@ body[data-shriek='true'] .ghost[data-severity='shriek'][data-rising='true'] .gho
   .masthead__crest {
     width: 58px;
   }
+  .masthead__actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
   .masthead__actions .btn {
     width: 100%;
+    padding: 12px 10px;
+  }
+  .masthead__actions .night-hint {
+    grid-column: 1 / -1;
+    max-width: none;
+  }
+  .toast {
+    left: 16px;
+    right: 16px;
+    max-width: none;
+    bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+    transform: translateY(30px);
+  }
+  .toast[data-show='true'] {
+    transform: none;
+  }
+  .masthead__crest {
+    display: none;
+  }
+  .feed-pill[data-hidden='true'] {
+    opacity: 0;
+    pointer-events: none;
   }
   .layout {
     padding: 12px 16px 30px;

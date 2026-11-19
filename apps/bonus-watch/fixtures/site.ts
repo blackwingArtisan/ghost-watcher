@@ -9,8 +9,10 @@
  *
  * Archived copies (served by the stand-in Wayback endpoints for the Ghost of Terms Past):
  * Version -1 (March 2026): Lanternfield $500, Bramblewick $200 at 4.10% APY, Mossgate 80,000 points.
- * Version 0 (June 2026):   Lanternfield cuts to $300, Bramblewick raises to $250, Mossgate cuts to
- *                          60,000 points; deadlines move.
+ * Version 0 (June 2026):   Lanternfield cuts to $300 and moves its deadline; Bramblewick raises to
+ *                          $250 and settles on today's terms; Mossgate cuts to 60,000 points. Since
+ *                          June, Lanternfield moved its deadline again and Mossgate raised the spend
+ *                          from $3,000 to $4,000, so each page has its own fickleness.
  */
 import type { FixtureSite, PageContext, WorthKnowing } from '@ghost-watcher/template/testing';
 
@@ -112,8 +114,8 @@ function bramblewick(ctx: PageContext): string {
   const reformatted = v === 2;
   const bonus = byVersion(v, { past: '$200', now: '$250' });
   const minimum = byVersion(v, { past: '$10,000', now: '$15,000' });
-  const ends = byVersion(v, { past: 'Jun 30, 2026', june: 'Sep 30, 2026', now: 'Dec 31, 2026' });
-  const apy = byVersion(v, { past: '4.10%', june: '3.95%', now: '3.85%' });
+  const ends = byVersion(v, { past: 'Jun 30, 2026', now: 'Dec 31, 2026' });
+  const apy = byVersion(v, { past: '4.10%', now: '3.85%' });
   return chrome(
     'High-Yield Savings',
     'Bramblewick Federal Credit Union',
@@ -141,8 +143,8 @@ function mossgate(ctx: PageContext): string {
   const v = ctx.version;
   const fee = v >= 2 ? '$95' : '$0';
   const points = byVersion(v, { past: '80,000', now: '60,000' });
-  const spend = byVersion(v, { past: '$5,000', now: '$4,000' });
-  const applyBy = byVersion(v, { past: '2026-05-31', june: '2026-09-30', now: '2026-12-15' });
+  const spend = byVersion(v, { past: '$3,000', june: '$3,000', now: '$4,000' });
+  const applyBy = byVersion(v, { past: '2026-05-31', now: '2026-12-15' });
   const clause =
     v >= 2
       ? ' Bonus not available if you have opened any Mossgate card in the past 48 months.'

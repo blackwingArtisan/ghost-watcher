@@ -152,6 +152,12 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
                 const version = site.advance();
                 return { version, moved: version !== before };
               },
+              night: () => site.version - 1,
+              rewind: async () => {
+                site.reset();
+                await deps.store.clear();
+                await deps.runner.checkAll({ force: true });
+              },
             },
           }
         : {}),

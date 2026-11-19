@@ -32,6 +32,9 @@ describe('bonus-watch: the Ghost of Terms Past', () => {
       expect(lanternfield.fickleness?.text).toBe('Fickle: changed 2 times in 9 months, 1 for the worse.');
       expect((await timelineOf('mossgate-nightfall')).headline).toMatchObject({ text: 'Bonus points cut 20,000 in June', tone: 'bad' });
       expect((await timelineOf('bramblewick-savings')).headline).toMatchObject({ text: 'Bonus raised $50 in June', tone: 'good' });
+      // Each page has its own temper, so the stones do not all read alike.
+      expect((await timelineOf('bramblewick-savings')).fickleness?.text).toBe('Fickle: changed 1 time in 9 months, 1 for the worse.');
+      expect((await timelineOf('mossgate-nightfall')).fickleness?.text).toBe('Fickle: changed 2 times in 9 months, 2 for the worse.');
     } finally {
       await fixture.close();
     }
