@@ -182,7 +182,7 @@ export interface PastHeadline {
 
 /**
  * How often the page changed what the ghost watches, over the span its archived copies cover:
- * `steady` (never), `fickle` (fewer than three changes a year) or `very fickle`.
+ * `steady` (never), `very fickle` (three or more changes, at a rate of three or more a year) or `fickle`.
  */
 export interface Fickleness {
   changes: number;
@@ -255,7 +255,8 @@ function fickleness(entries: PastEntry[], firstAt: string, nowAt: string): Fickl
   const worse = steps.filter((e) => e.tone === 'bad').length;
   const better = steps.filter((e) => e.tone === 'good').length;
   const perYear = Math.round(((changes * 12) / months) * 10) / 10;
-  const label = changes === 0 ? 'steady' : perYear < 3 ? 'fickle' : 'very fickle';
+  // One change is never "very" fickle, however short the span of copies.
+  const label = changes === 0 ? 'steady' : changes >= 3 && perYear >= 3 ? 'very fickle' : 'fickle';
   const span = `${months} month${months === 1 ? '' : 's'}`;
   const text =
     changes === 0

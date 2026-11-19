@@ -24,7 +24,7 @@ inclusion: always
     guard.ts              Host and Origin checks for the dashboard
     server.ts             dashboard HTTP server and JSON API
     ui/                   dashboard client script, shared renderer and stylesheet
-    testing/              fixture site server shared by app tests (export "./testing")
+    testing/              fixture site server, noise ratio and archive replay (export "./testing")
     view.ts               dashboard view model (ghost states, field rows, feed)
     app.ts                defineApp: name, copy, theme and watches for one app
     clock.ts              Clock port: system clock and a manual clock for tests

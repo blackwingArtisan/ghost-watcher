@@ -2,6 +2,10 @@
 
 ## 2026-11-18
 
+- **Real pages.** `replayArchive` and `scripts/real-pages.ts` replay a page's Wayback Machine copies
+  through a whole-page watcher, a selector text watcher and Ghost Watcher, and print the fickleness
+  score and every dated sentence. `docs/real-pages.md` covers the archive replay and a seven-day live
+  check. "Very fickle" now needs at least three changes.
 - **Fresh media.** `npm run stills` re-takes the README screenshots from the running demos, and the
   hero GIF is re-recorded with the archive ribbons and the shriek scene.
 - **Positioning.** The README and the Bonus Crypt's subtitle now lead with terms drift and one

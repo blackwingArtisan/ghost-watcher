@@ -147,6 +147,11 @@ and a rotating promo on every page, plus one night where a bank only reformats i
 changes its ghost slept through, and every night's toast reads like
 "3 pages changed: 2 worth waking for, 1 ignored as noise."
 
+**On real pages.** `scripts/real-pages.ts` replays a real page's archived copies from the Wayback
+Machine through the same three watchers and prints the alerts each would have sent, with every
+sentence Ghost Watcher would have written. [`docs/real-pages.md`](docs/real-pages.md) has the
+procedure, including a seven-day live check.
+
 ## Why not changedetection.io, Visualping or Distill?
 
 They are mature, general-purpose page watchers, and if you want to watch many different pages with
