@@ -2,6 +2,11 @@
 
 ## 2026-11-18
 
+- **Positioning.** The README and the Bonus Crypt's subtitle now lead with terms drift and one
+  persona, bonus hunters, with a sourced community size and the yearly stake. Beyond Kiroween
+  names two tiers, a sourced market anchor and a dated reason for now.
+- **Kiro log.** `KIRO-LOG.md` now opens with what Kiro built and a who-wrote-what table, and the
+  README no longer claims every spec task is checked off (11 open gaps are listed in `tasks.md`).
 - **Good news, bad news.** Fields declare which direction is `better`, and rules can set a `tone`.
   Findings, alerts, stones, Spirit mail and the séance carry it: a raised fee or a new eligibility
   window is red, a bigger bonus glows, a vanished value reads "gone", and readings the page never

@@ -1,14 +1,15 @@
 # Ghost Watcher
 
-**Catch the page that changed its mind and hoped you wouldn't notice.**
+**Banks edit the fine print at night. Ghost Watcher reads it at night too.**
 
 [Try it in 60 seconds](#try-it-in-60-seconds) · [Signal, not noise](#signal-not-noise) ·
 [Why not a page watcher you already know?](#why-not-changedetectionio-visualping-or-distill) ·
 [Built with Kiro](#built-with-kiro) · [Kiro log](KIRO-LOG.md) · [Demo script](docs/demo-script.md)
 
-Ghost Watcher is a skeleton for building small, polite page-change watchers. You name the parts of a
-page that matter (a bonus amount, a deadline, the fine print, a table of listings), and a ghost
-haunts them. It sleeps through the noise: timestamps, rotating banners, reordered lists, `$300`
+Ghost Watcher catches **terms drift**: the quiet bonus cut, the new monthly fee, the eligibility
+window slipped into the fine print while the headline offer stays the same. It is a skeleton for
+small, polite watchers. You name the parts of a page that matter (a bonus amount, a deadline, the
+fine print, a table of listings), and a ghost haunts them. It sleeps through the noise: timestamps, rotating banners, reordered lists, `$300`
 becoming `$300.00`. When something real changes, it wakes and tells you in one plain sentence:
 
 > Bonus went up from $300 to $400 (+$100).
@@ -43,12 +44,17 @@ Everything runs on your machine against an invented fixture site. No accounts, k
 
 ## Who it's for
 
-- **Bonus hunters**, who track a dozen bank offers and miss the week a $300 bonus becomes $400, or
-  the day "no monthly fee" quietly disappears from the fine print.
-- **Renters and neighbors**, who want to hear about the 2-bedroom under $2,100 in their
-  neighborhood, or the demolition permit on their street, without refreshing three sites a day.
-- **Developers**, who need a small, honest watcher for any page and want the robots.txt handling,
-  diffing and alerting already done.
+**Bonus hunters.** r/churning, the main community for bank and card sign-up bonuses, has roughly
+678,000 members ([The Hive Index](https://thehiveindex.com/communities/r-churning/), checked
+2026-11-18; Reddit stopped showing member counts on subreddit pages in 2025). Doctor of Credit's rule
+of thumb is that it is
+["generally OK to open 10 or less bank accounts each year"](https://www.doctorofcredit.com/how-many-bank-accounts-can-i-safely-open-within-a-year-for-bank-bonus-purposes/).
+At $200 to $500 a bonus, that is $2,000 to $5,000 a year riding on pages that change without notice:
+a bonus raised the week after you applied, a waiting period quietly moved from 12 to 13 months, "no
+monthly fee" gone from the fine print. One missed change costs $100 or more.
+
+**Same skeleton, other hauntings.** Haunted Listings watches rentals and building permits for
+renters and neighbors, and developers can point the template at any page that deserves a ghost.
 
 ## What's in this repo
 
@@ -166,13 +172,15 @@ Feature details checked against each product's own pages on 2026-11-18:
 
 ## Built with Kiro
 
-Kiro planned this repo before any code was written. Everything it used and produced is in
-[`.kiro/`](.kiro/):
+Kiro wrote the spec this repo is built against, reviewed it against the code, and built the
+integer-cents money change with its tests. Everything it used and produced is in [`.kiro/`](.kiro/),
+and [`KIRO-LOG.md`](KIRO-LOG.md) says who wrote what.
 
 - [`.kiro/steering/`](.kiro/steering/): product, tech and structure steering files, always included.
 - [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): requirements in EARS notation,
-  the design, and the task list. Kiro generated all three. Every task is now checked off, with
-  implementation notes.
+  the design, and the task list. Kiro generated all three and later tightened them against the code.
+  110 tasks: 99 are checked off with code and tests, and 11 open gaps found in Kiro's review are
+  listed with their requirement IDs.
 - [`.kiro/hooks/`](.kiro/hooks/): a hook that type-checks and runs the unit tests when a source or test
   file under `template/`, `apps/` or `e2e/` is saved, one that runs the full suite when an agent turn
   ends, and an agent hook (`money-guard`) that restates the integer-cents money rule when
@@ -180,11 +188,11 @@ Kiro planned this repo before any code was written. Everything it used and produ
   (`PostFileSave` and `Stop` triggers), which Kiro IDE 1.0 and CLI V3 load from `.kiro/hooks/*.json`.
 
 - [`.kiro/settings/mcp.json`](.kiro/settings/mcp.json): MCP servers for Kiro sessions, pinned: the AWS
-  Documentation server (for the SES and S3 adapters) and Context7 (library docs). They are
-  configured for the next Kiro session; no logged Kiro call has used them yet.
+  Documentation server (for the SES and S3 adapters) and Context7 (library docs), configured for
+  Kiro sessions.
 
-[`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the exact prompt, the files produced, the
-errors hit along the way, and the one requirement that was revised by hand.
+[`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the prompt, the files produced, what the Stop
+hook caught, and the one requirement that was revised by hand.
 
 A three-minute walkthrough for a demo video, beat by beat, is in [`docs/demo-script.md`](docs/demo-script.md).
 
@@ -314,12 +322,21 @@ sent as a contact.
 
 - **Free to self-host.** The template and both apps are MIT-licensed and run on one machine with
   no accounts. The S3, SES and webhook adapters are there for running it unattended.
-- **A small hosted tier would be the next step.** For example, 25 ghosts with phone alerts for a few
-  dollars a month. People already pay for page watching: changedetection.io's hosted plan is
-  $8.99/month and Visualping's Personal plan starts at $14/month for 1,000 checks (both from their
-  own pages, checked 2026-11-18).
-- **Why now.** Terms change quietly, and generic watchers alert on so much noise that people
-  mute them. A watcher that understands money, dates and fine print can afford to be loud.
+- **Personal, about $4 a month.** 25 hosted ghosts, phone alerts and a weekly digest for one bonus
+  hunter. A ghost checks a page a few times a day, so this is priced well under general watchers:
+  changedetection.io's hosted plan is $8.99/month and Visualping's Personal plan is $14/month for
+  1,000 checks (both from their own pages, checked 2026-11-18).
+- **Pro, about $49 a month.** For teams that watch terms for a living: competitors' pricing and
+  terms pages, a compliance team's own published disclosures, consumer advocates tracking fees. The
+  demand is already there: Visualping reports that roughly 35,000 of its users track legal pages and
+  about 11,000 track regulatory compliance
+  ([its own figures, updated 2026-04-12](https://visualping.io/blog/visualping-enterprise-evolution)).
+- **Why now.** Since 2025-05-12 the FTC's fees rule has made live-event tickets and short-term
+  lodging show the total price up front
+  ([Federal Register, 2025-01-10](https://www.govinfo.gov/content/pkg/FR-2025-01-10/html/2024-30293.htm)).
+  It does not reach bank or card offers, where a new fee or a narrower eligibility window still
+  arrives as an edit to the fine print. Generic watchers alert on so much page noise that people
+  mute them; a watcher that understands money, dates and fine print can afford to be loud.
 - **More hauntings on the same skeleton.** Price drops on a short list of products, terms-of-service
   pages (a clause added or removed), and course or class seats opening up. Each is one `app.ts`
   plus a fixture site.

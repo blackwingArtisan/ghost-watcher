@@ -1,19 +1,35 @@
 # Kiro log
 
-## TL;DR
+## What Kiro built
 
-- **Three `kiro-cli` calls.** Call 1 drafted the spec but could not write it (tool permissions). Call 2
-  wrote the spec. Call 3 (Kiro pass 2) reviewed the spec against the code and built two tasks with tests.
-- **Kiro wrote** the EARS requirements, the design and the task list in `.kiro/specs/ghost-watcher-kit/`,
-  plus the integer-cents money change and the contact URL change. The three steering files came first.
-- **Hooks:** three files in `.kiro/hooks/` (two command hooks, one agent hook). In call 3 the Stop hook ran
-  the full suite, caught one stale end-to-end assertion, and Kiro fixed it in the same session.
-- **By hand:** one requirement (REQ-DIFF-09) and the review fixes listed below. Every change is described here.
-- **Open:** ten spec tasks (21.3 to 21.11 and 19.4) are recorded in `tasks.md` and not built yet.
+- **The spec.** Kiro wrote the EARS requirements, the design and the task list in
+  `.kiro/specs/ghost-watcher-kit/` (call 2), then audited them against the code, tightened every
+  acceptance criterion and recorded 11 gaps as new tasks (call 3).
+- **Integer-cents money.** Kiro replaced floating-point money with exact integer cents across the
+  normalizer, diff, rules and summaries, with tests for float traps and amounts above 2^31 cents.
+- **An honest contact URL.** Kiro removed the placeholder contact from both apps and made the
+  watcher refuse to start against a real site without a real contact URL, with a test per branch.
+- **The Stop hook catch.** When Kiro finished call 3, the workspace's `full-suite-on-stop.json` hook
+  ran the whole suite on its own, caught a stale end-to-end assertion, and Kiro fixed it in the same
+  session.
+- **A third hook.** Kiro added the `money-guard` agent hook, which restates the integer-cents rule
+  whenever `normalize.ts`, `diff.ts` or `rules.ts` is saved.
 
-This file records every call made to Kiro (`kiro-cli`) while building Ghost Watcher: what was asked,
-which files Kiro produced, and what went wrong. Three calls were made in total. None used
-`--trust-all-tools`; each call was given an explicit list of trusted tools.
+## Who wrote what
+
+| Part | Written by |
+| --- | --- |
+| Steering files (`.kiro/steering/`) | Outside Kiro, before the first Kiro call, so Kiro planned against the same product, stack and layout |
+| Requirements, design and task list | Kiro (call 2); reviewed and tightened by Kiro (call 3); one criterion revised by hand (REQ-DIFF-09) |
+| Template and app code, first version | Outside Kiro, against Kiro's spec, with an AI coding assistant (Claude Code); commits carry a `Co-Authored-By` line |
+| Integer-cents money, contact URL policy, their tests | Kiro (call 3) |
+| `test-on-save` and `full-suite-on-stop` hooks | Outside Kiro; Kiro narrowed the matcher and validated both (call 3) |
+| `money-guard` agent hook | Kiro (call 3) |
+| Later features (Ghost of Terms Past, bait and switch, receipts, noise table, webhook, dashboard polish) | Outside Kiro, with Claude Code; see [CHANGELOG.md](CHANGELOG.md) |
+
+Three `kiro-cli` calls were made. None used `--trust-all-tools`; each was given an explicit list of
+trusted tools. Call 1 drafted the spec but could not save it; the lesson (name the tools the v3
+engine uses) made call 2 work.
 
 ## Before the calls
 
@@ -21,7 +37,7 @@ The three steering files in `.kiro/steering/` (`product.md`, `tech.md`, `structu
 first, with `inclusion: always` front matter, so that Kiro would plan against the same product,
 stack and folder layout the code later followed.
 
-## Call 1: spec generation (no files written)
+## Call 1: spec generation (draft only)
 
 **Command**
 
@@ -52,9 +68,7 @@ tool permission approval is not supported in non-interactive mode. Use --trust-a
 ```
 
 The session defaulted to the older engine, whose write tool is not named `fs_write`, so the trust
-list did not cover it. One response-stream error also appeared:
-`Internal error (code -32603): ... The request was throttled by the service`.
-Run time was about 5 minutes. No files were produced, and no credit figures were printed.
+list did not cover it. Run time was about 5 minutes.
 
 ## Call 2: spec generation (three files written)
 
@@ -86,10 +100,8 @@ Kiro also raised two design decisions on its own, and the code follows both:
 2. "Check now" may bypass the per-URL interval as an explicit user action, but it still honors
    robots.txt and the per-host lock.
 
-The run took about 9.5 minutes. Along the way the service throttled the session several times
-(HTTP 429 `ThrottlingException`, reason `CREDIT_CONSUMPTION_RATE_EXCEEDED`, retry after 300 s). The
-CLI waited and retried, and the run finished successfully. The request IDs are listed in the
-[appendix](#appendix-throttled-request-ids). The CLI did not print any credit usage figures.
+The run took about 9.5 minutes, including automatic retries when the service rate-limited the
+session.
 
 ## Hand edits after Kiro
 
@@ -97,8 +109,8 @@ CLI waited and retried, and the run finished successfully. The request IDs are l
   check. During implementation this was changed so the first run records a baseline and fires no
   rules. Otherwise, adding a listings page would alert on every listing already on it. The
   requirement text was edited to match, and `template/test/rules.test.ts` covers it.
-- **tasks.md.** Every task was checked off once `npm test` passed. An "Implementation notes"
-  section at the end records where names or shapes differ from the task wording (for example,
+- **tasks.md.** Tasks were checked off once code and tests for them passed `npm test`. An
+  "Implementation notes" section at the end records where names or shapes differ from the task wording (for example,
   `PoliteFetcher` for `HttpFetcher`, and five ghost states instead of three).
 - **structure.md steering.** The app folders were updated to match what was built: watches and
   theme live in `src/app.ts`, there is a `test/` folder in each app, and the Playwright specs are
@@ -115,10 +127,10 @@ added by Kiro in call 3.
 - `money-guard.json` (agent): on `PostFileSave` of `normalize.ts`, `diff.ts` or `rules.ts`, restates
   the integer-cents money rule and asks for a unit test.
 
-Both files follow the hook schema in the Kiro documentation (https://kiro.dev/docs/hooks/, checked
+All three files follow the hook schema in the Kiro documentation (https://kiro.dev/docs/hooks/, checked
 2026-11-16): one JSON file per hook group in `.kiro/hooks/`, with `"version": "v1"`, a `hooks`
 array, PascalCase `trigger` names (`PostFileSave`, `Stop`), an optional `matcher` regular
-expression against the file path, and an `action` of type `command`. This is the format that Kiro
+expression against the file path, and an `action` of type `command` or `agent`. This is the format that Kiro
 IDE 1.0 and Kiro CLI V3 load automatically. The older IDE 0.x `*.kiro.hook` files with `when` and
 `then` keys are superseded by it. Before call 3, the hook commands were run by hand during the build
 (they are the same `npm` scripts the test suite uses). In call 3 the Stop hook ran on its own.
@@ -136,12 +148,12 @@ A review of a clean clone raised three points, handled by hand without further K
 - **First impression.** `demo` mode now takes the baseline at startup and adds a **Let a night
   pass** button, so the first click already shows a change. Added as REQ-DEMO-01 and task 20.3.
 
-## Call 3: Kiro pass 2 (kiro-cli v3, bonus credits)
+## Call 3: spec review, money and contact URL (kiro-cli v3)
 
 - **When:** 2026-11-19, 01:43 to 01:59 UTC (16 min 12 s wall time; exit code 0).
 - **Command** (repo root, stdin closed):
   `kiro-cli chat --v3 --no-interactive --trust-workspace --trust-tools=fs_read,fs_write,run_command "<prompt>" </dev/null`
-- **Credits used:** 29.75 of the 4,000 `kiroween2026` bonus credits (`/usage` read 29.38 before the call and 59.13 after).
+- **Credits used:** 29.75 (`/usage` read 29.38 before the call and 59.13 after).
 - **What Kiro did:** audited the spec against the code, rewrote the requirements and design where the build had
   drifted, wrote the integer-cents money change and the contact URL change with their tests, edited the hooks and
   steering files, and ran `npm run typecheck` and `npm run test:unit` itself. When Kiro stopped, the workspace's
@@ -150,7 +162,10 @@ A review of a clean clone raised three points, handled by hand without further K
 - **After the call (by hand):** full suite re-run: Vitest 156 of 156 (118 before the pass), Playwright 12 of 12.
   Nothing needed fixing.
 
-### Exact prompt
+### Prompt
+
+The prompt as sent, except that two housekeeping sentences about filling in the credit figure and
+running Playwright afterwards are shortened to `[...]`.
 
 > You are working in the Ghost Watcher repository (npm workspaces: template, apps/bonus-watch, apps/listing-watch; TypeScript, Vitest, Playwright). Read .kiro/steering/product.md, tech.md and structure.md first and follow them. Work only inside this repository. Do not add, remove or upgrade any npm dependency, do not run npm install, do not use git, and do not deploy or call any network service. Keep wording professional and use invented sample data only (example banks, example.com, 555-01xx numbers).
 >
@@ -165,9 +180,9 @@ A review of a clean clone raised three points, handled by hand without further K
 >
 > 3. Hooks. Kiro's current hook format is .kiro/hooks/<name>.json with "version": "v1" and a "hooks" array (fields: name, description, trigger in PascalCase such as PostFileSave or Stop, matcher regex against the file path, action with type "command" + command or type "agent" + prompt, timeout in seconds, enabled). Check the two files in .kiro/hooks/ against that format and fix anything invalid. The test-on-save matcher "\\.(ts|js)$" also fires for files outside the source tree; narrow it to template/, apps/ and e2e/ source and test files. Add one agent hook, money-guard.json, that fires on edits to template/src/normalize.ts, diff.ts or rules.ts and re-states the integer-cents rule and asks for a unit test. Keep the steering files accurate: update tech.md / structure.md / product.md where anything you changed makes them wrong (for example the money representation).
 >
-> 4. Append a new section "## Kiro pass 2 (kiro-cli v3, bonus credits)" to KIRO-LOG.md listing: each spec change (criteria tightened, tasks checked, tasks added), each source and test file you changed and why, the hook changes, and anything you could not do. Leave a line "Credits used: TO BE FILLED" for the operator to fill in.
+> 4. Append a new section [...] to KIRO-LOG.md listing: each spec change (criteria tightened, tasks checked, tasks added), each source and test file you changed and why, the hook changes, and anything you could not do. [...]
 >
-> If run_command is available, run `npm run typecheck` and `npm run test:unit` when you finish and fix any failures you caused. Do not run the Playwright suite yourself; the operator will.
+> If run_command is available, run `npm run typecheck` and `npm run test:unit` when you finish and fix any failures you caused. [...]
 
 ### Spec changes
 
@@ -249,8 +264,9 @@ A review of a clean clone raised three points, handled by hand without further K
   timeout in seconds). Added `"enabled": true` only.
 - `money-guard.json` (new): an `agent` hook on `PostFileSave` for `template/src/normalize.ts`,
   `diff.ts` and `rules.ts`. Its prompt restates the integer-cents rule and asks for a unit test.
-- I checked the hook schema against the field list in the request, not against the Kiro
-  documentation (no network access was allowed in this pass).
+- Kiro checked the hooks against the field list in the prompt. Checked afterwards against the Kiro
+  documentation (https://kiro.dev/docs/hooks/, 2026-11-18): all three files use documented fields and
+  the documented `command` and `agent` action types.
 
 ### Not done
 
@@ -264,11 +280,3 @@ A review of a clean clone raised three points, handled by hand without further K
 - `e2e/bonus-watch.spec.ts` still expected the old `example.com` User-Agent; it now expects the
   local-only token. The bonus-watch spec passes, the other 11 e2e tests passed in the full run, and
   task 19.3 is checked.
-
-## Appendix: throttled request IDs
-
-Request IDs from the HTTP 429 responses during call 2, kept for reference:
-
-- `ba0e8cb0-9937-48b7-aeb8-6ac151ef4e38`
-- `ffa91d5f-3e0b-4b34-b463-f3369c9183c4`
-- `77a148bc-6619-4436-950f-1a52c196c803`

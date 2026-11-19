@@ -11,7 +11,7 @@ export function buildApp(env: Env = process.env): GhostApp {
   return defineApp({
     id: 'bonus-watch',
     name: 'The Bonus Crypt',
-    tagline: 'Ghosts that haunt bank and card bonus pages, and wail the moment the terms change.',
+    tagline: 'Banks edit the fine print at night. These ghosts read it at night too, and wail when a bonus is cut or a fee creeps in.',
     version: '0.1.0',
     alertTo: ['bonus.hunter@example.com'],
     theme: { accent: '#8dffb4', accentSecondary: '#e8c66a', sky: '#0d1414', moon: '#efe7c8', crest: 'Crypt' },
