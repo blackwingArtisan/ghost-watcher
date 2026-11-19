@@ -1,5 +1,5 @@
 // Dashboard client: keeps the graveyard live, opens séances, and sends "check now" and "lay to rest".
-import { noiseSummary, renderDetail, renderFeed, renderGraveyard, renderStats } from './render.js';
+import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderStats } from './render.js';
 
 const $ = (/** @type {string} */ sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 const initial = document.getElementById('initial-state');
@@ -74,6 +74,29 @@ async function openSeance(id, show = true) {
   if (show && !dialog.open) dialog.showModal();
 }
 
+/** "Raise the dead": shows the dispute pack for one change in the séance drawer. @param {string} id @param {string} alertId */
+async function openDispute(id, alertId) {
+  openId = null;
+  const pack = await api(`/api/ghosts/${encodeURIComponent(id)}/alerts/${encodeURIComponent(alertId)}/dispute`);
+  $('#seance-body').innerHTML = renderDispute(pack);
+  if (!dialog.open) dialog.showModal();
+  dialog.scrollTop = 0;
+}
+
+/** @param {string} targetId */
+async function copyText(targetId) {
+  const field = /** @type {HTMLTextAreaElement | null} */ (document.getElementById(targetId));
+  if (!field) return;
+  try {
+    await navigator.clipboard.writeText(field.value);
+    toast('Copied. Fill in the bracketed blanks before you send it.');
+  } catch {
+    field.focus();
+    field.select();
+    toast('Selected. Press Ctrl+C or Cmd+C to copy.');
+  }
+}
+
 /** @param {any} result */
 function describeResult(result) {
   switch (result.status) {
@@ -115,6 +138,10 @@ document.addEventListener('click', (event) => {
   const id = target.dataset.id || '';
   if (action === 'open') {
     void withBusy(() => openSeance(id));
+  } else if (action === 'dispute') {
+    void withBusy(() => openDispute(id, target.dataset.alert || ''));
+  } else if (action === 'copy') {
+    void copyText(target.dataset.target || '');
   } else if (action === 'check') {
     const card = document.getElementById(`ghost-${id}`);
     if (card) card.dataset.checking = 'true';

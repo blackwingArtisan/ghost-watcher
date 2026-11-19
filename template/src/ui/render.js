@@ -73,6 +73,61 @@ export function renderReceipt(receipt) {
   return `<p class="receipt"><span class="receipt__tag">Receipt</span> ${link} · sha256 <code title="before: ${esc(receipt.before.sha256)}">${esc(shortHash(receipt.before.sha256))}</code> → <code title="after: ${esc(receipt.after.sha256)}">${esc(shortHash(receipt.after.sha256))}</code></p>`;
 }
 
+/**
+ * "Raise the dead": shown on every change that kept a receipt. It opens the dispute pack.
+ * @param {any} alert
+ */
+export function renderRaiseButton(alert) {
+  if (!alert || !alert.receipt) return '';
+  return `<button type="button" class="btn btn--small btn--raise" data-action="dispute" data-id="${esc(alert.watchId)}" data-alert="${esc(alert.id)}" aria-label="Raise the dead: dispute pack for ${esc(alert.watchName)}">Raise the dead</button>`;
+}
+
+/**
+ * The dispute pack: a letter to the bank, the evidence, and prefilled CFPB complaint text.
+ * @param {any} pack
+ */
+export function renderDispute(pack) {
+  const lines = (/** @type {string[]} */ list) => list.map((line) => `<li>${esc(line)}</li>`).join('');
+  const evidence = pack.evidence
+    .map((/** @type {any} */ row) => `<tr><th scope="row">${esc(row.label)}</th><td><code>${esc(row.value)}</code></td></tr>`)
+    .join('');
+  const c = pack.complaint;
+  return `<header class="dispute__head">
+  <div class="seance__ghost">${ghostSvg('restless')}</div>
+  <div>
+    <p class="eyebrow">Raise the dead · ${esc(pack.kind)}</p>
+    <h2 id="seance-title">Dispute pack: ${esc(pack.watchName)}</h2>
+    <p class="muted small">Show the bank its own terms from the day you applied. Fill in the bracketed blanks (${esc(pack.blanks.join(', '))}), then send it yourself. Nothing here is sent for you.</p>
+  </div>
+</header>
+<div class="seance__actions">
+  <button type="button" class="btn" data-action="open" data-id="${esc(pack.watchId)}">Back to the séance</button>
+</div>
+<section class="dispute__terms">
+  <div class="dispute__side" data-side="before"><h3>${esc(pack.beforeDate)}: what the page said</h3><ul>${lines(pack.before)}</ul></div>
+  <div class="dispute__side" data-side="after"><h3>${esc(pack.afterDate)}: what it says now</h3><ul>${lines(pack.after)}</ul></div>
+</section>
+<section class="dispute__block">
+  <h3>1. Letter to the bank</h3>
+  <p class="muted small">Subject: <span class="dispute__subject">${esc(pack.letter.subject)}</span></p>
+  <label for="dispute-letter">Letter to the bank</label>
+  <textarea class="dispute__text" id="dispute-letter" readonly rows="14">${esc(pack.letter.body)}</textarea>
+  <button type="button" class="btn btn--small" data-action="copy" data-target="dispute-letter">Copy the letter</button>
+</section>
+<section class="dispute__block">
+  <h3>2. Evidence</h3>
+  <table class="values dispute__evidence"><tbody>${evidence}</tbody></table>
+</section>
+<section class="dispute__block">
+  <h3>3. If the bank says no: a CFPB complaint</h3>
+  <p class="muted small">At <a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">consumerfinance.gov/complaint</a> choose <b>${esc(c.product)}</b>, then <b>${esc(c.issue)}</b>, then <b>${esc(c.subIssue)}</b>.</p>
+  <label for="dispute-cfpb">What happened</label>
+  <textarea class="dispute__text" id="dispute-cfpb" readonly rows="7">${esc(c.whatHappened)}</textarea>
+  <button type="button" class="btn btn--small" data-action="copy" data-target="dispute-cfpb">Copy the complaint text</button>
+  <p class="muted small">Fair resolution: <span class="dispute__resolution">${esc(c.desiredResolution)}</span></p>
+</section>`;
+}
+
 /** @param {string} iso */
 export function clockTime(iso) {
   const d = new Date(iso);
@@ -252,7 +307,7 @@ function renderLiveLetters(state) {
       return `<li class="feed__item" data-severity="${esc(a.severity)}" data-tone="${esc(a.tone || 'neutral')}" data-acknowledged="${entry.acknowledged}"${a.stealth ? ' data-stealth="true"' : ''}>
   <div class="feed__meta"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><button type="button" class="feed__watch" data-action="open" data-id="${esc(a.watchId)}">${esc(a.watchName)}</button><time datetime="${esc(a.createdAt)}">${esc(ago(a.createdAt, state.generatedAt))}</time></div>
   ${stealth}<p class="feed__summary">${esc(a.summary)}</p>
-  ${renderReceipt(a.receipt)}${letter}
+  ${renderReceipt(a.receipt)}<div class="feed__actions">${letter}${renderRaiseButton(a)}</div>
 </li>`;
     })
     .join('\n');
@@ -293,7 +348,7 @@ export function renderDetail(detail, nowIso) {
   const alerts = detail.alerts.length
     ? detail.alerts
         .map(
-          (/** @type {any} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div>${a.stealth ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>` : ''}<p>${esc(a.summary)}</p>${renderReceipt(a.receipt)}<p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
+          (/** @type {any} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div>${a.stealth ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>` : ''}<p>${esc(a.summary)}</p>${renderReceipt(a.receipt)}${renderRaiseButton({ ...a, watchId: detail.id, watchName: detail.name })}<p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
         )
         .join('')
     : '<li class="muted">No alerts yet. The ghost has nothing to report.</li>';

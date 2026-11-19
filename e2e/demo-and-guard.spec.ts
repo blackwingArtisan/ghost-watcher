@@ -81,6 +81,18 @@ test('demo mode: the first sighting is already taken, and one key press lets a n
   expect(scan.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
   await expect(night).toBeEnabled();
 
+  // Raise the dead: the bait and switch becomes a dispute pack with the letter and CFPB text.
+  await baitAndSwitch.getByRole('button', { name: /^Raise the dead/ }).click();
+  const seance = page.locator('#seance');
+  await expect(seance.getByRole('heading', { name: 'Dispute pack: Mossgate Nightfall Card' })).toBeVisible();
+  await expect(seance.locator('#dispute-letter')).toHaveValue(/Fine print: "Bonus not available if you have opened any Mossgate card in the past 48 months\."/);
+  await expect(seance.locator('#dispute-letter')).toHaveValue(/SHA-256 of my record of the page on .+: [0-9a-f]{64}/);
+  await expect(seance.locator('#dispute-cfpb')).toHaveValue(/The headline offer stayed the same/);
+  await expect(seance).toContainText("Didn't receive advertised or promotional terms");
+  const packScan = await new AxeBuilder({ page }).include('#seance').withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(packScan.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+  await page.keyboard.press('Escape');
+
   const state = (await (await page.request.get(`${DEMO_FIXTURES}/__fixture/state`)).json()) as { version: number };
   expect(state.version).toBe(2);
 });

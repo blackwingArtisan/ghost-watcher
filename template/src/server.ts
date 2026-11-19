@@ -6,6 +6,7 @@
  *   GET  /api/ghosts/:id                one ghost: values now and before, lists, rules, alert log
  *   POST /api/ghosts/:id/check          check now (skips the interval; robots.txt still applies)
  *   POST /api/ghosts/:id/acknowledge    lay the ghost to rest
+ *   GET  /api/ghosts/:id/alerts/:alert/dispute   the dispute pack for a change that kept a receipt
  *   POST /api/check-all                 check every watch now
  *   POST /api/demo/next-night           demo mode only: advance the fixture site, then check every watch
  *   GET  /outbox/:file.html             preview of a letter in the local outbox
@@ -21,6 +22,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { GhostDeps } from './config';
 import { allowedHostSet, checkRequest } from './guard';
+import { disputePack } from './dispute';
 import { dashboardState, ghostDetail } from './view';
 // The renderer is a plain ES module shared with the browser (no build step).
 import { renderPage } from './ui/render.js';
@@ -152,6 +154,16 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       const night = options.demo.nextNight();
       const results = night.moved ? await deps.runner.checkAll({ force: true }) : [];
       return json(res, 200, { ...night, results: results.map(publicResult) });
+    }
+
+    const disputeRoute = /^\/api\/ghosts\/([a-z0-9-]+)\/alerts\/([a-z0-9-]+)\/dispute$/.exec(path);
+    if (method === 'GET' && disputeRoute) {
+      const watch = deps.runner.watch(disputeRoute[1] ?? '');
+      if (!watch) return json(res, 404, { error: 'No such ghost' });
+      const alert = (await deps.store.alerts(watch.id)).find((a) => a.id === disputeRoute[2]);
+      const pack = alert ? disputePack(alert, watch) : null;
+      if (!pack) return json(res, 404, { error: 'No receipt was kept for that change' });
+      return json(res, 200, pack);
     }
 
     const ghostRoute = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge))?$/.exec(path);

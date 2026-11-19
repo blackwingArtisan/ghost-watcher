@@ -2,6 +2,12 @@
 
 ## 2026-11-18
 
+- **Raise the dead.** Every shriek and bait and switch that kept a receipt gets a "Raise the dead"
+  button in Spirit mail and the haunting log. It opens a dispute pack: a letter to the bank quoting
+  what the page said before and after the change, with dates, the archived copy and both SHA-256
+  hashes, plus prefilled Consumer Financial Protection Bureau complaint text under the matching
+  CFPB product and issue. `disputePack()` is pure and deterministic, and is served at
+  `GET /api/ghosts/:id/alerts/:alert/dispute`.
 - **Real pages.** `replayArchive` and `scripts/real-pages.ts` replay a page's Wayback Machine copies
   through a whole-page watcher, a selector text watcher and Ghost Watcher, and print the fickleness
   score and every dated sentence. `docs/real-pages.md` covers the archive replay and a seven-day live

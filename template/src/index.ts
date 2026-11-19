@@ -45,6 +45,16 @@ export {
   type ReceiptSide,
   type SavePageNowOptions,
 } from './receipts';
+export {
+  disputePack,
+  complaintCategory,
+  letterDate,
+  CFPB_CATEGORIES,
+  CFPB_COMPLAINT_URL,
+  type ComplaintCategory,
+  type DisputePack,
+  type EvidenceRow,
+} from './dispute';
 export { Runner, backoffMs, nextEligibleAt, type CheckResult, type CheckOptions } from './runner';
 export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } from './app';
 export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env } from './config';
