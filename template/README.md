@@ -150,6 +150,7 @@ their `test/` folders and the root `e2e/` folder.
 | `rules.changed(field)` | The normalized value changes. It is skipped when a more specific rule already fired for the same field |
 | `rules.appeared(field, { matching? })` | The region appears, or a sentence matching the phrase is new |
 | `rules.disappeared(field, { matching? })` | The region vanishes, or a sentence matching the phrase is gone |
+| `rules.stealthEdit(field, headline)` | `field` changes while every `headline` field stays the same (a bait and switch). Findings already about `field` get a "Bait and switch" banner and a shriek instead of a second alert |
 | `rules.newItem(list, filters?)` | A list item with a new identity matches every filter |
 | `rules.itemRemoved(list, filters?)` | A list item is gone |
 | `rules.itemChanged(list, field, { direction? })` | A field of an existing item changes, optionally only `up` or `down` |

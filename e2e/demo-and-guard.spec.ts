@@ -40,6 +40,11 @@ test('demo mode: the first sighting is already taken, and one click lets a night
   await expect(page.locator('#ghost-bramblewick-savings .ghost__ignored')).toHaveText("Slept through 1 page change that didn't matter");
   await expect(lanternfield.locator('.ghost__ignored')).toHaveCount(0);
   await expect(page.locator('#feed')).toContainText('Bonus went up from $300 to $400 (+$100).');
+  // Mossgate kept its 60,000 points but slipped an eligibility window into the fine print.
+  const baitAndSwitch = page.locator('#feed .feed__item[data-stealth="true"]');
+  await expect(baitAndSwitch).toHaveCount(1);
+  await expect(baitAndSwitch).toContainText('Bait and switch Bonus points stayed the same while the fine print changed.');
+  await expect(baitAndSwitch).toContainText('Mossgate Nightfall Card');
   await expect(night).toBeEnabled();
 
   const state = (await (await page.request.get(`${DEMO_FIXTURES}/__fixture/state`)).json()) as { version: number };

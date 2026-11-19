@@ -187,6 +187,7 @@ export class Runner {
       ...(finding.before !== undefined ? { before: finding.before } : {}),
       ...(finding.after !== undefined ? { after: finding.after } : {}),
       ...(finding.item ? { item: finding.item } : {}),
+      ...(finding.stealth ? { stealth: finding.stealth } : {}),
     }));
     await store.appendAlerts(watch.id, alerts);
     Object.assign(status, {

@@ -76,6 +76,11 @@ export type Rule =
   | (RuleBase & { kind: 'changed'; field: string })
   | (RuleBase & { kind: 'appeared'; field: string; matching?: string })
   | (RuleBase & { kind: 'disappeared'; field: string; matching?: string })
+  /**
+   * A stealth edit: `field` (usually the fine print) changed while every `headline` field stayed the
+   * same. Findings on `field` are marked as a bait and switch instead of producing a second alert.
+   */
+  | (RuleBase & { kind: 'stealthEdit'; field: string; headline: string[] })
   | (RuleBase & { kind: 'newItem'; list: string; where?: FilterCondition[] })
   | (RuleBase & { kind: 'itemRemoved'; list: string; where?: FilterCondition[] })
   | (RuleBase & {
@@ -177,6 +182,13 @@ export function validateWatch(watch: Watch): string[] {
       if ((rule.kind === 'appeared' || rule.kind === 'disappeared') && rule.matching) {
         checkPattern(rule.matching, `rule ${rule.kind}`, problems);
       }
+      if (rule.kind === 'stealthEdit') {
+        if (rule.headline.length === 0) problems.push('rule stealthEdit needs at least one headline field');
+        for (const name of rule.headline) {
+          if (!fieldNames.has(name)) problems.push(`rule stealthEdit refers to unknown headline field "${name}"`);
+          if (name === rule.field) problems.push(`rule stealthEdit cannot use "${name}" as its own headline`);
+        }
+      }
       continue;
     }
     if ('list' in rule) {
@@ -226,6 +238,8 @@ export const rules = {
     field,
     ...options,
   }),
+  /** Fires when `field` changes while every `headline` field stays the same (a bait and switch). */
+  stealthEdit: (field: string, headline: string[], options: RuleBase = {}): Rule => ({ kind: 'stealthEdit', field, headline, ...options }),
   newItem: (list: string, where: FilterCondition[] = [], options: RuleBase = {}): Rule => ({
     kind: 'newItem',
     list,

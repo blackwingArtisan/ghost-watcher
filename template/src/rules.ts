@@ -19,6 +19,8 @@ export interface Finding {
   /** The list item this finding is about, for list rules. */
   item?: ListItem;
   summary: string;
+  /** Set when a `stealthEdit` rule marked this change: why it looks like a bait and switch. */
+  stealth?: string;
 }
 
 const DEFAULT_SEVERITY: Record<RuleKind, Severity> = {
@@ -27,6 +29,7 @@ const DEFAULT_SEVERITY: Record<RuleKind, Severity> = {
   changed: 'moan',
   appeared: 'moan',
   disappeared: 'moan',
+  stealthEdit: 'shriek',
   newItem: 'shriek',
   itemRemoved: 'whisper',
   itemChanged: 'moan',
@@ -49,6 +52,8 @@ export function describeRule(rule: Rule, watch?: Pick<Watch, 'fields' | 'lists'>
       return rule.matching ? `${fieldLabel(rule.field)} starts mentioning /${rule.matching}/` : `${fieldLabel(rule.field)} appears`;
     case 'disappeared':
       return rule.matching ? `${fieldLabel(rule.field)} stops mentioning /${rule.matching}/` : `${fieldLabel(rule.field)} disappears`;
+    case 'stealthEdit':
+      return `${fieldLabel(rule.field)} changes while ${joinWords(rule.headline.map(fieldLabel))} stay the same`;
     case 'newItem':
       return `new ${listLabel(rule.list)}${filter(rule.where)}`;
     case 'itemRemoved':
@@ -72,6 +77,11 @@ const OP_WORDS: Record<FilterCondition['op'], string> = {
 export function describeCondition(condition: FilterCondition): string {
   const value = Array.isArray(condition.value) ? condition.value.join(', ') : String(condition.value);
   return `${condition.field} ${OP_WORDS[condition.op]} ${value}`;
+}
+
+function joinWords(words: string[]): string {
+  if (words.length <= 1) return words[0] ?? '';
+  return `${words.slice(0, -1).join(', ')} and ${words[words.length - 1]}`;
 }
 
 function sameText(a: string, b: string | number): boolean {
@@ -160,6 +170,9 @@ function evaluateFieldRule(rule: Extract<Rule, { field: string }>, change: Field
         return `${label} no longer says ${quoteMatching(textOf(change.before), rule.matching)}`;
       }
       return change.type === 'removed' ? describeFieldChange(label, change) : null;
+    case 'stealthEdit':
+      // Decided across fields in applyStealthEdits, not one change at a time.
+      return null;
     default:
       return null;
   }
@@ -240,7 +253,47 @@ export function evaluateRules(watch: Watch, d: Diff): Finding[] {
       }
     }
   }
-  return dedupe(findings);
+  return applyStealthEdits(watch, d, dedupe(findings));
+}
+
+/**
+ * A `stealthEdit` rule fires when its field changed and none of its headline fields did. Findings
+ * already about that field are marked (and raised to the rule's severity) rather than duplicated;
+ * only when no other rule noticed the change does the stealth edit become its own finding.
+ */
+function applyStealthEdits(watch: Watch, d: Diff, findings: Finding[]): Finding[] {
+  const changed = new Set(d.fields.map((c) => c.field));
+  let result = findings;
+  for (const rule of watch.rules) {
+    if (rule.kind !== 'stealthEdit') continue;
+    const change = d.fields.find((c) => c.field === rule.field);
+    if (!change || rule.headline.some((name) => changed.has(name))) continue;
+    const label = fieldLabel(watch, rule.field);
+    const headline = rule.headline.map((name) => fieldLabel(watch, name));
+    const stealth = `${joinWords(headline)} stayed the same while the ${label.toLowerCase()} changed.`;
+    const severity = rule.severity ?? DEFAULT_SEVERITY.stealthEdit;
+    const onField = result.filter((f) => f.field === rule.field && !f.list);
+    if (onField.length > 0) {
+      result = result.map((f) =>
+        f.field === rule.field && !f.list ? { ...f, stealth, severity: LOUDNESS[severity] > LOUDNESS[f.severity] ? severity : f.severity } : f,
+      );
+      continue;
+    }
+    result = [
+      ...result,
+      {
+        ruleKind: rule.kind,
+        ruleLabel: describeRule(rule, watch),
+        severity,
+        field: rule.field,
+        before: change.before,
+        after: change.after,
+        summary: describeFieldChange(label, change),
+        stealth,
+      },
+    ];
+  }
+  return result;
 }
 
 const LOUDNESS: Record<Severity, number> = { whisper: 0, moan: 1, shriek: 2 };

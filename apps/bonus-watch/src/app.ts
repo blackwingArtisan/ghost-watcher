@@ -41,6 +41,7 @@ export function buildApp(env: Env = process.env): GhostApp {
           rules.changed('deadline'),
           rules.appeared('finePrint', { matching: 'monthly (service|maintenance) fee applies', severity: 'shriek', label: 'fine print adds a monthly fee' }),
           rules.changed('finePrint', { severity: 'whisper' }),
+          rules.stealthEdit('finePrint', ['bonus']),
           rules.disappeared('bonus', { severity: 'shriek', label: 'bonus offer ends' }),
         ],
       }),
@@ -65,6 +66,7 @@ export function buildApp(env: Env = process.env): GhostApp {
           rules.changed('deadline'),
           rules.wentDown('apy', { severity: 'whisper' }),
           rules.changed('finePrint', { severity: 'whisper' }),
+          rules.stealthEdit('finePrint', ['bonus']),
         ],
       }),
       defineWatch({
@@ -88,6 +90,7 @@ export function buildApp(env: Env = process.env): GhostApp {
           rules.changed('applyBy'),
           rules.appeared('finePrint', { matching: 'past \\d+ months', severity: 'shriek', label: 'fine print adds an eligibility window' }),
           rules.changed('finePrint', { severity: 'whisper' }),
+          rules.stealthEdit('finePrint', ['points']),
         ],
       }),
       defineWatch({

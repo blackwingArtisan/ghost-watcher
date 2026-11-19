@@ -81,6 +81,29 @@ describe('bonus-watch watches against its fixture pages', () => {
   });
 });
 
+describe('bonus-watch: stealth edits', () => {
+  const stealth = (watchId: string, from: number, to: number) => {
+    const watch = app.watches.find((w) => w.id === watchId) as Watch;
+    return evaluateRules(watch, diff(extract(pageFor(watch, from, 1), watch), extract(pageFor(watch, to, 7), watch)))
+      .filter((f) => f.stealth)
+      .map((f) => `${f.stealth} ${f.summary}`);
+  };
+
+  it('flags fine print that changes under an unchanged headline as a bait and switch', () => {
+    expect(stealth('lanternfield-checking', 2, 3)).toEqual([
+      'Bonus stayed the same while the fine print changed. Fine print now says "A $12 monthly service fee applies unless you keep a $1,500 daily balance."',
+    ]);
+    expect(stealth('mossgate-nightfall', 1, 2)).toEqual([
+      'Bonus points stayed the same while the fine print changed. Fine print now says "Bonus not available if you have opened any Mossgate card in the past 48 months."',
+    ]);
+  });
+
+  it('does not flag a night when the headline changed in the open', () => {
+    expect(stealth('lanternfield-checking', 1, 2)).toEqual([]);
+    expect(stealth('bramblewick-savings', 2, 3)).toEqual([]);
+  });
+});
+
 describe('bonus-watch contact URL', () => {
   const LOCAL_ONLY_UA = 'GhostWatcher/0.1.0 (local-only, no public contact; page-change watcher)';
   const memory = { GHOST_STORE: 'memory', GHOST_ALERTS: 'console' };

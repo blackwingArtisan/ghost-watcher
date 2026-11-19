@@ -36,12 +36,13 @@ export function renderAlertMessage(options: RenderOptions): AlertMessage {
   const { appName, watch, alerts, createdAt } = options;
   const count = alerts.length;
   const loudest = alerts.some((a) => a.severity === 'shriek') ? 'shriek' : alerts.some((a) => a.severity === 'moan') ? 'moan' : 'whisper';
-  const subject = `${loudest === 'shriek' ? '[!] ' : ''}${watch.name}: ${count === 1 ? alerts[0]?.summary ?? 'a change' : `${count} changes`}`.slice(0, 180);
+  const stealthy = alerts.some((a) => a.stealth);
+  const subject = `${loudest === 'shriek' ? '[!] ' : ''}${stealthy ? 'Bait and switch on ' : ''}${watch.name}: ${count === 1 ? alerts[0]?.summary ?? 'a change' : `${count} changes`}`.slice(0, 180);
 
   const text = [
     `${appName}: your ghost saw something on ${watch.name}.`,
     '',
-    ...alerts.map((a) => `- [${SEVERITY_WORD[a.severity]}] ${a.summary}\n  Rule: ${a.ruleLabel}`),
+    ...alerts.map((a) => `- [${SEVERITY_WORD[a.severity]}] ${a.stealth ? `BAIT AND SWITCH: ${a.stealth} ` : ''}${a.summary}\n  Rule: ${a.ruleLabel}`),
     '',
     `Page: ${watch.url}`,
     `Checked: ${createdAt}`,
@@ -52,7 +53,7 @@ export function renderAlertMessage(options: RenderOptions): AlertMessage {
     .map(
       (a) => `<tr>
   <td style="padding:10px 12px;vertical-align:top;width:76px"><span style="display:inline-block;padding:2px 8px;border-radius:999px;font:600 11px/18px system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#0d0b14;background:${SEVERITY_COLOR[a.severity]}">${SEVERITY_WORD[a.severity]}</span></td>
-  <td style="padding:10px 12px;font:15px/1.5 Georgia,serif;color:#ece6ff">${escapeHtml(a.summary)}<div style="font:12px/1.4 ui-monospace,Menlo,monospace;color:#9a93b8;margin-top:4px">Rule: ${escapeHtml(a.ruleLabel)}</div></td>
+  <td style="padding:10px 12px;font:15px/1.5 Georgia,serif;color:#ece6ff">${a.stealth ? `<div style="font:700 11px/1.4 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#ff8f87;margin-bottom:4px">Bait and switch</div><div style="font:13px/1.4 system-ui,sans-serif;color:#d8cff5;margin-bottom:4px">${escapeHtml(a.stealth)}</div>` : ''}${escapeHtml(a.summary)}<div style="font:12px/1.4 ui-monospace,Menlo,monospace;color:#9a93b8;margin-top:4px">Rule: ${escapeHtml(a.ruleLabel)}</div></td>
 </tr>`,
     )
     .join('\n');

@@ -188,9 +188,12 @@ export function renderFeed(state) {
       const letter = entry.letter
         ? `<a class="feed__letter" href="/outbox/${encodeURIComponent(entry.letter)}.html" target="_blank" rel="noopener">Read the letter</a>`
         : '';
-      return `<li class="feed__item" data-severity="${esc(a.severity)}" data-acknowledged="${entry.acknowledged}">
+      const stealth = a.stealth
+        ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>`
+        : '';
+      return `<li class="feed__item" data-severity="${esc(a.severity)}" data-acknowledged="${entry.acknowledged}"${a.stealth ? ' data-stealth="true"' : ''}>
   <div class="feed__meta"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><button type="button" class="feed__watch" data-action="open" data-id="${esc(a.watchId)}">${esc(a.watchName)}</button><time datetime="${esc(a.createdAt)}">${esc(ago(a.createdAt, state.generatedAt))}</time></div>
-  <p class="feed__summary">${esc(a.summary)}</p>
+  ${stealth}<p class="feed__summary">${esc(a.summary)}</p>
   ${letter}
 </li>`;
     })
@@ -232,7 +235,7 @@ export function renderDetail(detail, nowIso) {
   const alerts = detail.alerts.length
     ? detail.alerts
         .map(
-          (/** @type {any} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div><p>${esc(a.summary)}</p><p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
+          (/** @type {any} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div>${a.stealth ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>` : ''}<p>${esc(a.summary)}</p><p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
         )
         .join('')
     : '<li class="muted">No alerts yet. The ghost has nothing to report.</li>';

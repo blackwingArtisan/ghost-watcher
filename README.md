@@ -51,6 +51,10 @@ This repo holds one reusable template and two apps built from it, each in its ow
   "Mar 4: Bonus $500. Jun 11: Bonus went down from $500 to $300 (-$200)." Past changes are shown,
   never sent as alerts. In `demo` mode the fixture site stands in for the archive, and the adapter's
   tests replay real recorded Wayback responses.
+- **Bait and switch.** `rules.stealthEdit('finePrint', ['bonus'])` notices when the fine print changes
+  while the headline offer stays put. In the demo, Mossgate keeps its 60,000 points but slips a
+  48-month eligibility window into the terms; Spirit mail and the email lead with a "Bait and switch"
+  banner instead of a routine fine-print note.
 - **Plain-English alerts.** The outbox writes each alert as an `.eml` file, an HTML preview and an
   index line. It works with no accounts. Amazon SES is an opt-in adapter.
 - **A haunted dashboard.** Each watch is a ghost on a tombstone. It sleeps while nothing changes,

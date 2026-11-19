@@ -18,6 +18,8 @@ export interface Alert {
   before?: MaybeValue;
   after?: MaybeValue;
   item?: ListItem;
+  /** Set for a stealth edit: why it looks like a bait and switch. */
+  stealth?: string;
 }
 
 /** Everything one check run found on one watch, rendered for delivery. */
