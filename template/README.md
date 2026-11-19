@@ -135,7 +135,7 @@ their `test/` folders and the root `e2e/` folder.
 | `noise.ts` | Visible page text and its fingerprint, for the ignored-noise count and the noise-ratio comparison |
 | `history.ts` | `HistorySource` port, the Wayback Machine (CDX) adapter, and the Ghost of Terms Past timeline built from archived copies |
 | `store/` | `BlobStore` port (memory, file, S3) and `GhostStore` (snapshots, status, alerts, acknowledgements) |
-| `alerts/` | `AlertSink` port (outbox, console, fan-out, SES) and the email renderer |
+| `alerts/` | `AlertSink` port (outbox, console, fan-out, SES, webhook for ntfy, Discord and Slack) and the email renderer |
 | `config.ts` | Environment-driven adapter selection (`loadDeps`); picks the User-Agent contact and refuses a missing or placeholder contact URL for real sites |
 | `guard.ts` | Dashboard request guard: loopback or `GHOST_ALLOWED_HOSTS` Host only, same-origin POSTs only |
 | `server.ts`, `view.ts`, `ui/` | The dashboard: JSON API, view model, shared renderer, client script and theme |

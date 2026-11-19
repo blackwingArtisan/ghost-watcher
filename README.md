@@ -182,7 +182,7 @@ is selected by environment variable and loaded only when selected.
 | Port | Local (default) | Real (opt-in) | Select with |
 | --- | --- | --- | --- |
 | Storage | `FileBlobStore` under `.ghost-data/` (`MemoryBlobStore` for tests) | `S3BlobStore` (AWS SDK v3) | `GHOST_STORE=file\|memory\|s3`, `GHOST_S3_BUCKET`, `GHOST_S3_PREFIX`, `AWS_REGION` |
-| Alerts | `OutboxAlertSink` (`.eml`, HTML preview, `outbox.jsonl`), `ConsoleAlertSink` | `SesEmailAlertSink` (SES v2) | `GHOST_ALERTS=outbox,console,ses` (comma-separated), `GHOST_SES_FROM`, `GHOST_ALERT_TO` |
+| Alerts | `OutboxAlertSink` (`.eml`, HTML preview, `outbox.jsonl`), `ConsoleAlertSink` | `SesEmailAlertSink` (SES v2), `WebhookAlertSink` (ntfy, Discord, Slack or plain JSON) | `GHOST_ALERTS=outbox,console,ses,webhook` (comma-separated), `GHOST_SES_FROM`, `GHOST_ALERT_TO`, `GHOST_WEBHOOK_URL`, `GHOST_WEBHOOK_FORMAT` |
 | Fetching | `PoliteFetcher` over `fetch` | the same fetcher, pointed at real sites | `GHOST_CONTACT_URL`, `GHOST_HOST_GAP_MS`, `GHOST_TIMEOUT_MS` |
 | History | off (`demo` uses the fixture site's stand-in archive) | `WaybackHistorySource` (Internet Archive CDX API, free, no key) | `GHOST_HISTORY=wayback`, `GHOST_HISTORY_BASE`, `GHOST_HISTORY_LIMIT` |
 | Dashboard access | loopback hosts only | a deployed hostname | `GHOST_ALLOWED_HOSTS` (comma-separated; Render's `RENDER_EXTERNAL_HOSTNAME` is added automatically) |

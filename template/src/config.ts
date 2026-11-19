@@ -4,7 +4,11 @@
  *
  *   GHOST_DATA_DIR         where local data lives (default ./.ghost-data)
  *   GHOST_STORE            file (default) | memory | s3      (s3 needs GHOST_S3_BUCKET)
- *   GHOST_ALERTS           outbox (default) | console | ses  (ses needs GHOST_SES_FROM)
+ *   GHOST_ALERTS           outbox (default) | console | ses | webhook, comma-separated (ses needs
+ *                          GHOST_SES_FROM; webhook needs GHOST_WEBHOOK_URL)
+ *   GHOST_WEBHOOK_URL      where webhook alerts go: an ntfy topic URL, a Discord or Slack webhook, or
+ *                          your own endpoint (https, unless it is on this machine)
+ *   GHOST_WEBHOOK_FORMAT   ntfy | discord | slack | json (default: detected from the URL)
  *   GHOST_ALERT_TO         comma-separated recipients (defaults to the app's invented demo address)
  *   GHOST_CONTACT_URL      contact URL sent in the User-Agent (overrides the app's optional one; required
  *                          for real sites, unnecessary when every watch is on a loopback or reserved host)
@@ -21,6 +25,7 @@ import { systemClock, type Clock } from './clock';
 import { PoliteFetcher, buildUserAgent, type Fetcher } from './fetcher';
 import { WAYBACK_BASE, WaybackHistorySource, type HistorySource } from './history';
 import { ConsoleAlertSink, FanOutAlertSink, OutboxAlertSink } from './alerts/sinks';
+import { WEBHOOK_FORMATS, WebhookAlertSink, type WebhookFormat } from './alerts/webhook';
 import type { AlertSink } from './alerts/types';
 import { FileBlobStore, MemoryBlobStore, type BlobStore } from './store/blob';
 import { GhostStore } from './store/ghost-store';
@@ -83,7 +88,9 @@ async function makeSink(env: Env, dataDir: string): Promise<{ sink: AlertSink; o
   const kinds = (env.GHOST_ALERTS ?? 'outbox').split(',').map((k) => k.trim()).filter(Boolean);
   const sinks: AlertSink[] = [];
   let outbox: OutboxAlertSink | undefined;
+  const labels: string[] = [];
   for (const kind of kinds) {
+    labels.push(kind);
     if (kind === 'outbox') {
       outbox = new OutboxAlertSink(join(dataDir, 'outbox'));
       sinks.push(outbox);
@@ -100,13 +107,37 @@ async function makeSink(env: Env, dataDir: string): Promise<{ sink: AlertSink; o
           clientConfig: env.AWS_REGION ? { region: env.AWS_REGION } : {},
         }),
       );
+    } else if (kind === 'webhook') {
+      const sink = makeWebhook(env);
+      sinks.push(sink);
+      // The URL can carry a secret token, so only the format is shown.
+      labels[labels.length - 1] = `webhook (${sink.format})`;
     } else {
-      throw new ConfigError(`GHOST_ALERTS entries must be outbox, console or ses, got "${kind}".`);
+      throw new ConfigError(`GHOST_ALERTS entries must be outbox, console, ses or webhook, got "${kind}".`);
     }
   }
   if (sinks.length === 0) throw new ConfigError('GHOST_ALERTS selects no alert sink.');
   const sink = sinks.length === 1 ? (sinks[0] as AlertSink) : new FanOutAlertSink(sinks);
-  return { sink, ...(outbox ? { outbox } : {}), label: kinds.join(' + ') };
+  return { sink, ...(outbox ? { outbox } : {}), label: labels.join(' + ') };
+}
+
+function makeWebhook(env: Env): WebhookAlertSink {
+  const raw = env.GHOST_WEBHOOK_URL?.trim();
+  if (!raw) throw new ConfigError('GHOST_ALERTS=webhook needs GHOST_WEBHOOK_URL (an ntfy topic, Discord or Slack webhook, or your own endpoint).');
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new ConfigError('GHOST_WEBHOOK_URL is not a valid URL.');
+  }
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && !visitsThirdParty(url.toString()))) {
+    throw new ConfigError('GHOST_WEBHOOK_URL must use https unless it points at this machine.');
+  }
+  const format = env.GHOST_WEBHOOK_FORMAT?.trim();
+  if (format && !WEBHOOK_FORMATS.includes(format as WebhookFormat)) {
+    throw new ConfigError(`GHOST_WEBHOOK_FORMAT must be one of ${WEBHOOK_FORMATS.join(', ')}, got "${format}".`);
+  }
+  return new WebhookAlertSink({ url: url.toString(), ...(format ? { format: format as WebhookFormat } : {}) });
 }
 
 function makeHistory(env: Env, userAgent: string, hasContact: boolean): { history?: HistorySource; label: string } {

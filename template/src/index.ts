@@ -40,3 +40,4 @@ export { runCli, parseFlags, describeResult, type CliOptions } from './cli';
 // in `config.ts` and here only as types.
 export type { S3BlobStore } from './store/s3';
 export type { SesEmailAlertSink } from './alerts/ses';
+export { WebhookAlertSink, buildWebhookRequest, compactText, detectWebhookFormat, type WebhookFormat, type WebhookRequest } from './alerts/webhook';

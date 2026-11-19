@@ -202,7 +202,7 @@ describe('configuration', () => {
   it('explains what cloud adapters need instead of failing later', async () => {
     await expect(loadDeps(app, { env: { GHOST_DATA_DIR: dir, GHOST_STORE: 's3' } })).rejects.toThrow(ConfigError);
     await expect(loadDeps(app, { env: { GHOST_DATA_DIR: dir, GHOST_ALERTS: 'ses' } })).rejects.toThrow(/GHOST_SES_FROM/);
-    await expect(loadDeps(app, { env: { GHOST_DATA_DIR: dir, GHOST_ALERTS: 'pigeon' } })).rejects.toThrow(/outbox, console or ses/);
+    await expect(loadDeps(app, { env: { GHOST_DATA_DIR: dir, GHOST_ALERTS: 'pigeon' } })).rejects.toThrow(/outbox, console, ses or webhook/);
     await expect(loadDeps(app, { env: { GHOST_DATA_DIR: dir, GHOST_INTERVAL_MINUTES: '-5' } })).rejects.toThrow(/non-negative/);
   });
 

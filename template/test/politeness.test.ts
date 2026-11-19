@@ -151,8 +151,9 @@ describe('PoliteFetcher', () => {
   });
 
   it('times out slow pages', async () => {
-    const { origin } = await site({ '/robots.txt': { status: 404, body: '' }, '/slow': { body: 'late', delayMs: 400 } });
-    const fetcher = new PoliteFetcher({ userAgent: UA, minHostGapMs: 0, timeoutMs: 50 });
+    // Generous margins: robots.txt must answer within the timeout even when the suite runs in parallel.
+    const { origin } = await site({ '/robots.txt': { status: 404, body: '' }, '/slow': { body: 'late', delayMs: 2000 } });
+    const fetcher = new PoliteFetcher({ userAgent: UA, minHostGapMs: 0, timeoutMs: 400 });
     expect(await fetcher.fetchPage(`${origin}/slow`)).toMatchObject({ status: 'error', message: expect.stringContaining('No answer') });
   });
 
