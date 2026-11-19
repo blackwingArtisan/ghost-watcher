@@ -90,6 +90,9 @@ One reusable template and two apps built from it, each in its own folder:
   banner instead of a routine fine-print note.
 - **Plain-English alerts.** The outbox writes each alert as an `.eml` file, an HTML preview and an
   index line. It works with no accounts. Amazon SES is an opt-in adapter.
+- **Two apps look like two apps.** The Bonus Crypt's ghosts haunt tombstones; Haunted Listings'
+  ghosts haunt gabled houses whose windows light up when a listing worth knowing about appears.
+  Each app sets its colors, crest word and motif in one `theme` line.
 - **A haunted dashboard.** Each watch is a ghost on a tombstone. It sleeps while nothing changes,
   glows when something does, and fades when robots.txt says no or the page's layout has changed.
   Click a ghost to open the séance: what is on the page now, what it said before, and a word-level

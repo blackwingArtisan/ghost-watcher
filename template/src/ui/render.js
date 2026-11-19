@@ -285,11 +285,11 @@ export function renderPage(state, assets) {
 <link rel="stylesheet" href="/ui/style.css">
 <style>:root{${themeVars}}</style>
 </head>
-<body>
+<body data-motif="${esc(state.app.motif || 'stone')}">
 <div class="sky" aria-hidden="true"><div class="stars"></div><div class="moon"></div><div class="fog fog--far"></div><div class="fog fog--near"></div></div>
 <a class="skip" href="#graveyard">Skip to the ghosts</a>
 <header class="masthead">
-  <div class="masthead__crest" aria-hidden="true">${ghostSvg('restless')}</div>
+  <div class="masthead__crest" aria-hidden="true">${ghostSvg('restless')}<span class="masthead__crest-word">${esc(state.app.crest || 'Watch')}</span></div>
   <div class="masthead__text">
     <p class="eyebrow">Ghost Watcher · ${esc(state.app.watchNoun)}</p>
     <h1>${esc(state.app.name)}</h1>

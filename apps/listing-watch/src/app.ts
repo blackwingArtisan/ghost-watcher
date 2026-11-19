@@ -25,7 +25,7 @@ export function buildApp(env: Env = process.env): GhostApp {
     tagline: 'Ghosts that prowl rental listings and city permit filings, and knock only when something fits.',
     version: '0.1.0',
     alertTo: ['night.owl.renter@example.com'],
-    theme: { accent: '#ffad5c', accentSecondary: '#b89cff', sky: '#140f1f', moon: '#ffe3c2', crest: 'Lantern' },
+    theme: { accent: '#ffad5c', accentSecondary: '#b89cff', sky: '#140f1f', moon: '#ffe3c2', crest: 'Lantern', motif: 'house' },
     copy: {
       watchNoun: 'listings and permits',
       quiet: 'No new listing or permit has matched your filters yet.',

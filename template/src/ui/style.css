@@ -217,6 +217,60 @@ body[data-restless='true'] .moon {
 .masthead__crest .g-body {
   fill: #f6f2ff;
 }
+.masthead__crest-word {
+  display: block;
+  margin-top: 2px;
+  text-align: center;
+  font: 400 0.95rem/1 var(--display);
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--accent) 70%, var(--ink));
+}
+
+/* ---------- motif: a gabled haunted house instead of a tombstone ---------- */
+
+[data-motif='house'] .ghost__stone {
+  margin-top: 26px;
+  padding-top: 30px;
+  border-radius: 4px 4px 10px 10px;
+  border-top: 0;
+}
+/* The roof, as wide as the house, with a lit attic window. */
+[data-motif='house'] .ghost__stone::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  right: -10px;
+  top: -44px;
+  height: 46px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background:
+    radial-gradient(circle at 50% 62%, var(--house-window, rgba(255, 255, 255, 0.08)) 0 7px, transparent 8px),
+    repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.22) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #4a3f68, #2d2645);
+  z-index: 0;
+}
+/* Two windows on the facade. They stay dark until a listing the filters care about appears. */
+[data-motif='house'] .ghost__stone::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 14px;
+  right: 14px;
+  height: 14px;
+  background:
+    linear-gradient(var(--house-window, rgba(255, 255, 255, 0.07)), var(--house-window, rgba(255, 255, 255, 0.07))) left / 22px 14px no-repeat,
+    linear-gradient(var(--house-window, rgba(255, 255, 255, 0.07)), var(--house-window, rgba(255, 255, 255, 0.07))) right / 22px 14px no-repeat;
+  border-radius: 2px;
+}
+[data-motif='house'] .ghost[data-state='restless'] .ghost__stone {
+  --house-window: color-mix(in srgb, var(--accent) 85%, #fff3c4);
+}
+[data-motif='house'] .ghost[data-state='restless'] .ghost__stone::after {
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+[data-motif='house'] .ghost__spirit {
+  margin-bottom: -18px;
+}
 
 .eyebrow {
   margin: 0;

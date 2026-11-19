@@ -85,6 +85,8 @@ export interface DashboardState {
     store: string;
     alerts: string;
     history: string;
+    crest: string;
+    motif: 'stone' | 'house';
     /** True when the dashboard runs in demo mode (the server sets it). */
     demo?: boolean;
   };
@@ -196,6 +198,8 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
       store: deps.describe.store,
       alerts: deps.describe.alerts,
       history: deps.describe.history,
+      crest: app.theme.crest ?? 'Watch',
+      motif: app.theme.motif ?? 'stone',
     },
     ghosts,
     feed: feed.slice(0, 30),

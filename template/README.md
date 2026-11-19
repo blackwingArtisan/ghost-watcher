@@ -25,7 +25,7 @@ export function buildApp(env: Env = process.env) {
     // contactUrl: 'https://your-domain.example/price-watch', // add a real page before watching live sites
     alertTo: ['shopper@example.com'],
     copy: { watchNoun: 'shop pages', quiet: 'Nothing has stirred yet.' },
-    theme: { accent: '#ffb86b', crest: 'Till' },
+    theme: { accent: '#ffb86b', crest: 'Till', motif: 'stone' }, // or motif: 'house' for apps about places
     watches: [
       defineWatch({
         id: 'lantern-sale',

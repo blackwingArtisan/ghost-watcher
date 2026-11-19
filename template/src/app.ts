@@ -10,8 +10,10 @@ export interface Theme {
   sky: string;
   /** The moon's color; tint it to set the mood. */
   moon?: string;
-  /** Emoji-free one-word motif shown in the header crest, e.g. `Crypt`. */
+  /** Emoji-free one-word motif engraved under the header crest, e.g. `Crypt`. */
   crest?: string;
+  /** What each ghost haunts: a tombstone (default) or a gabled haunted house, for apps about places. */
+  motif?: 'stone' | 'house';
 }
 
 export interface AppCopy {
@@ -48,6 +50,7 @@ export const DEFAULT_THEME: Theme = {
   sky: '#120f22',
   moon: '#f3ecd2',
   crest: 'Watch',
+  motif: 'stone',
 };
 
 export function defineApp(app: Omit<GhostApp, 'theme'> & { theme?: Partial<Theme> }): GhostApp {

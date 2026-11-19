@@ -7,8 +7,8 @@ import AxeBuilder from '@axe-core/playwright';
  * they never trigger a check, so they leave the other specs' state alone.
  */
 const DASHBOARDS = [
-  { app: 'bonus-watch', url: 'http://127.0.0.1:3134', title: 'The Bonus Crypt' },
-  { app: 'listing-watch', url: 'http://127.0.0.1:3136', title: 'Haunted Listings' },
+  { app: 'bonus-watch', url: 'http://127.0.0.1:3134', title: 'The Bonus Crypt', motif: 'stone', crest: 'Crypt' },
+  { app: 'listing-watch', url: 'http://127.0.0.1:3136', title: 'Haunted Listings', motif: 'house', crest: 'Lantern' },
 ];
 
 for (const { app, url, title } of DASHBOARDS) {
@@ -57,7 +57,13 @@ for (const { app, url, title } of DASHBOARDS) {
   });
 }
 
-for (const { app, url } of DASHBOARDS) {
+for (const { app, url, motif, crest } of DASHBOARDS) {
+  test(`${app}: haunts its own motif under its own crest`, async ({ page }) => {
+    await page.goto(url);
+    await expect(page.locator('body')).toHaveAttribute('data-motif', motif);
+    await expect(page.locator('.masthead__crest-word')).toHaveText(crest);
+  });
+
   test(`${app}: axe finds no WCAG 2.1 A or AA violations on the graveyard or the séance`, async ({ page }) => {
     // Colors are measured at rest: a drawer caught mid-fade would blend into its background.
     await page.emulateMedia({ reducedMotion: 'reduce' });
