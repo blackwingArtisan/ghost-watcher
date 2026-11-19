@@ -162,10 +162,14 @@ Kiro planned this repo before any code was written. Everything it used and produ
   `normalize.ts`, `diff.ts` or `rules.ts` is saved. They use Kiro's `v1` hook file format
   (`PostFileSave` and `Stop` triggers), which Kiro IDE 1.0 and CLI V3 load from `.kiro/hooks/*.json`.
 
+- [`.kiro/settings/mcp.json`](.kiro/settings/mcp.json): MCP servers for Kiro sessions, pinned: the AWS
+  Documentation server (for the SES and S3 adapters) and Context7 (library docs). They are
+  configured for the next Kiro session; no logged Kiro call has used them yet.
+
 [`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the exact prompt, the files produced, the
 errors hit along the way, and the one requirement that was revised by hand.
 
-A three-minute walkthrough for a demo video is in [`docs/demo-script.md`](docs/demo-script.md).
+A three-minute walkthrough for a demo video, beat by beat, is in [`docs/demo-script.md`](docs/demo-script.md).
 
 ## How to run
 
@@ -278,6 +282,20 @@ documentation-only domain (the fixture and demo sites), the User-Agent says
 third-party site and `GHOST_CONTACT_URL` is unset or names a documentation-only domain such as
 `example.com`, so set it to a page you control before watching live sites. A placeholder is never
 sent as a contact.
+
+## Beyond Kiroween
+
+- **Free to self-host.** The template and both apps are MIT-licensed and run on one machine with
+  no accounts. The S3, SES and webhook adapters are there for running it unattended.
+- **A small hosted tier would be the next step.** For example, 25 ghosts with phone alerts for a few
+  dollars a month. People already pay for page watching: changedetection.io's hosted plan is
+  $8.99/month and Visualping's Personal plan starts at $14/month for 1,000 checks (both from their
+  own pages, checked 2026-11-18).
+- **Why now.** Terms change quietly, and generic watchers alert on so much noise that people
+  mute them. A watcher that understands money, dates and fine print can afford to be loud.
+- **More hauntings on the same skeleton.** Price drops on a short list of products, terms-of-service
+  pages (a clause added or removed), and course or class seats opening up. Each is one `app.ts`
+  plus a fixture site.
 
 ## Disclaimer
 
