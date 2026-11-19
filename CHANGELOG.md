@@ -11,6 +11,8 @@
 - **Positioning.** The README and the Bonus Crypt's subtitle now lead with terms drift and one
   persona, bonus hunters, with a sourced community size and the yearly stake. Beyond Kiroween
   names two tiers, a sourced market anchor and a dated reason for now.
+- **For judges.** A short box at the top of the README: the category, the 60-second path, and one
+  evidence link each for the spec, steering, hooks, authorship and tests.
 - **Kiro log.** `KIRO-LOG.md` now opens with what Kiro built and a who-wrote-what table, and the
   README no longer claims every spec task is checked off (11 open gaps are listed in `tasks.md`).
 - **Good news, bad news.** Fields declare which direction is `better`, and rules can set a `tone`.

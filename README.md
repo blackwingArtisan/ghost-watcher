@@ -6,11 +6,26 @@
 [Why not a page watcher you already know?](#why-not-changedetectionio-visualping-or-distill) ·
 [Built with Kiro](#built-with-kiro) · [Kiro log](KIRO-LOG.md) · [Demo script](docs/demo-script.md)
 
+### For judges
+
+Kiroween 2026, **Skeleton Crew**: one template, two apps that look and behave differently
+(the Bonus Crypt and Haunted Listings), each a single `app.ts` on the shared skeleton.
+
+| | Where to look |
+| --- | --- |
+| 60 seconds | `npm install && npm run bonus`, open http://127.0.0.1:3130, press **N** to let a night pass |
+| Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code |
+| Steering | [`.kiro/steering/`](.kiro/steering/): product, tech and structure, `inclusion: always` |
+| Hooks | [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and the `money-guard` agent hook Kiro wrote ([log](KIRO-LOG.md#what-kiro-built)) |
+| Who wrote what | [KIRO-LOG.md](KIRO-LOG.md#who-wrote-what) |
+| Tests | `npm test`: type-check, 216 Vitest tests and 16 Playwright tests, all against `127.0.0.1` |
+
 Ghost Watcher catches **terms drift**: the quiet bonus cut, the new monthly fee, the eligibility
 window slipped into the fine print while the headline offer stays the same. It is a skeleton for
 small, polite watchers. You name the parts of a page that matter (a bonus amount, a deadline, the
-fine print, a table of listings), and a ghost haunts them. It sleeps through the noise: timestamps, rotating banners, reordered lists, `$300`
-becoming `$300.00`. When something real changes, it wakes and tells you in one plain sentence:
+fine print, a table of listings), and a ghost haunts them. It sleeps through the noise: timestamps,
+rotating banners, reordered lists, `$300` becoming `$300.00`. When something real changes, it wakes
+and tells you in one plain sentence:
 
 > Bonus went up from $300 to $400 (+$100).
 >
