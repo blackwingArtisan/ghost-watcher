@@ -221,6 +221,9 @@ npm run noise          # print the noise-ratio table above
 npm run hero           # re-record docs/bonus-crypt-night.gif from the demo (needs ffmpeg)
 ```
 
+[`.github/workflows/test.yml`](.github/workflows/test.yml) runs the same `npm test` on pushes to
+`main` and on pull requests. Notable changes are listed in [`CHANGELOG.md`](CHANGELOG.md).
+
 Playwright starts the fixture sites and dashboards itself on ports 3134 to 3139 (3138-3139 run one app in `demo` mode).
 
 ## Architecture
