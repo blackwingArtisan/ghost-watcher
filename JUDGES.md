@@ -21,19 +21,21 @@ The fastest look: `npm install && npm run bonus`, open http://127.0.0.1:3130/?ni
 
 | Claim | Evidence |
 | --- | --- |
-| Tested end to end | `npm test`: type-check, 224 Vitest tests, 17 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
+| Tested end to end | `npm test`: type-check, 348 Vitest tests, 27 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
 | Fewer false alarms, measured | `npm run noise`: 10 alerts, none false, none missed, against 77 (67 false) from a whole-page watcher on the same responses; pinned by `template/test/noise.test.ts` |
 | Money is exact | Integer cents and BigInt-safe arithmetic in `template/src/normalize.ts`, tests in `template/test/money.test.ts` (built by Kiro) |
 | Polite by construction | RFC 9309 robots.txt parsing, per-host locks, Crawl-delay, back-off and an honest User-Agent in `template/src/robots.ts` and `template/src/fetcher.ts`; the watcher refuses real sites without a contact URL (`template/src/config.ts`) |
 | Proof that holds up | SHA-256 over the exact stored bytes plus an Internet Archive Save Page Now copy (`template/src/receipts.ts`); `shasum -a 256` on the snapshot files reproduces the hashes |
 | Ports and adapters | Storage, alerts, history, receipts and fetching sit behind ports, with local defaults and opt-in S3, SES and webhook adapters ([docs/details.md](docs/details.md#adapters-local-vs-real)) |
 
-**Kiro.** Kiro wrote the EARS requirements, design and task list (`.kiro/specs/ghost-watcher-kit/`),
+**Kiro.** Kiro specced and built Seal the pact end to end (`.kiro/specs/seal-the-pact/`, 91 EARS
+criteria, 27 tasks, 4,526 lines with no hand fixes; transcripts in `docs/kiro-sessions/`). It also wrote
+the EARS requirements, design and task list (`.kiro/specs/ghost-watcher-kit/`),
 reviewed them against the code, built integer-cents money and the contact-URL policy, and wrote the
 `money-guard` agent hook. The Stop hook ran the full suite after a Kiro session and caught a stale
 assertion that Kiro fixed. Steering files are in `.kiro/steering/`, hooks in `.kiro/hooks/`, MCP
-servers in `.kiro/settings/mcp.json`. Most feature code was written outside Kiro with another AI
-coding assistant; [KIRO-LOG.md](KIRO-LOG.md) has every call and the who-wrote-what table.
+servers in `.kiro/settings/mcp.json`. The skeleton's first version and the earlier features were
+written with another AI coding assistant; [KIRO-LOG.md](KIRO-LOG.md) has every call and the who-wrote-what table.
 
 ## Design
 

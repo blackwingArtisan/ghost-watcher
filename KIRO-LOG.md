@@ -2,6 +2,15 @@
 
 ## What Kiro built
 
+- **Seal the pact, the headline feature, specced and built by Kiro.** Kiro wrote
+  `.kiro/specs/seal-the-pact/` (11 requirements, 91 EARS criteria, 27 tasks), then built all 27 tasks
+  in two sessions: "I applied today" on each Bonus Crypt stone seals the page's snapshot, SHA-256,
+  archived copy and date as your pact. Every later change is judged against the pact as well as last
+  night. The dispute pack quotes what the page promised the day you applied against today, and a
+  bonus-match letter asks for terms that improved. The demo pact is back-dated 40 days. Kiro wrote
+  4,526 of its lines, the developer none (calls 5 to 7 below).
+- **Overridable e2e ports.** Kiro moved every Playwright port into `e2e/ports.ts` behind
+  `GHOST_E2E_PORT`, with tests (call 4).
 - **The spec.** Kiro wrote the EARS requirements, the design and the task list in
   `.kiro/specs/ghost-watcher-kit/` (call 2), then audited them against the code, tightened every
   acceptance criterion and recorded 11 gaps as new tasks (call 3).
@@ -25,9 +34,11 @@
 | Integer-cents money, contact URL policy, their tests | Kiro (call 3) |
 | `test-on-save` and `full-suite-on-stop` hooks | Outside Kiro; Kiro narrowed the matcher and validated both (call 3) |
 | `money-guard` agent hook | Kiro (call 3) |
+| Seal the pact: spec, pact store, comparison, dispute and bonus-match letters, routes, dashboard, demo seeding, 120 Vitest and 10 Playwright tests | Kiro (calls 5 to 7); the developer ran the shell and the checks and changed no line |
+| Overridable e2e ports (`e2e/ports.ts`) and its tests | Kiro (call 4) |
 | Later features (Ghost of Terms Past, bait and switch, receipts, noise table, webhook, dashboard polish) | Outside Kiro, with Claude Code; see [CHANGELOG.md](CHANGELOG.md) |
 
-Three `kiro-cli` calls were made. None used `--trust-all-tools`; each was given an explicit list of
+Seven `kiro-cli` calls were made. None used `--trust-all-tools`; each was given an explicit list of
 trusted tools. Call 1 drafted the spec but could not save it; the lesson (name the tools the v3
 engine uses) made call 2 work.
 
@@ -280,3 +291,37 @@ running Playwright afterwards are shortened to `[...]`.
 - `e2e/bonus-watch.spec.ts` still expected the old `example.com` User-Agent; it now expects the
   local-only token. The bonus-watch spec passes, the other 11 e2e tests passed in the full run, and
   task 19.3 is checked.
+
+## Calls 4 to 7: Seal the pact, built by Kiro (kiro-cli 3.5, 2026-11-19)
+
+The judges' top-ranked feature was built by Kiro from a spec Kiro wrote. The developer ran each
+session, ran every check from a fresh clone, read the diffs, re-took the screenshots and committed
+between sessions. No line of Kiro's code needed a fix. Each transcript holds the exact prompt and
+Kiro's full output.
+
+| Call | What Kiro did | Time | Credits | Lines Kiro added | Transcript |
+|---|---|---|---|---|---|
+| 4: e2e ports | Put every Playwright port in `e2e/ports.ts` behind `GHOST_E2E_PORT` (default 3134), with tests; no spec hardcodes a port | 2 min 17 s | 1.59 | 114 | [session 1](docs/kiro-sessions/session-1-e2e-ports.md) |
+| 5: spec | Wrote `.kiro/specs/seal-the-pact/`: 11 requirements, 91 EARS criteria, a design naming the real modules, and 27 tasks in two sessions with a traceability table | 7 min 59 s | 11.20 | 967 | [session 2](docs/kiro-sessions/session-2-seal-the-pact-spec.md) |
+| 6: tasks 1-13 | `pact.ts`, `sealing.ts`, pact storage in `GhostStore`, the runner's pact comparison, pact-dated dispute packs and the bonus-match letter; 86 new Vitest tests | 8 min 33 s | 17.49 | 2,003 | [session 3](docs/kiro-sessions/session-3-pact-domain.md) |
+| 7: tasks 14-27 | Routes, the "I applied today" button, sealed chip, pact section, confirm panels, demo seeding 40 days back, README paragraph; 34 Vitest and 10 Playwright tests, including axe scans | 11 min 42 s | 24.26 | 1,556 | [session 4](docs/kiro-sessions/session-4-pact-dashboard.md) |
+
+- **Command** (repo root, stdin closed): `GHOST_E2E_PORT=3840 kiro-cli chat --v3 --no-interactive
+  --trust-workspace --trust-tools=fs_read,fs_write,run_command[,@context7] "<prompt>" </dev/null`.
+- **Credits:** 54.54 in total, read with `/usage` before and after each call.
+- **Who wrote what:** Kiro wrote all 4,640 added lines across the four calls; the developer changed
+  none of them. The developer's own additions were the session transcripts in `docs/kiro-sessions/`
+  and this log.
+- **Kiro's judgement calls**, all in the transcripts: a pact whose snapshot file is missing must not
+  block a new seal (a test caught it, and Kiro changed the read); a restored pack keeps today's text
+  with the date filled; listing-watch's API stays byte-identical because it does not turn pacts on.
+- **Decisions the developer made** on the spec's four open questions: keep Kiro's defaults. Packs use
+  the stored URL (display-host rewriting is a separate item), the demo pact has no archived copy,
+  sealing uses the latest stored reading, and alerts keep a copy of the pact.
+- **Tests:** Vitest 224 to 348, Playwright 17 to 27, all from a fresh clone with
+  `GHOST_E2E_PORT=3840`.
+- **Screenshots:** Kiro screenshotted its own UI and fixed a hash that wrapped on the sealed stone.
+  The developer re-took the demo at 1360 px and 390 px: the pack reads "Oct 10, 2026, the day you
+  applied" against "Nov 19, 2026: what it says now", with no horizontal scroll.
+- **Open:** packs in the demo still show the fixture host `127.0.0.1:<port>` rather than a display
+  name, which is a separate item. Haunted Listings does not use pacts yet.

@@ -30,10 +30,10 @@ Crypt and Haunted Listings), each a single `app.ts` on the shared skeleton.
 | --- | --- |
 | 60 seconds | `npm install && npm run bonus`, open http://127.0.0.1:3130/?night=1 (the night passes as it loads), then **Raise the dead** on the Bait and switch letter |
 | Criteria to evidence | [JUDGES.md](JUDGES.md): each judging criterion mapped to files, commands and numbers |
-| Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code |
+| Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code. [`.kiro/specs/seal-the-pact/`](.kiro/specs/seal-the-pact/): the headline feature, specced and then built by Kiro |
 | Steering and hooks | [`.kiro/steering/`](.kiro/steering/) (always included) and [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and Kiro's `money-guard` agent hook |
 | Who wrote what | [KIRO-LOG.md](KIRO-LOG.md#who-wrote-what) |
-| Tests | `npm test`: type-check, 224 Vitest tests and 17 Playwright tests, all against `127.0.0.1` |
+| Tests | `npm test`: type-check, 348 Vitest tests and 27 Playwright tests, all against `127.0.0.1` |
 
 ### Try it in 60 seconds
 
@@ -124,12 +124,15 @@ Feature details were checked against each product's own pages on 2026-11-18; the
 
 ## Built with Kiro
 
-Kiro wrote the spec this repo is built against, reviewed it against the code, and built the
-integer-cents money change and the contact-URL policy with their tests. Its hooks run the tests on
-save and the full suite when an agent turn ends (which caught a stale assertion Kiro then fixed), and
-it wrote the `money-guard` agent hook. Most feature code was written outside Kiro, against Kiro's
-spec, with another AI coding assistant; [KIRO-LOG.md](KIRO-LOG.md) records every Kiro call and who
-wrote what.
+Kiro specced and built the headline feature, **Seal the pact**: it wrote
+`.kiro/specs/seal-the-pact/` (91 EARS criteria, 27 tasks) and then all of its code and tests in two
+`kiro-cli` sessions (4,526 lines, 120 Vitest and 10 Playwright tests, 52.95 credits), with no line
+fixed by hand. Kiro also wrote the spec the skeleton is built against, reviewed it against the code,
+built the integer-cents money change, the contact-URL policy and the overridable e2e ports, and wrote
+the `money-guard` agent hook. Its hooks run the tests on save and the full suite when an agent turn
+ends (which caught a stale assertion Kiro then fixed). The skeleton's first version and the earlier
+features were written against Kiro's spec with another AI coding assistant.
+[KIRO-LOG.md](KIRO-LOG.md) records every Kiro call, its transcript and who wrote what.
 
 ## Beyond Kiroween
 
