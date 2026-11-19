@@ -1,7 +1,18 @@
 # Kiro log
 
+## TL;DR
+
+- **Three `kiro-cli` calls.** Call 1 drafted the spec but could not write it (tool permissions). Call 2
+  wrote the spec. Call 3 (Kiro pass 2) reviewed the spec against the code and built two tasks with tests.
+- **Kiro wrote** the EARS requirements, the design and the task list in `.kiro/specs/ghost-watcher-kit/`,
+  plus the integer-cents money change and the contact URL change. The three steering files came first.
+- **Hooks:** three files in `.kiro/hooks/` (two command hooks, one agent hook). In call 3 the Stop hook ran
+  the full suite, caught one stale end-to-end assertion, and Kiro fixed it in the same session.
+- **By hand:** one requirement (REQ-DIFF-09) and the review fixes listed below. Every change is described here.
+- **Open:** ten spec tasks (21.3 to 21.11 and 19.4) are recorded in `tasks.md` and not built yet.
+
 This file records every call made to Kiro (`kiro-cli`) while building Ghost Watcher: what was asked,
-which files Kiro produced, and what went wrong. Two calls were made in total. Neither used
+which files Kiro produced, and what went wrong. Three calls were made in total. None used
 `--trust-all-tools`; each call was given an explicit list of trusted tools.
 
 ## Before the calls
@@ -77,9 +88,8 @@ Kiro also raised two design decisions on its own, and the code follows both:
 
 The run took about 9.5 minutes. Along the way the service throttled the session several times
 (HTTP 429 `ThrottlingException`, reason `CREDIT_CONSUMPTION_RATE_EXCEEDED`, retry after 300 s). The
-CLI waited and retried, and the run finished successfully. Request IDs from the throttled responses:
-`ba0e8cb0-9937-48b7-aeb8-6ac151ef4e38`, `ffa91d5f-3e0b-4b34-b463-f3369c9183c4`,
-`77a148bc-6619-4436-950f-1a52c196c803`. The CLI did not print any credit usage figures.
+CLI waited and retried, and the run finished successfully. The request IDs are listed in the
+[appendix](#appendix-throttled-request-ids). The CLI did not print any credit usage figures.
 
 ## Hand edits after Kiro
 
@@ -96,19 +106,22 @@ CLI waited and retried, and the run finished successfully. Request IDs from the 
 
 ## Hooks
 
-`.kiro/hooks/` holds two agent hooks used while building:
+`.kiro/hooks/` holds three hook files: two command hooks written before call 3, and one agent hook
+added by Kiro in call 3.
 
-- `test-on-save.json`: on `PostFileSave` of any `.ts` or `.js` file, runs
-  `npm run typecheck && npm run test:unit`.
-- `full-suite-on-stop.json`: on `Stop`, runs `npm test` (type-check, unit and end-to-end).
+- `test-on-save.json` (command): on `PostFileSave` of a source or test file, runs
+  `npm run typecheck && npm run test:unit`. Call 3 narrowed its matcher (see below).
+- `full-suite-on-stop.json` (command): on `Stop`, runs `npm test` (type-check, unit and end-to-end).
+- `money-guard.json` (agent): on `PostFileSave` of `normalize.ts`, `diff.ts` or `rules.ts`, restates
+  the integer-cents money rule and asks for a unit test.
 
 Both files follow the hook schema in the Kiro documentation (https://kiro.dev/docs/hooks/, checked
 2026-11-16): one JSON file per hook group in `.kiro/hooks/`, with `"version": "v1"`, a `hooks`
 array, PascalCase `trigger` names (`PostFileSave`, `Stop`), an optional `matcher` regular
 expression against the file path, and an `action` of type `command`. This is the format that Kiro
 IDE 1.0 and Kiro CLI V3 load automatically. The older IDE 0.x `*.kiro.hook` files with `when` and
-`then` keys are superseded by it. The commands themselves were run by hand during the build (they
-are the same `npm` scripts the test suite uses).
+`then` keys are superseded by it. Before call 3, the hook commands were run by hand during the build
+(they are the same `npm` scripts the test suite uses). In call 3 the Stop hook ran on its own.
 
 ## Changes after review
 
@@ -123,9 +136,9 @@ A review of a clean clone raised three points, handled by hand without further K
 - **First impression.** `demo` mode now takes the baseline at startup and adds a **Let a night
   pass** button, so the first click already shows a change. Added as REQ-DEMO-01 and task 20.3.
 
-## Kiro pass 2 (kiro-cli v3, bonus credits)
+## Call 3: Kiro pass 2 (kiro-cli v3, bonus credits)
 
-- **When:** 2026-11-19, 01:43 to 01:59 UTC (16 min 12 s wall time, under a 25-minute cap; exit code 0).
+- **When:** 2026-11-19, 01:43 to 01:59 UTC (16 min 12 s wall time; exit code 0).
 - **Command** (repo root, stdin closed):
   `kiro-cli chat --v3 --no-interactive --trust-workspace --trust-tools=fs_read,fs_write,run_command "<prompt>" </dev/null`
 - **Credits used:** 29.75 of the 4,000 `kiroween2026` bonus credits (`/usage` read 29.38 before the call and 59.13 after).
@@ -134,7 +147,7 @@ A review of a clean clone raised three points, handled by hand without further K
   steering files, and ran `npm run typecheck` and `npm run test:unit` itself. When Kiro stopped, the workspace's
   own `full-suite-on-stop.json` hook ran `npm test` (including Playwright), which caught one stale e2e assertion;
   Kiro fixed it in the same session (see "Follow-up" below).
-- **After the call (operator):** full suite re-run: Vitest 156 of 156 (118 before the pass), Playwright 12 of 12.
+- **After the call (by hand):** full suite re-run: Vitest 156 of 156 (118 before the pass), Playwright 12 of 12.
   Nothing needed fixing.
 
 ### Exact prompt
@@ -183,7 +196,7 @@ A review of a clean clone raised three points, handled by hand without further K
   - Checked: 3.2 and the two new tasks 21.1 (money) and 21.2 (contact URL), after code and tests
     landed. New task 6.9 (`itemRemoved`, `itemChanged`, severities) is checked because code and tests
     exist.
-  - Unchecked on review: 19.3 (later checked: the operator's run passed after one fix) and 19.4 (one config
+  - Unchecked on review: 19.3 (later checked: the full-suite run passed after one fix) and 19.4 (one config
     test builds the real AWS SDK clients, which breaks REQ-TEST-06.1).
   - Reworded to match the code: 2.1, 3.5, 5.2, 6.6, 9.2, 9.4, 10.1 to 10.4, 11.5, 12.2, 14.3, 14.4,
     17.2, 17.4, 18.2, 18.4, 19.5, 20.2, and the intro of the implementation notes.
@@ -251,3 +264,11 @@ A review of a clean clone raised three points, handled by hand without further K
 - `e2e/bonus-watch.spec.ts` still expected the old `example.com` User-Agent; it now expects the
   local-only token. The bonus-watch spec passes, the other 11 e2e tests passed in the full run, and
   task 19.3 is checked.
+
+## Appendix: throttled request IDs
+
+Request IDs from the HTTP 429 responses during call 2, kept for reference:
+
+- `ba0e8cb0-9937-48b7-aeb8-6ac151ef4e38`
+- `ffa91d5f-3e0b-4b34-b463-f3369c9183c4`
+- `77a148bc-6619-4436-950f-1a52c196c803`

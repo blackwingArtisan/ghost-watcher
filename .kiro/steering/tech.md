@@ -19,10 +19,10 @@ Every external effect goes through a small interface with a free local default:
 
 | Port | Local default (used by tests and dev) | Real adapter (written, opt-in) |
 |---|---|---|
-| `Fetcher` | `HttpFetcher` against local fixture servers | same `HttpFetcher` against live sites |
-| `SnapshotStore` | `JsonFileSnapshotStore`, `MemorySnapshotStore` | `S3SnapshotStore` (AWS SDK v3) |
-| `AlertSink` | `OutboxAlertSink` (JSON lines + rendered email files) | `SesEmailAlertSink` (Amazon SES v2) |
-| `Clock` | `systemClock`, `fixedClock` in tests | n/a |
+| `Fetcher` | `PoliteFetcher` against local fixture servers | the same `PoliteFetcher` against live sites |
+| `BlobStore` (wrapped by `GhostStore`) | `FileBlobStore`, `MemoryBlobStore` | `S3BlobStore` (AWS SDK v3) |
+| `AlertSink` | `OutboxAlertSink` (JSON lines + rendered email files), `ConsoleAlertSink` | `SesEmailAlertSink` (Amazon SES v2) |
+| `Clock` | `systemClock`, `manualClock` in tests | n/a |
 
 Adapters are chosen by environment variables (`GHOST_STORE`, `GHOST_ALERTS`). The default is always
 the local adapter. Tests never construct a real cloud client and never touch the network beyond
