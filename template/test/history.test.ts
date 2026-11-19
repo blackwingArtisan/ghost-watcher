@@ -11,6 +11,7 @@ import type { FetchOutcome, Fetcher, Transport } from '../src/fetcher';
 import {
   WaybackHistorySource,
   buildPastTimeline,
+  headlineOf,
   cdxQueryUrl,
   parseCdx,
   pastChangeCount,
@@ -138,6 +139,16 @@ describe('buildPastTimeline', () => {
     expect(timeline.entries[2]?.lines[0]).toContain('avoid relying on it for testing and monitoring purposes');
     expect(timeline.entries[3]).toMatchObject({ lines: ['Nothing watched has changed since the last archived copy.'], severity: null });
     expect(pastChangeCount(timeline)).toBe(2);
+    // Text changes have no amount, so there is no ribbon, but they still count toward fickleness.
+    expect(timeline.headline).toBeUndefined();
+    expect(timeline.fickleness).toMatchObject({ changes: 2, worse: 0, months: 23, label: 'fickle' });
+  });
+
+  it('calls a page that never changed steady', () => {
+    const page = (at: string): PastCapture => ({ capturedAt: at, html: '<html><body><p>Same words.</p></body></html>', archiveUrl: at });
+    const today = extract('<html><body><p>Same words.</p></body></html>', notice);
+    const timeline = buildPastTimeline(notice, [page('2026-01-10T00:00:00Z'), page('2026-04-10T00:00:00Z')], { takenAt: '2026-07-10T00:00:00Z', ...today }, 'x', '2026-07-10T00:00:00Z');
+    expect(timeline.fickleness?.text).toBe('Steady: nothing watched changed in 6 months of archived copies.');
   });
 
   it('skips copies in a layout the ghost cannot read, and explains an empty history', () => {
@@ -228,6 +239,18 @@ describe('Runner and the Ghost of Terms Past', () => {
     expect((await runner.check(bonusWatch)).status).toBe('baseline');
     expect((await store.pastTimeline('lantern'))?.note).toBe('Could not read a test archive: timed out');
     expect((await store.status('lantern')).lastMessage).toBe('First sighting recorded. The ghost now knows this page.');
+  });
+});
+
+describe('headlineOf', () => {
+  const money = (cents: number) => ({ kind: 'money' as const, amountMinor: cents, currency: 'USD', display: '' });
+  const base = { ruleKind: 'wentDown' as const, ruleLabel: '', severity: 'shriek' as const, summary: '' };
+  it('names the amount a value was cut or raised by, and skips dates and text', () => {
+    expect(headlineOf(bonusWatch, { ...base, field: 'bonus', before: money(50000), after: money(30000) })).toBe('Bonus cut $200');
+    expect(headlineOf(bonusWatch, { ...base, field: 'bonus', before: money(30000), after: money(40050) })).toBe('Bonus raised $100.50');
+    expect(headlineOf(bonusWatch, { ...base, field: 'bonus', before: { kind: 'text', text: 'a' }, after: { kind: 'text', text: 'b' } })).toBeNull();
+    const date = (iso: string) => ({ kind: 'date' as const, iso, display: iso });
+    expect(headlineOf(bonusWatch, { ...base, field: 'bonus', before: date('2026-01-01'), after: date('2026-02-01') })).toBeNull();
   });
 });
 

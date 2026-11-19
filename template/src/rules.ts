@@ -6,7 +6,7 @@ import type { Diff, FieldChange, ListChange } from './diff';
 import type { ListItem } from './extract';
 import { compareMinorToMajor, compareToTarget, textOf, type MaybeValue } from './normalize';
 import { describeFieldChange, describeItem, finish, sentences } from './summary';
-import type { FilterCondition, ListSpec, Rule, RuleKind, Severity, Watch } from './watch';
+import type { Better, FilterCondition, ListSpec, Rule, RuleKind, Severity, Tone, Watch } from './watch';
 
 export interface Finding {
   ruleKind: RuleKind;
@@ -21,6 +21,18 @@ export interface Finding {
   summary: string;
   /** Set when a `stealthEdit` rule marked this change: why it looks like a bait and switch. */
   stealth?: string;
+  /** Good or bad news for the reader. Left out when the change has no clear direction. */
+  tone?: Exclude<Tone, 'neutral'>;
+}
+
+/** Good or bad news, from the direction a numeric value moved and which direction is better. */
+export function toneOf(delta: number | undefined, better: Better | undefined): Exclude<Tone, 'neutral'> | undefined {
+  if (!better || delta === undefined || delta === 0) return undefined;
+  return (delta > 0) === (better === 'higher') ? 'good' : 'bad';
+}
+
+function withTone<T extends Finding>(finding: T, tone: Exclude<Tone, 'neutral'> | undefined): T {
+  return tone ? { ...finding, tone } : finding;
 }
 
 const DEFAULT_SEVERITY: Record<RuleKind, Severity> = {
@@ -194,10 +206,10 @@ function evaluateListRule(rule: Extract<Rule, { list: string }>, change: ListCha
     list: rule.list,
   };
   if (rule.kind === 'newItem' && change.type === 'itemAdded' && matchesFilter(change.item, rule.where)) {
-    return { ...base, item: change.item, summary: `New ${noun}: ${describeItem(spec, change.item)}.` };
+    return withTone({ ...base, item: change.item, summary: `New ${noun}: ${describeItem(spec, change.item)}.` }, rule.tone);
   }
   if (rule.kind === 'itemRemoved' && change.type === 'itemRemoved' && matchesFilter(change.item, rule.where)) {
-    return { ...base, item: change.item, summary: `${capitalize(noun)} gone: ${describeItem(spec, change.item)}.` };
+    return withTone({ ...base, item: change.item, summary: `${capitalize(noun)} gone: ${describeItem(spec, change.item)}.` }, rule.tone);
   }
   if (rule.kind === 'itemChanged' && change.type === 'itemChanged' && matchesFilter(change.after, rule.where)) {
     const fieldChange = change.changes.find((c) => c.field === rule.field);
@@ -207,13 +219,16 @@ function evaluateListRule(rule: Extract<Rule, { list: string }>, change: ListCha
       if (rule.direction === 'up' ? fieldChange.delta <= 0 : fieldChange.delta >= 0) return null;
     }
     const label = spec.fields[rule.field]?.label ?? rule.field;
-    return {
-      ...base,
-      item: change.after,
-      before: fieldChange.before,
-      after: fieldChange.after,
-      summary: `${describeItem(spec, change.after)}: ${describeFieldChange(label, fieldChange)}`,
-    };
+    return withTone(
+      {
+        ...base,
+        item: change.after,
+        before: fieldChange.before,
+        after: fieldChange.after,
+        summary: `${describeItem(spec, change.after)}: ${describeFieldChange(label, fieldChange)}`,
+      },
+      rule.tone ?? toneOf(fieldChange.delta, spec.fields[rule.field]?.better),
+    );
   }
   return null;
 }
@@ -241,15 +256,22 @@ export function evaluateRules(watch: Watch, d: Diff): Finding[] {
       if (change.field !== rule.field) continue;
       const summary = evaluateFieldRule(rule, change, watch);
       if (summary) {
-        findings.push({
-          ruleKind: rule.kind,
-          ruleLabel: describeRule(rule, watch),
-          severity: rule.severity ?? DEFAULT_SEVERITY[rule.kind],
-          field: change.field,
-          before: change.before,
-          after: change.after,
-          summary,
-        });
+        const better = watch.fields.find((f) => f.name === change.field)?.better;
+        const derived = change.type === 'removed' ? 'bad' : toneOf(change.delta, better);
+        findings.push(
+          withTone(
+            {
+              ruleKind: rule.kind,
+              ruleLabel: describeRule(rule, watch),
+              severity: rule.severity ?? DEFAULT_SEVERITY[rule.kind],
+              field: change.field,
+              before: change.before,
+              after: change.after,
+              summary,
+            },
+            rule.tone ?? derived,
+          ),
+        );
       }
     }
   }
@@ -275,7 +297,9 @@ function applyStealthEdits(watch: Watch, d: Diff, findings: Finding[]): Finding[
     const onField = result.filter((f) => f.field === rule.field && !f.list);
     if (onField.length > 0) {
       result = result.map((f) =>
-        f.field === rule.field && !f.list ? { ...f, stealth, severity: LOUDNESS[severity] > LOUDNESS[f.severity] ? severity : f.severity } : f,
+        f.field === rule.field && !f.list
+          ? { ...f, stealth, tone: 'bad' as const, severity: LOUDNESS[severity] > LOUDNESS[f.severity] ? severity : f.severity }
+          : f,
       );
       continue;
     }
@@ -290,6 +314,7 @@ function applyStealthEdits(watch: Watch, d: Diff, findings: Finding[]): Finding[
         after: change.after,
         summary: describeFieldChange(label, change),
         stealth,
+        tone: 'bad',
       },
     ];
   }

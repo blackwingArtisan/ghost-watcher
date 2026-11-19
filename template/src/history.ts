@@ -10,9 +10,9 @@ import { systemClock, type Clock } from './clock';
 import { diff, type Snapshot } from './diff';
 import { extract, type Extraction } from './extract';
 import type { Transport } from './fetcher';
-import { displayValue } from './normalize';
-import { evaluateRules } from './rules';
-import type { Severity, Watch } from './watch';
+import { displayValue, formatMinor, numericValue } from './normalize';
+import { evaluateRules, type Finding } from './rules';
+import type { Severity, Tone, Watch } from './watch';
 
 /** One archived copy of a page. */
 export interface PastCapture {
@@ -168,6 +168,33 @@ export interface PastEntry {
   /** Plain sentences: the values on the oldest copy, or what changed. */
   lines: string[];
   severity: Severity | null;
+  /** Bad when any change in this step was bad news, else good when any was good news. */
+  tone?: Exclude<Tone, 'neutral'>;
+}
+
+/** The one past change worth putting on the stone: "Bonus cut $200 in June". */
+export interface PastHeadline {
+  text: string;
+  tone: Tone;
+  at: string;
+  field: string;
+}
+
+/**
+ * How often the page changed what the ghost watches, over the span its archived copies cover:
+ * `steady` (never), `fickle` (fewer than three changes a year) or `very fickle`.
+ */
+export interface Fickleness {
+  changes: number;
+  /** Changes that were bad news for the reader, and good news. */
+  worse: number;
+  better: number;
+  /** Whole months between the oldest readable copy and today's first sighting (at least 1). */
+  months: number;
+  perYear: number;
+  label: 'steady' | 'fickle' | 'very fickle';
+  /** "Fickle: changed 2 times in 9 months, 1 for the worse." */
+  text: string;
 }
 
 export interface PastTimeline {
@@ -178,6 +205,8 @@ export interface PastTimeline {
   entries: PastEntry[];
   /** Set when there is nothing to show, to say why. */
   note?: string;
+  headline?: PastHeadline;
+  fickleness?: Fickleness;
 }
 
 const LOUDNESS: Severity[] = ['whisper', 'moan', 'shriek'];
@@ -186,6 +215,55 @@ function loudest(severities: Severity[]): Severity | null {
   let best = -1;
   for (const s of severities) best = Math.max(best, LOUDNESS.indexOf(s));
   return best < 0 ? null : (LOUDNESS[best] ?? null);
+}
+
+function toneOfStep(findings: Finding[]): Exclude<Tone, 'neutral'> | undefined {
+  if (findings.some((f) => f.tone === 'bad')) return 'bad';
+  return findings.some((f) => f.tone === 'good') ? 'good' : undefined;
+}
+
+function monthName(iso: string, lookedAt: string): string {
+  const options: Intl.DateTimeFormatOptions = { month: 'long', timeZone: 'UTC' };
+  if (iso.slice(0, 4) !== lookedAt.slice(0, 4)) options.year = 'numeric';
+  return new Date(iso).toLocaleDateString('en-US', options);
+}
+
+/** "Bonus cut $200", "Annual fee raised $95", "Bonus points cut 20,000"; null for non-numeric changes. */
+export function headlineOf(watch: Watch, finding: Finding): string | null {
+  const { before = null, after = null } = finding;
+  if (!finding.field || !before || !after || before.kind !== after.kind || after.kind === 'date') return null;
+  const a = numericValue(before);
+  const b = numericValue(after);
+  if (a === null || b === null || a === b) return null;
+  const label = watch.fields.find((f) => f.name === finding.field)?.label ?? finding.field;
+  const size = Math.abs(b - a);
+  const amount =
+    after.kind === 'money'
+      ? formatMinor(size, after.currency)
+      : after.kind === 'percent'
+        ? `${Math.round(size * 100) / 100} points`
+        : (Math.round(size * 100) / 100).toLocaleString('en-US');
+  return `${label} ${b < a ? 'cut' : 'raised'} ${amount}`;
+}
+
+const MONTH_MS = 30.44 * 86_400_000;
+
+function fickleness(entries: PastEntry[], firstAt: string, nowAt: string): Fickleness {
+  const steps = entries.filter((e) => e.kind === 'change' || (e.kind === 'now' && e.severity !== null));
+  const months = Math.max(1, Math.round((Date.parse(nowAt) - Date.parse(firstAt)) / MONTH_MS));
+  const changes = steps.length;
+  const worse = steps.filter((e) => e.tone === 'bad').length;
+  const better = steps.filter((e) => e.tone === 'good').length;
+  const perYear = Math.round(((changes * 12) / months) * 10) / 10;
+  const label = changes === 0 ? 'steady' : perYear < 3 ? 'fickle' : 'very fickle';
+  const span = `${months} month${months === 1 ? '' : 's'}`;
+  const text =
+    changes === 0
+      ? `Steady: nothing watched changed in ${span} of archived copies.`
+      : `${label === 'fickle' ? 'Fickle' : 'Very fickle'}: changed ${changes} time${changes === 1 ? '' : 's'} in ${span}${
+          worse ? `, ${worse} for the worse` : ''
+        }.`;
+  return { changes, worse, better, months, perYear, label, text };
 }
 
 function foundSomething(extraction: Extraction): boolean {
@@ -223,24 +301,38 @@ export function buildPastTimeline(
 ): PastTimeline {
   const entries: PastEntry[] = [];
   let previous: Extraction | null = null;
+  let firstAt: string | null = null;
   let used = 0;
+  let best: { finding: Finding; at: string; text: string } | null = null;
+  const consider = (findings: Finding[], at: string) => {
+    for (const finding of findings) {
+      const text = headlineOf(watch, finding);
+      if (!text) continue;
+      // The loudest numeric change wins; among equals, the most recent.
+      if (!best || LOUDNESS.indexOf(finding.severity) >= LOUDNESS.indexOf(best.finding.severity)) best = { finding, at, text };
+    }
+  };
   for (const capture of [...captures].sort((a, b) => a.capturedAt.localeCompare(b.capturedAt))) {
     if (capture.capturedAt >= current.takenAt) continue;
     const extraction = extract(capture.html, watch);
     if (!foundSomething(extraction)) continue;
     used += 1;
     if (!previous) {
+      firstAt = capture.capturedAt;
       entries.push({ kind: 'first', at: capture.capturedAt, archiveUrl: capture.archiveUrl, lines: [describeValues(watch, extraction)], severity: null });
     } else {
       const findings = evaluateRules(watch, diff(previous, extraction));
       if (findings.length > 0) {
+        const tone = toneOfStep(findings);
         entries.push({
           kind: 'change',
           at: capture.capturedAt,
           archiveUrl: capture.archiveUrl,
           lines: findings.map((f) => f.summary),
           severity: loudest(findings.map((f) => f.severity)),
+          ...(tone ? { tone } : {}),
         });
+        consider(findings, capture.capturedAt);
       }
     }
     previous = extraction;
@@ -258,14 +350,28 @@ export function buildPastTimeline(
     };
   }
   const findings = evaluateRules(watch, diff(previous, { fields: current.fields, lists: current.lists }));
+  const tone = toneOfStep(findings);
   entries.push({
     kind: 'now',
     at: current.takenAt,
     archiveUrl: null,
     lines: findings.length > 0 ? findings.map((f) => f.summary) : ['Nothing watched has changed since the last archived copy.'],
     severity: loudest(findings.map((f) => f.severity)),
+    ...(tone ? { tone } : {}),
   });
-  return { source, lookedAt, captures: used, entries };
+  consider(findings, current.takenAt);
+  const chosen = best as { finding: Finding; at: string; text: string } | null;
+  const headline: PastHeadline | undefined = chosen
+    ? { text: `${chosen.text} in ${monthName(chosen.at, lookedAt)}`, tone: chosen.finding.tone ?? 'neutral', at: chosen.at, field: chosen.finding.field ?? '' }
+    : undefined;
+  return {
+    source,
+    lookedAt,
+    captures: used,
+    entries,
+    ...(headline ? { headline } : {}),
+    fickleness: fickleness(entries, firstAt ?? current.takenAt, current.takenAt),
+  };
 }
 
 /** Changes the timeline found, counting today's step only when it changed something. */

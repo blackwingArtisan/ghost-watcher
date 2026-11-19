@@ -42,7 +42,7 @@ export function renderPast(past) {
   const words = { first: 'Earliest copy', change: 'Changed', now: 'First sighting' };
   const items = past.entries
     .map(
-      (/** @type {any} */ e) => `<li class="past__entry" data-kind="${esc(e.kind)}" data-severity="${esc(e.severity || '')}">
+      (/** @type {any} */ e) => `<li class="past__entry" data-kind="${esc(e.kind)}" data-severity="${esc(e.severity || '')}" data-tone="${esc(e.tone || 'neutral')}">
   <span class="past__dot" aria-hidden="true"></span>
   <div><p class="past__when"><time datetime="${esc(e.at)}">${esc(calendarDate(e.at))}</time> · ${esc(words[/** @type {keyof typeof words} */ (e.kind)] || e.kind)}${
     e.archiveUrl ? ` · <a href="${esc(e.archiveUrl)}" target="_blank" rel="noopener noreferrer">archived copy</a>` : ''
@@ -50,7 +50,10 @@ export function renderPast(past) {
 </li>`,
     )
     .join('');
-  return `<section class="past">${title}<p class="muted small">What this ghost would have told you, had it been watching. Read from ${past.captures} archived ${past.captures === 1 ? 'copy' : 'copies'} through the same rules; never sent as alerts.</p><ol class="past__list">${items}</ol></section>`;
+  const fickle = past.fickleness
+    ? `<p class="past__fickle" data-label="${esc(past.fickleness.label)}"><span class="past__score">${esc(past.fickleness.perYear)}</span> changes a year · ${esc(past.fickleness.text)}</p>`
+    : '';
+  return `<section class="past">${title}${fickle}<p class="muted small">What this ghost would have told you, had it been watching. Read from ${past.captures} archived ${past.captures === 1 ? 'copy' : 'copies'} through the same rules; never sent as alerts.</p><ol class="past__list">${items}</ol></section>`;
 }
 
 /** "3f2a9c1b…d41e" @param {string} hex */
@@ -147,10 +150,21 @@ export function renderGhostCard(ghost, nowIso) {
   const readings = (ghost.readings || [])
     .map((/** @type {any} */ r) =>
       r.before !== undefined
-        ? `<div class="reading" data-changed="true"><dt>${esc(r.label)}</dt><dd><del aria-label="was ${esc(r.before)}">${esc(r.before)}</del> <ins aria-label="now ${esc(r.value)}">${esc(r.value)}</ins></dd></div>`
+        ? `<div class="reading" data-changed="true" data-tone="${esc(r.tone || 'neutral')}"><dt>${esc(r.label)}</dt><dd><del aria-label="was ${esc(r.before)}">${esc(r.before)}</del> <ins aria-label="now ${esc(r.value)}"${r.value === 'gone' ? ' data-gone="true"' : ''}>${esc(r.value)}</ins></dd></div>`
         : `<div class="reading"><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`,
     )
     .join('');
+  const ribbon = ghost.headline
+    ? `<p class="ghost__ribbon" data-tone="${esc(ghost.headline.tone)}" title="Found by the Ghost of Terms Past in archived copies"><span class="ghost__ribbon-tag">From the archive</span> ${esc(ghost.headline.text)}</p>`
+    : '';
+  const fickle =
+    ghost.fickleness && ghost.fickleness.changes > 0
+      ? `<p class="ghost__fickle" data-label="${esc(ghost.fickleness.label)}">${esc(ghost.fickleness.text)}</p>`
+      : '';
+  const crack =
+    ghost.state === 'restless' && ghost.loudest === 'shriek'
+      ? '<svg class="ghost__crack" viewBox="0 0 60 90" aria-hidden="true" focusable="false"><path d="M34 0 L26 18 L36 30 L22 48 L31 60 L20 90"/><path d="M26 18 L14 24 M22 48 L10 52 M31 60 L42 70"/></svg>'
+      : '';
   const badge = ghost.unread > 0 ? `<span class="ghost__badge" data-severity="${esc(ghost.loudest)}" aria-label="${ghost.unread} unread">${ghost.unread}</span>` : '';
   const when = ghost.lastAttemptAt ? `Last visit ${esc(ago(ghost.lastAttemptAt, nowIso))}` : 'Never visited';
   return `<article class="ghost" id="ghost-${esc(ghost.id)}" data-ghost="${esc(ghost.id)}" data-state="${esc(ghost.state)}" data-severity="${esc(ghost.loudest || '')}" data-checking="${ghost.checking ? 'true' : 'false'}">
@@ -162,12 +176,13 @@ export function renderGhostCard(ghost, nowIso) {
     ${badge}
   </div>
   <div class="ghost__stone">
+    ${crack}${ribbon}
     <p class="ghost__state"><span class="dot"></span>${esc(STATE_WORDS[/** @type {keyof typeof STATE_WORDS} */ (ghost.state)] || ghost.state)}</p>
     <h3 class="ghost__name">${esc(ghost.name)}</h3>
     <p class="ghost__sub">${esc(ghost.subtitle)}</p>
     <dl class="readings">${readings}</dl>
     <p class="ghost__msg">${esc(ghost.lastMessage)}</p>
-    ${ignoredChip(ghost.ignored)}
+    ${fickle}${ignoredChip(ghost.ignored)}
     <p class="ghost__when">${when}</p>
   </div>
 </article>`;
@@ -195,14 +210,36 @@ export function renderStats(state) {
   return parts.join('<span class="sep" aria-hidden="true">✦</span>');
 }
 
+/**
+ * Letters from the Ghost of Terms Past: changes found in archived copies before the ghost arrived.
+ * Dimmed, and never counted as alerts. @param {any} state
+ */
+export function renderArchiveLetters(state) {
+  return (state.archive || [])
+    .map(
+      (/** @type {any} */ letter) => `<li class="feed__item feed__item--archive" data-archive="true" data-tone="${esc(letter.tone || 'neutral')}">
+  <div class="feed__meta"><span class="sev sev--archive">Archive</span><button type="button" class="feed__watch" data-action="open" data-id="${esc(letter.watchId)}">${esc(letter.watchName)}</button><time datetime="${esc(letter.at)}">${esc(calendarDate(letter.at))}</time></div>
+  ${letter.lines.map((/** @type {string} */ line) => `<p class="feed__summary">${esc(line)}</p>`).join('')}
+  ${letter.archiveUrl ? `<a class="feed__letter" href="${esc(letter.archiveUrl)}" target="_blank" rel="noopener noreferrer">Archived copy</a>` : ''}
+</li>`,
+    )
+    .join('\n');
+}
+
 /** @param {any} state */
 export function renderFeed(state) {
+  const archive = renderArchiveLetters(state);
   if (!state.feed.length) {
     const quiet = state.app.demo
       ? 'Nothing has stirred yet. Click <b>Let a night pass</b> to see what the ghosts catch.'
       : esc(state.app.quiet);
-    return `<li class="feed__empty">${quiet}</li>`;
+    return `<li class="feed__empty">${quiet}</li>${archive ? `\n${archive}` : ''}`;
   }
+  return `${renderLiveLetters(state)}${archive ? `\n${archive}` : ''}`;
+}
+
+/** @param {any} state */
+function renderLiveLetters(state) {
   return state.feed
     .map((/** @type {any} */ entry) => {
       const a = entry.alert;
@@ -212,7 +249,7 @@ export function renderFeed(state) {
       const stealth = a.stealth
         ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>`
         : '';
-      return `<li class="feed__item" data-severity="${esc(a.severity)}" data-acknowledged="${entry.acknowledged}"${a.stealth ? ' data-stealth="true"' : ''}>
+      return `<li class="feed__item" data-severity="${esc(a.severity)}" data-tone="${esc(a.tone || 'neutral')}" data-acknowledged="${entry.acknowledged}"${a.stealth ? ' data-stealth="true"' : ''}>
   <div class="feed__meta"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><button type="button" class="feed__watch" data-action="open" data-id="${esc(a.watchId)}">${esc(a.watchName)}</button><time datetime="${esc(a.createdAt)}">${esc(ago(a.createdAt, state.generatedAt))}</time></div>
   ${stealth}<p class="feed__summary">${esc(a.summary)}</p>
   ${renderReceipt(a.receipt)}${letter}
@@ -227,7 +264,7 @@ export function renderDetail(detail, nowIso) {
   const longFields = detail.fields.filter((/** @type {any} */ f) => f.long);
   const fieldRows = shortFields
     .map(
-      (/** @type {any} */ f) => `<tr data-changed="${f.changed}"><th scope="row">${esc(f.label)}</th><td class="now">${esc(f.now)}</td><td class="before">${f.before === null ? '<span class="muted">—</span>' : esc(f.before)}</td></tr>`,
+      (/** @type {any} */ f) => `<tr data-changed="${f.changed}"><th scope="row">${esc(f.label)}</th><td class="now">${esc(f.now)}</td><td class="before">${f.before === null ? '<span class="muted">—</span>' : f.changed ? esc(f.before) : '<span class="muted">unchanged</span>'}</td></tr>`,
     )
     .join('');
   const table = shortFields.length
@@ -303,7 +340,7 @@ export function renderPage(state, assets) {
 <style>:root{${themeVars}}</style>
 </head>
 <body data-motif="${esc(state.app.motif || 'stone')}">
-<div class="sky" aria-hidden="true"><div class="stars"></div><div class="moon"></div><div class="fog fog--far"></div><div class="fog fog--near"></div></div>
+<div class="sky" aria-hidden="true"><div class="stars"></div><div class="moon"></div><div class="lightning"></div><div class="fog fog--far"></div><div class="fog fog--near"></div></div>
 <a class="skip" href="#graveyard">Skip to the ghosts</a>
 <header class="masthead">
   <div class="masthead__crest" aria-hidden="true">${ghostSvg('restless')}<span class="masthead__crest-word">${esc(state.app.crest || 'Watch')}</span></div>
@@ -318,12 +355,13 @@ export function renderPage(state, assets) {
         ? `
     <button type="button" class="btn btn--glow btn--beckon" data-action="next-night" aria-describedby="night-hint">Let a night pass</button>
     <button type="button" class="btn" data-action="check-all">Summon every ghost</button>
-    <p class="night-hint" id="night-hint">Demo: the invented fixture site changes overnight, then every ghost looks again.</p>`
+    <p class="night-hint" id="night-hint">Demo: the invented fixture site changes overnight, then every ghost looks again. Press <kbd>N</kbd>.</p>`
         : `
     <button type="button" class="btn btn--glow" data-action="check-all">Summon every ghost</button>`
     }
   </div>
 </header>
+<a class="feed-pill" href="#feed-title" id="feed-pill">Spirit mail <span id="feed-pill-count">${state.feed.filter((/** @type {any} */ e) => !e.acknowledged).length}</span></a>
 <main class="layout">
   <section class="graveyard" id="graveyard" aria-label="Watched pages">${renderGraveyard(state)}</section>
   <aside class="feed" aria-labelledby="feed-title">

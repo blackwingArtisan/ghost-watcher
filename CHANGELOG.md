@@ -2,6 +2,20 @@
 
 ## 2026-11-18
 
+- **Good news, bad news.** Fields declare which direction is `better`, and rules can set a `tone`.
+  Findings, alerts, stones, Spirit mail and the séance carry it: a raised fee or a new eligibility
+  window is red, a bigger bonus glows, a vanished value reads "gone", and readings the page never
+  showed are left off the stone.
+- **The archive on the first screen.** The Ghost of Terms Past now gives each stone a ribbon with
+  its biggest past change ("Bonus cut $200 in June") and a fickleness score, and Spirit mail opens
+  with dimmed letters from the archive instead of an empty box.
+- **A shriek scene.** A night that wakes a shriek turns the moon red, flashes lightning, shakes the
+  ghost and cracks its stone, all stilled under reduced motion. `N` lets a night pass; the button
+  pulses harder until it is pressed.
+- **Polish.** Changed readings take a full row and never wrap mid-value; dates on stones are compact
+  ("Jan 15 '27"); a restless stone keeps naming its newest unread change; the toast sits at the top
+  and says "newly restless"; the séance says "unchanged" when a value has not moved; long ghost
+  names wrap in Spirit mail; phones get a sticky "Spirit mail" pill with the unread count.
 - **The ghost keeps receipts.** A shriek or a bait and switch now carries the SHA-256 of the
   snapshots before and after the change, and with `GHOST_RECEIPTS=archive` a permanent copy of the
   page from Internet Archive Save Page Now. Receipts appear in the letter, the webhook text, Spirit

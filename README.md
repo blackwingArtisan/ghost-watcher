@@ -81,7 +81,10 @@ One reusable template and two apps built from it, each in its own folder:
 - **The Ghost of Terms Past.** On a ghost's first sighting it reads the page's archived copies from
   the Internet Archive's Wayback Machine (one per month, newest six) and runs them through the
   same extract, diff and rules. The séance opens with the page's history instead of a blank:
-  "Mar 4: Bonus $500. Jun 11: Bonus went down from $500 to $300 (-$200)." Past changes are shown,
+  "Mar 4: Bonus $500. Jun 11: Bonus went down from $500 to $300 (-$200)." The stone wears the
+  biggest past change as a ribbon ("Bonus cut $200 in June"), carries a fickleness score ("changed
+  2 times in 9 months, 1 for the worse"), and Spirit mail starts with dimmed letters from the
+  archive, so the dashboard has a story to tell before the first night. Past changes are shown,
   never sent as alerts. In `demo` mode the fixture site stands in for the archive, and the adapter's
   tests replay real recorded Wayback responses.
 - **Bait and switch.** `rules.stealthEdit('finePrint', ['bonus'])` notices when the fine print changes
@@ -104,7 +107,11 @@ One reusable template and two apps built from it, each in its own folder:
   diff of the fine print. From there you can **Check now** or **Lay to rest**, or summon every ghost at once. The
   dashboard works from the keyboard, respects reduced motion, is readable on a phone, and passes an
   axe-core WCAG 2.1 AA scan in every state a demo night leaves behind. A changed value shows on its
-  stone, old value struck through, until you read the alert.
+  stone, old value struck through, until you read the alert, colored by what it means for you: a
+  field declares which way is better (`better: 'higher'` for a bonus, `'lower'` for a fee), so a
+  raised fee turns red, a bigger bonus glows, and a value that vanished reads "gone". A shriek gets
+  its own scene: the moon flushes red, lightning flashes and the stone cracks. Press <kbd>N</kbd> in
+  demo mode to let a night pass.
 - **Safe to leave running.** The dashboard answers only to `localhost` and loopback Host headers
   (plus any listed in `GHOST_ALLOWED_HOSTS`), which stops DNS-rebinding pages. Every POST must come
   from the dashboard's own origin, so another web page cannot make the ghosts go out and fetch.

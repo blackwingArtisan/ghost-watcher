@@ -24,7 +24,18 @@ export interface FieldSpec {
    * group is used; otherwise the whole match. Useful when a value sits inside a sentence.
    */
   pattern?: string;
+  /**
+   * Which direction is good news for the reader: `higher` for a bonus or a rate, `lower` for a fee or
+   * a deposit. Sets the tone of a change (good or bad), so the dashboard can color it the right way.
+   */
+  better?: Better;
 }
+
+/** Which way a numeric value should move to be good news. */
+export type Better = 'higher' | 'lower';
+
+/** Whether a change is good or bad news for the reader. Changes with no clear direction are neutral. */
+export type Tone = 'good' | 'bad' | 'neutral';
 
 /** One value read from each item of a repeated block (a listing card, a table row). */
 export interface ListFieldSpec {
@@ -33,6 +44,7 @@ export interface ListFieldSpec {
   attribute?: string;
   pattern?: string;
   label?: string;
+  better?: Better;
 }
 
 /** A repeated block on a page, such as a list of listings or a table of permits. */
@@ -68,6 +80,8 @@ interface RuleBase {
   label?: string;
   /** How loudly the ghost reacts. Defaults depend on the rule kind. */
   severity?: Severity;
+  /** Good or bad news. Defaults from the field's `better` direction, or `bad` for a value that disappears. */
+  tone?: Exclude<Tone, 'neutral'>;
 }
 
 export type Rule =

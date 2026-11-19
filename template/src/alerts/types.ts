@@ -1,7 +1,7 @@
 import type { ListItem } from '../extract';
 import type { MaybeValue } from '../normalize';
 import type { Receipt } from '../receipts';
-import type { RuleKind, Severity } from '../watch';
+import type { RuleKind, Severity, Tone } from '../watch';
 
 /** One explained change on one watch. */
 export interface Alert {
@@ -21,6 +21,8 @@ export interface Alert {
   item?: ListItem;
   /** Set for a stealth edit: why it looks like a bait and switch. */
   stealth?: string;
+  /** Good or bad news for the reader, when the change has a clear direction. */
+  tone?: Exclude<Tone, 'neutral'>;
   /** Proof of the change, kept for shrieks and bait and switches: snapshot hashes and an archived copy. */
   receipt?: Receipt;
 }

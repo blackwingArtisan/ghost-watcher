@@ -3,7 +3,7 @@ export * from './watch';
 export * from './normalize';
 export { extract, type Extraction, type ListItem } from './extract';
 export { diff, compareValues, fingerprint, isEmptyDiff, type Diff, type FieldChange, type ListChange, type Snapshot } from './diff';
-export { evaluateRules, matchesFilter, describeRule, describeCondition, type Finding } from './rules';
+export { evaluateRules, matchesFilter, describeRule, describeCondition, toneOf, type Finding } from './rules';
 export { describeFieldChange, describeItem, sentences, textChange, wordDiff, changedWindow, type WordSegment } from './summary';
 export { parseRobots, isAllowed, crawlDelayMs, productToken, type RobotsPolicy } from './robots';
 export { PoliteFetcher, buildUserAgent, LOCAL_ONLY_CONTACT, type Fetcher, type FetchOutcome, type PoliteFetcherOptions, type Transport } from './fetcher';
@@ -20,11 +20,14 @@ export {
   buildPastTimeline,
   cdxQueryUrl,
   describeValues,
+  headlineOf,
   parseCdx,
   pastChangeCount,
   waybackTimestampToIso,
+  type Fickleness,
   type HistorySource,
   type PastCapture,
+  type PastHeadline,
   type PastEntry,
   type PastTimeline,
   type WaybackOptions,

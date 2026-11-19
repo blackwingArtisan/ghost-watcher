@@ -6,7 +6,7 @@ const DEMO_FIXTURES = 'http://127.0.0.1:3139';
 
 test.describe.configure({ mode: 'serial' });
 
-test('demo mode: the first sighting is already taken, and one click lets a night pass', async ({ page }) => {
+test('demo mode: the first sighting is already taken, and one key press lets a night pass', async ({ page }) => {
   await page.goto(DEMO);
   const lanternfield = page.locator('#ghost-lanternfield-checking');
   // The demo took its baseline at startup, so nobody has to summon the ghosts first.
@@ -15,10 +15,19 @@ test('demo mode: the first sighting is already taken, and one click lets a night
 
   // The Ghost of Terms Past filled the séance from archived copies at the first sighting.
   await expect(lanternfield.locator('.ghost__msg')).toHaveText('First sighting recorded. The Ghost of Terms Past found 2 earlier changes.');
+  // Before anything happens, the stone already carries the worst past change and a fickleness score.
+  await expect(lanternfield.locator('.ghost__ribbon')).toContainText(/From the archive\s*Bonus cut \$200 in June/);
+  await expect(lanternfield.locator('.ghost__ribbon')).toHaveAttribute('data-tone', 'bad');
+  await expect(lanternfield.locator('.ghost__fickle')).toHaveText(/^Fickle: changed 2 times in \d+ months, 1 for the worse\.$/);
+  // Spirit mail is not empty either: the archive's letters wait below the prompt, dimmed.
+  const fromArchive = page.locator('#feed .feed__item--archive');
+  await expect(fromArchive.filter({ hasText: 'Lanternfield' })).toContainText('Bonus went down from $500 to $300 (-$200).');
   await lanternfield.locator('.ghost__hit').click();
   const past = page.locator('#seance .past');
   await expect(past.getByRole('heading', { name: /Ghost of Terms Past/ })).toBeVisible();
   await expect(past.locator('.past__entry')).toHaveCount(3);
+  await expect(past.locator('.past__fickle')).toContainText('changes a year');
+  await expect(past.locator('.past__entry[data-kind="change"]')).toHaveAttribute('data-tone', 'bad');
   await expect(past.locator('.past__entry[data-kind="change"]')).toContainText('Jun 11, 2026');
   await expect(past.locator('.past__entry[data-kind="change"]')).toContainText('Bonus went down from $500 to $300 (-$200).');
   const archived = await past.locator('.past__entry[data-kind="first"] a').getAttribute('href');
@@ -32,11 +41,16 @@ test('demo mode: the first sighting is already taken, and one click lets a night
   await expect(night).toHaveClass(/btn--glow/);
   await expect(page.getByRole('button', { name: 'Summon every ghost' })).not.toHaveClass(/btn--glow/);
   await expect(page.locator('#feed .feed__empty')).toContainText('Click Let a night pass');
-  await night.click();
+  await expect(page.locator('#night-hint kbd')).toHaveText('N');
+  // N lets the night pass, the same as the button.
+  await page.keyboard.press('n');
   await expect(page.locator('#toast')).toContainText('Night 1 passes.');
   await expect(page.locator('#toast')).toContainText('3 pages changed: 2 worth waking for, 1 ignored as noise.');
-  await expect(page.locator('#toast')).toContainText('restless');
+  await expect(page.locator('#toast')).toContainText('2 newly restless.');
   await expect(lanternfield).toHaveAttribute('data-state', 'restless');
+  // A shriek gets its scene (red moon, lightning) and leaves a crack in the stone.
+  await expect(lanternfield.locator('.ghost__crack')).toHaveCount(1);
+  await expect(page.locator('#ghost-bramblewick-savings .ghost__crack')).toHaveCount(0);
   // Bramblewick's page was only reformatted: its ghost slept through it, and the stone says so.
   await expect(page.locator('#ghost-bramblewick-savings .ghost__ignored')).toHaveText("Slept through 1 page change that didn't matter");
   await expect(lanternfield.locator('.ghost__ignored')).toHaveCount(0);
@@ -56,6 +70,9 @@ test('demo mode: the first sighting is already taken, and one click lets a night
   const bonusReading = lanternfield.locator('.reading[data-changed="true"]').filter({ hasText: 'Bonus' });
   await expect(bonusReading.locator('del')).toHaveText('$300');
   await expect(bonusReading.locator('ins')).toHaveText('$400');
+  // A bigger bonus is good news; the stone colors it that way.
+  await expect(bonusReading).toHaveAttribute('data-tone', 'good');
+  await expect(page.locator('#feed-pill-count')).toHaveText(/^\d+$/);
   await expect(page.locator('#ghost-bramblewick-savings .reading[data-changed="true"]')).toHaveCount(0);
   // Every state a night can leave behind (restless, struck values, a bait and switch) passes axe.
   // Colors are measured at rest, with every transition stilled.

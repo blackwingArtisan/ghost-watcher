@@ -14,6 +14,8 @@ function paint() {
   $('#graveyard').innerHTML = renderGraveyard(state);
   $('#feed').innerHTML = renderFeed(state);
   $('#stats').innerHTML = renderStats(state);
+  const pill = document.getElementById('feed-pill-count');
+  if (pill) pill.textContent = String(state.feed.filter((/** @type {any} */ e) => !e.acknowledged).length);
   document.body.dataset.restless = String(state.ghosts.some((/** @type {any} */ g) => g.state === 'restless'));
 }
 
@@ -43,6 +45,12 @@ function riseAfterNight(results) {
     if (result.status !== 'changed') continue;
     const card = document.getElementById(`ghost-${result.watchId}`);
     if (card) card.dataset.rising = 'true';
+  }
+  // A shriek gets its own scene: the moon flushes red, lightning flashes, and the ghost shakes.
+  const shrieked = results.some((r) => r.status === 'changed' && (r.alerts || []).some((/** @type {any} */ a) => a.severity === 'shriek'));
+  if (shrieked) {
+    document.body.dataset.shriek = 'true';
+    setTimeout(() => delete document.body.dataset.shriek, 1800);
   }
   const feed = $('#feed');
   feed.dataset.arriving = 'true';
@@ -136,7 +144,7 @@ document.addEventListener('click', (event) => {
           const changed = night.results.filter((/** @type {any} */ r) => r.status === 'changed').length;
           const noise = noiseSummary(night.results);
           toast(
-            `Night ${night.version - 1} passes. ${noise ? `${noise} ` : ''}${changed ? `${changed} ghost${changed === 1 ? '' : 's'} restless.` : 'All quiet.'}`,
+            `Night ${night.version - 1} passes. ${noise ? `${noise} ` : ''}${changed ? `${changed} newly restless.` : 'All quiet.'}`,
           );
         }
         await refresh();
@@ -155,12 +163,23 @@ document.addEventListener('click', (event) => {
       const blocked = results.filter((/** @type {any} */ r) => r.status === 'blocked').length;
       const noise = noiseSummary(results);
       toast(
-        `${results.length} ghosts visited. ${noise ? `${noise} ` : ''}${changed ? `${changed} restless.` : 'All quiet.'}${blocked ? ` ${blocked} turned away by robots.txt.` : ''}`,
+        `${results.length} ghosts visited. ${noise ? `${noise} ` : ''}${changed ? `${changed} newly restless.` : 'All quiet.'}${blocked ? ` ${blocked} turned away by robots.txt.` : ''}`,
       );
       await refresh();
+      riseAfterNight(results);
       target.removeAttribute('disabled');
     });
   }
+});
+
+// N lets a night pass in demo mode, so a presenter never has to hunt for the button.
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'n' && event.key !== 'N') return;
+  if (event.metaKey || event.ctrlKey || event.altKey || dialog.open) return;
+  const target = event.target;
+  if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+  const button = /** @type {HTMLButtonElement | null} */ (document.querySelector('[data-action="next-night"]'));
+  if (button && !button.disabled) button.click();
 });
 
 dialog.addEventListener('close', () => {

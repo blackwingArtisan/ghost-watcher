@@ -96,12 +96,58 @@ describe('Runner noise counting', () => {
     }
     // Two unread rises: the stone shows the value from before the first one.
     const view = await ghostView(deps, watch);
-    expect(view.readings).toEqual([{ label: 'Bonus', value: '$450', before: '$300' }]);
+    expect(view.readings).toEqual([{ label: 'Bonus', value: '$450', before: '$300', tone: 'neutral' }]);
     expect(renderGhostCard(view, clock.now().toISOString())).toContain(
-      '<div class="reading" data-changed="true"><dt>Bonus</dt><dd><del aria-label="was $300">$300</del> <ins aria-label="now $450">$450</ins></dd></div>',
+      '<div class="reading" data-changed="true" data-tone="neutral"><dt>Bonus</dt><dd><del aria-label="was $300">$300</del> <ins aria-label="now $450">$450</ins></dd></div>',
     );
     await store.acknowledge('lantern', clock.now().toISOString());
     expect((await ghostView(deps, watch)).readings).toEqual([{ label: 'Bonus', value: '$450' }]);
+  });
+
+  it('colors a change by what it means for the reader, says "gone" for a lost value and hides one never seen', async () => {
+    const feeWatch = defineWatch({
+      id: 'fees',
+      name: 'Fee Crypt',
+      url: 'https://example.com/fees',
+      intervalMs: 0,
+      fields: [
+        { name: 'fee', label: 'Fee', selector: '.fee', kind: 'money', better: 'lower' },
+        { name: 'bonus', label: 'Bonus', selector: '.bonus', kind: 'money', better: 'higher' },
+        { name: 'perk', label: 'Perk', selector: '.perk', kind: 'text' },
+      ],
+      rules: [rules.changed('fee'), rules.changed('bonus'), rules.disappeared('bonus')],
+    });
+    const feeApp = { ...app, watches: [feeWatch] };
+    const html = (fee: string, bonus: string | null) =>
+      `<html><body><p class="fee">${fee}</p>${bonus ? `<p class="bonus">${bonus}</p>` : ''}</body></html>`;
+    const clock = manualClock('2026-10-31T00:00:00Z');
+    const store = new GhostStore(new MemoryBlobStore());
+    const runner = new Runner({ app: feeApp, fetcher: new ListFetcher([html('$5', '$300'), html('$15', '$350'), html('$15', null)], clock), store, sink, clock });
+    const deps = { app: feeApp, store, runner, clock, outbox: undefined } as unknown as Parameters<typeof ghostView>[0];
+    await runner.check(feeWatch);
+    clock.advance(1000);
+    const night = await runner.check(feeWatch);
+    expect(night.status === 'changed' && night.alerts.map((a) => [a.field, a.tone])).toEqual([
+      ['fee', 'bad'],
+      ['bonus', 'good'],
+    ]);
+    expect((await ghostView(deps, feeWatch)).readings).toEqual([
+      { label: 'Fee', value: '$15', before: '$5', tone: 'bad' },
+      { label: 'Bonus', value: '$350', before: '$300', tone: 'good' },
+    ]);
+    clock.advance(1000);
+    await runner.check(feeWatch);
+    const view = await ghostView(deps, feeWatch);
+    // The perk never appeared on the page, so the stone leaves it off rather than reading "nothing".
+    expect(view.readings).toEqual([
+      { label: 'Fee', value: '$15', before: '$5', tone: 'bad' },
+      { label: 'Bonus', value: 'gone', before: '$300', tone: 'bad' },
+    ]);
+    expect(renderGhostCard(view, clock.now().toISOString())).toContain('<ins aria-label="now gone" data-gone="true">gone</ins>');
+    // A quiet visit afterwards does not make the stone forget why the ghost is restless.
+    clock.advance(1000);
+    await runner.check(feeWatch);
+    expect((await ghostView(deps, feeWatch)).lastMessage).toBe('3 unread changes. Latest: Bonus disappeared (it was "$350").');
   });
 
   it('says the page changed but nothing watched did', async () => {

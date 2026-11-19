@@ -51,7 +51,7 @@ export function buildApp(env: Env = process.env): GhostApp {
               address: { selector: '.address', kind: 'text' },
               neighborhood: { selector: '.hood', kind: 'text' },
               beds: { selector: '.beds', kind: 'number', label: 'beds' },
-              price: { selector: '.price', kind: 'money', label: 'Rent' },
+              price: { selector: '.price', kind: 'money', label: 'Rent', better: 'lower' },
               link: { selector: 'a.details', attribute: 'href', kind: 'url' },
             },
           },
@@ -60,7 +60,7 @@ export function buildApp(env: Env = process.env): GhostApp {
           rules.newItem(
             'listings',
             [where.atLeast('beds', FILTERS.minBeds), where.atMost('price', FILTERS.maxRent), where.oneOf('neighborhood', FILTERS.neighborhoods)],
-            { severity: 'shriek' },
+            { severity: 'shriek', tone: 'good' },
           ),
           rules.itemChanged('listings', 'price', {
             direction: 'down',
@@ -86,13 +86,13 @@ export function buildApp(env: Env = process.env): GhostApp {
             fields: {
               unit: { selector: '.unit-no', kind: 'text' },
               layout: { selector: '.layout', kind: 'text' },
-              rent: { selector: '.rent', kind: 'money', label: 'Rent' },
+              rent: { selector: '.rent', kind: 'money', label: 'Rent', better: 'lower' },
               available: { selector: '.avail', kind: 'text' },
             },
           },
         ],
         rules: [
-          rules.newItem('units', [where.atMost('rent', FILTERS.studioMaxRent)], { severity: 'shriek' }),
+          rules.newItem('units', [where.atMost('rent', FILTERS.studioMaxRent)], { severity: 'shriek', tone: 'good' }),
           rules.itemRemoved('units', [], { label: 'a unit is rented' }),
         ],
       }),
@@ -136,10 +136,10 @@ export function buildApp(env: Env = process.env): GhostApp {
         tags: ['rentals'],
         fields: [
           { name: 'status', label: 'Leasing', selector: '#leasing-status', kind: 'text' },
-          { name: 'fromPrice', label: 'From', selector: '#from-price', kind: 'money' },
+          { name: 'fromPrice', label: 'From', selector: '#from-price', kind: 'money', better: 'lower' },
         ],
         rules: [
-          rules.appeared('status', { matching: 'now leasing', severity: 'shriek', label: 'leasing opens' }),
+          rules.appeared('status', { matching: 'now leasing', severity: 'shriek', tone: 'good', label: 'leasing opens' }),
           rules.wentDown('fromPrice'),
           rules.changed('status', { severity: 'whisper' }),
         ],
