@@ -18,7 +18,7 @@ becoming `$300.00`. When something real changes, it wakes and tells you in one p
 >
 > New listing: 2 bd in Old Mill at 418 Bramble Row, Apt 3 for $1,950/mo.
 
-![The Bonus Crypt after one night: four ghosts on tombstones in a row, two glowing with the old values struck through beside the new ones, one asleep after a reformat-only change, one turned away by robots.txt, and the Spirit mail feed with a Bait and switch letter](docs/bonus-crypt.png)
+![The Bonus Crypt in 14 seconds: the Ghost of Terms Past shows Lanternfield's bonus cut from $500 to $300 before any night has passed; then one night passes, two ghosts wake, the stones show $300 struck through beside $400, and Spirit mail fills with a Bait and switch letter](docs/bonus-crypt-night.gif)
 
 **Why a ghost?** A ghost haunts one page, sleeps until something it was told to care about changes,
 and will not walk through a door robots.txt has closed.
@@ -59,6 +59,8 @@ One reusable template and two apps built from it, each in its own folder:
 | [`template/`](template/) | The skeleton: watch definitions, polite fetching, semantic diff, rules, history, alerts, storage, the haunted dashboard and the CLI |
 | [`apps/bonus-watch/`](apps/bonus-watch/) | **The Bonus Crypt** watches bank and card sign-up bonus pages for changes to the amount, deposit, deadline and fine print |
 | [`apps/listing-watch/`](apps/listing-watch/) | **Haunted Listings** watches rental listings and city building permits, and only speaks up about items that match your filters |
+
+![The Bonus Crypt after one night: four ghosts on tombstones in a row, two glowing with the old values struck through beside the new ones, one asleep after a reformat-only change, one turned away by robots.txt, and the Spirit mail feed with a Bait and switch letter](docs/bonus-crypt.png)
 
 ![A séance in Haunted Listings: the listings on the page, which ones are new, the rules that make the ghost stir, and the haunting log](docs/haunted-listings-seance.png)
 
@@ -213,6 +215,7 @@ npm test               # type-check, then unit and CLI tests, then Playwright en
 npm run test:unit      # Vitest only
 npm run test:e2e       # Playwright only (run `npx playwright install chromium` once first)
 npm run noise          # print the noise-ratio table above
+npm run hero           # re-record docs/bonus-crypt-night.gif from the demo (needs ffmpeg)
 ```
 
 Playwright starts the fixture sites and dashboards itself on ports 3134 to 3139 (3138-3139 run one app in `demo` mode).
