@@ -22,7 +22,8 @@
     "bonus": "npm run demo -w @ghost-watcher/bonus-watch",
     "listing": "npm run demo -w @ghost-watcher/listing-watch",
     "noise": "tsx scripts/noise-ratio.ts",
-    "hero": "tsx scripts/record-hero.ts"
+    "hero": "tsx scripts/record-hero.ts",
+    "stills": "tsx scripts/capture-stills.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

@@ -1514,8 +1514,12 @@ body[data-night='true'] .moon {
 
 /* ---------- Spirit mail from the archive, and tone ---------- */
 
-.feed__item[data-tone='good'] {
+/* Unread letters take the color of their news: good glows in the accent, bad is red. */
+.feed__item[data-tone='good']:not([data-acknowledged='true']) {
   border-left-color: var(--accent);
+}
+.feed__item[data-tone='bad']:not([data-acknowledged='true']) {
+  border-left-color: var(--shriek);
 }
 .feed__item--archive {
   background: transparent;

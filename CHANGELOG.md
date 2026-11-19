@@ -2,6 +2,8 @@
 
 ## 2026-11-18
 
+- **Fresh media.** `npm run stills` re-takes the README screenshots from the running demos, and the
+  hero GIF is re-recorded with the archive ribbons and the shriek scene.
 - **Positioning.** The README and the Bonus Crypt's subtitle now lead with terms drift and one
   persona, bonus hunters, with a sourced community size and the yearly stake. Beyond Kiroween
   names two tiers, a sourced market anchor and a dated reason for now.

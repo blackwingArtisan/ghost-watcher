@@ -55,7 +55,8 @@ try {
   await pause(page, 700);
 
   // One night passes.
-  await page.getByRole('button', { name: 'Let a night pass' }).click();
+  // force: the button pulses until pressed, so it never holds still for Playwright's stability check.
+  await page.getByRole('button', { name: 'Let a night pass' }).click({ force: true });
   await page.locator('#ghost-lanternfield-checking[data-state="restless"]').waitFor();
   await pause(page, 3000);
   await page.locator('#feed .feed__item[data-stealth="true"]').hover();
