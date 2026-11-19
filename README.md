@@ -1,26 +1,45 @@
 # Ghost Watcher
 
-**Haunt the part of a web page you care about.** Ghost Watcher is a skeleton for building small,
-polite page-change watchers. You name the regions of a page that matter (a bonus amount, a deadline,
-the fine print, a table of listings), and a ghost checks them on a schedule. It ignores the noise:
-timestamps, rotating banners, reordered lists, `$300` becoming `$300.00`. When something real
-changes, the ghost wakes up and tells you in one plain sentence:
+**Catch the page that changed its mind and hoped you wouldn't notice.**
+
+[Try it in 60 seconds](#try-it-in-60-seconds) · [Signal, not noise](#signal-not-noise) ·
+[Why not a page watcher you already know?](#why-not-changedetectionio-visualping-or-distill) ·
+[Built with Kiro](#built-with-kiro) · [Kiro log](KIRO-LOG.md) · [Demo script](docs/demo-script.md)
+
+Ghost Watcher is a skeleton for building small, polite page-change watchers. You name the parts of a
+page that matter (a bonus amount, a deadline, the fine print, a table of listings), and a ghost
+haunts them. It sleeps through the noise: timestamps, rotating banners, reordered lists, `$300`
+becoming `$300.00`. When something real changes, it wakes and tells you in one plain sentence:
 
 > Bonus went up from $300 to $400 (+$100).
-> Fine print now says "A $12 monthly service fee applies unless you keep a $1,500 daily balance."
+>
+> **Bait and switch:** Bonus points stayed the same while the fine print changed. Fine print now says
+> "Bonus not available if you have opened any Mossgate card in the past 48 months."
+>
 > New listing: 2 bd in Old Mill at 418 Bramble Row, Apt 3 for $1,950/mo.
 
 ![The Bonus Crypt dashboard: four ghosts on tombstones, two glowing after their bonus pages changed, one turned away by robots.txt, and the Spirit mail feed of one-sentence alerts](docs/bonus-crypt.png)
 
-![A séance in Haunted Listings: the listings on the page, which ones are new, the rules that make the ghost stir, and the haunting log](docs/haunted-listings-seance.png)
+**Why a ghost?** A ghost haunts one page, sleeps until something it was told to care about changes,
+and will not walk through a door robots.txt has closed.
 
-This repo holds one reusable template and two apps built from it, each in its own folder:
+### A walkthrough (demo data, invented banks)
 
-| Folder | What it is |
-| --- | --- |
-| [`template/`](template/) | The skeleton: watch definitions, polite fetching, semantic diff, rules, alerts, storage, the haunted dashboard and the CLI |
-| [`apps/bonus-watch/`](apps/bonus-watch/) | **The Bonus Crypt** watches bank and card sign-up bonus pages for changes to the amount, deposit, deadline and fine print |
-| [`apps/listing-watch/`](apps/listing-watch/) | **Haunted Listings** watches rental listings and city building permits, and only speaks up about items that match your filters |
+You are eyeing Lanternfield's $300 checking bonus, so you give it a ghost. Before you have waited a
+single night, the **Ghost of Terms Past** reads the page's archived copies and tells you the bonus was
+$500 in March and was cut to $300 in June. The first night, the bonus rises to $400 and the ghost
+shrieks. The next night the headline still says $400, but the fine print has grown a $12 monthly fee:
+a bait and switch, flagged as one. Meanwhile Bramblewick reformatted its whole offer page, and its
+ghost slept straight through it.
+
+### Try it in 60 seconds
+
+```sh
+npm install
+npm run bonus      # open http://127.0.0.1:3130 and click "Let a night pass"
+```
+
+Everything runs on your machine against an invented fixture site. No accounts, keys or live sites.
 
 ## Who it's for
 
@@ -30,6 +49,18 @@ This repo holds one reusable template and two apps built from it, each in its ow
   neighborhood, or the demolition permit on their street, without refreshing three sites a day.
 - **Developers**, who need a small, honest watcher for any page and want the robots.txt handling,
   diffing and alerting already done.
+
+## What's in this repo
+
+One reusable template and two apps built from it, each in its own folder:
+
+| Folder | What it is |
+| --- | --- |
+| [`template/`](template/) | The skeleton: watch definitions, polite fetching, semantic diff, rules, history, alerts, storage, the haunted dashboard and the CLI |
+| [`apps/bonus-watch/`](apps/bonus-watch/) | **The Bonus Crypt** watches bank and card sign-up bonus pages for changes to the amount, deposit, deadline and fine print |
+| [`apps/listing-watch/`](apps/listing-watch/) | **Haunted Listings** watches rental listings and city building permits, and only speaks up about items that match your filters |
+
+![A séance in Haunted Listings: the listings on the page, which ones are new, the rules that make the ghost stir, and the haunting log](docs/haunted-listings-seance.png)
 
 ## What works
 
@@ -90,6 +121,49 @@ and a rotating promo on every page, plus one night where a bank only reformats i
 `listingWorthKnowing`). The dashboard shows the same count live: each stone says how many page
 changes its ghost slept through, and every night's toast reads like
 "3 pages changed: 2 worth waking for, 1 ignored as noise."
+
+## Why not changedetection.io, Visualping or Distill?
+
+They are mature, general-purpose page watchers, and if you want to watch many different pages with
+little setup, start with one of them. Ghost Watcher is narrower on purpose: a few pages you care a lot
+about, typed values, and rules you can read and test.
+
+| | What it does well (from its own docs) | Where Ghost Watcher differs |
+| --- | --- | --- |
+| [changedetection.io](https://github.com/dgtlmoon/changedetection.io) | Open source (Apache-2.0), self-hosted or $8.99/month hosted. CSS, XPath and JSONPath filters, ignore and trigger text, price and restock detection, price conditions, notifications to Discord, Slack, email and more through Apprise, optional LLM summaries | Its README leaves robots.txt compliance to the user. Ghost Watcher's fetcher enforces robots.txt, identifies itself honestly, and refuses to start against a real site without a contact URL |
+| [Visualping](https://visualping.io) | Hosted visual and text monitoring, AI "Important Alerts" on every plan, a free plan of 150 checks a month across 5 pages | Whether a change matters is decided by rules you can read and unit-test, not by a model, so the same page change always gets the same answer |
+| [Distill.io](https://distill.io) | Browser extension and cloud monitors, CSS and XPath selections, conditions such as "has number that increased more than", AI change summaries on its Enterprise and Flexi plans | Values are typed before they are compared: money in integer cents, dates in days, list items matched by identity, so alerts state the change ("Deadline moved from Sep 30, 2026 to Jan 15, 2027 (107 days later).") |
+
+Also only here: the **Ghost of Terms Past** (a page's history from the Wayback Machine on the first
+sighting), the **bait-and-switch** rule, the [measured noise table](#signal-not-noise), and the fact
+that it is a template: each app above is one `app.ts` file plus a fixture site and tests.
+
+Feature details checked against each product's own pages on 2026-11-18:
+[changedetection.io README](https://github.com/dgtlmoon/changedetection.io),
+[Visualping pricing](https://visualping.io/business/pricing/),
+[Visualping AI](https://visualping.io/blog/visualping-ai),
+[Distill conditions](https://distill.io/docs/web-monitor/using-conditions-to-get-alert-on-important-changes/),
+[Distill AI change summary](https://distill.io/docs/web-monitor/ai-change-summary/).
+
+## Built with Kiro
+
+Kiro planned this repo before any code was written. Everything it used and produced is in
+[`.kiro/`](.kiro/):
+
+- [`.kiro/steering/`](.kiro/steering/): product, tech and structure steering files, always included.
+- [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): requirements in EARS notation,
+  the design, and the task list. Kiro generated all three. Every task is now checked off, with
+  implementation notes.
+- [`.kiro/hooks/`](.kiro/hooks/): a hook that type-checks and runs the unit tests when a source or test
+  file under `template/`, `apps/` or `e2e/` is saved, one that runs the full suite when an agent turn
+  ends, and an agent hook (`money-guard`) that restates the integer-cents money rule when
+  `normalize.ts`, `diff.ts` or `rules.ts` is saved. They use Kiro's `v1` hook file format
+  (`PostFileSave` and `Stop` triggers), which Kiro IDE 1.0 and CLI V3 load from `.kiro/hooks/*.json`.
+
+[`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the exact prompt, the files produced, the
+errors hit along the way, and the one requirement that was revised by hand.
+
+A three-minute walkthrough for a demo video is in [`docs/demo-script.md`](docs/demo-script.md).
 
 ## How to run
 
@@ -202,26 +276,6 @@ documentation-only domain (the fixture and demo sites), the User-Agent says
 third-party site and `GHOST_CONTACT_URL` is unset or names a documentation-only domain such as
 `example.com`, so set it to a page you control before watching live sites. A placeholder is never
 sent as a contact.
-
-## Built with Kiro
-
-Kiro planned this repo before any code was written. Everything it used and produced is in
-[`.kiro/`](.kiro/):
-
-- [`.kiro/steering/`](.kiro/steering/): product, tech and structure steering files, always included.
-- [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): requirements in EARS notation,
-  the design, and the task list. Kiro generated all three. Every task is now checked off, with
-  implementation notes.
-- [`.kiro/hooks/`](.kiro/hooks/): a hook that type-checks and runs the unit tests when a source or test
-  file under `template/`, `apps/` or `e2e/` is saved, one that runs the full suite when an agent turn
-  ends, and an agent hook (`money-guard`) that restates the integer-cents money rule when
-  `normalize.ts`, `diff.ts` or `rules.ts` is saved. They use Kiro's `v1` hook file format
-  (`PostFileSave` and `Stop` triggers), which Kiro IDE 1.0 and CLI V3 load from `.kiro/hooks/*.json`.
-
-[`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the exact prompt, the files produced, the
-errors hit along the way, and the one requirement that was revised by hand.
-
-A three-minute walkthrough for a demo video is in [`docs/demo-script.md`](docs/demo-script.md).
 
 ## Disclaimer
 
