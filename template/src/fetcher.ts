@@ -21,14 +21,23 @@ export type Transport = (
   init: { headers: Record<string, string>; signal: AbortSignal; redirect: 'follow' },
 ) => Promise<{ status: number; url: string; text(): Promise<string>; headers: { get(name: string): string | null } }>;
 
+/** What the User-Agent says in place of a contact URL when every watched page is on this machine. */
+export const LOCAL_ONLY_CONTACT = 'local-only, no public contact';
+
 export interface UserAgentOptions {
   product?: string;
   version: string;
-  /** Where a site operator can learn about the watcher or reach its owner. Required: we identify ourselves. */
-  contactUrl: string;
+  /** Where a site operator can learn about the watcher or reach its owner. Required unless `localOnly`. */
+  contactUrl?: string;
+  /**
+   * For watchers that only visit loopback or reserved hosts (fixture and demo sites): say so, instead
+   * of naming a contact page nobody can visit. Takes precedence over `contactUrl`.
+   */
+  localOnly?: boolean;
 }
 
-export function buildUserAgent({ product = 'GhostWatcher', version, contactUrl }: UserAgentOptions): string {
+export function buildUserAgent({ product = 'GhostWatcher', version, contactUrl, localOnly }: UserAgentOptions): string {
+  if (localOnly) return `${product}/${version} (${LOCAL_ONLY_CONTACT}; page-change watcher)`;
   if (!contactUrl) throw new Error('A contact URL is required so site operators can identify the watcher.');
   return `${product}/${version} (+${contactUrl}; page-change watcher)`;
 }

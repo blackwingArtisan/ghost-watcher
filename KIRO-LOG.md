@@ -122,3 +122,132 @@ A review of a clean clone raised three points, handled by hand without further K
   REQ-FETCH-SEC-01 and task 20.2.
 - **First impression.** `demo` mode now takes the baseline at startup and adds a **Let a night
   pass** button, so the first click already shows a change. Added as REQ-DEMO-01 and task 20.3.
+
+## Kiro pass 2 (kiro-cli v3, bonus credits)
+
+- **When:** 2026-11-19, 01:43 to 01:59 UTC (16 min 12 s wall time, under a 25-minute cap; exit code 0).
+- **Command** (repo root, stdin closed):
+  `kiro-cli chat --v3 --no-interactive --trust-workspace --trust-tools=fs_read,fs_write,run_command "<prompt>" </dev/null`
+- **Credits used:** 29.75 of the 4,000 `kiroween2026` bonus credits (`/usage` read 29.38 before the call and 59.13 after).
+- **What Kiro did:** audited the spec against the code, rewrote the requirements and design where the build had
+  drifted, wrote the integer-cents money change and the contact URL change with their tests, edited the hooks and
+  steering files, and ran `npm run typecheck` and `npm run test:unit` itself. When Kiro stopped, the workspace's
+  own `full-suite-on-stop.json` hook ran `npm test` (including Playwright), which caught one stale e2e assertion;
+  Kiro fixed it in the same session (see "Follow-up" below).
+- **After the call (operator):** full suite re-run: Vitest 156 of 156 (118 before the pass), Playwright 12 of 12.
+  Nothing needed fixing.
+
+### Exact prompt
+
+> You are working in the Ghost Watcher repository (npm workspaces: template, apps/bonus-watch, apps/listing-watch; TypeScript, Vitest, Playwright). Read .kiro/steering/product.md, tech.md and structure.md first and follow them. Work only inside this repository. Do not add, remove or upgrade any npm dependency, do not run npm install, do not use git, and do not deploy or call any network service. Keep wording professional and use invented sample data only (example banks, example.com, 555-01xx numbers).
+>
+> Do these four jobs in order.
+>
+> 1. Spec review. Read .kiro/specs/ghost-watcher-kit/requirements.md, design.md and tasks.md and compare them with the code in template/src, apps/*/src and the tests in template/test, apps/*/test and e2e/. Tighten every acceptance criterion into strict EARS form (WHEN / WHILE / IF ... THEN / WHERE ... THE SYSTEM SHALL ...), one testable behavior per criterion, keeping existing requirement IDs so task references stay valid. Where the "Implementation notes" in tasks.md record that the build differs from a requirement, update the requirement or design so they describe what the code really does. Mark a task [x] only if code and a test really implement it. Add a new unchecked task for every gap you find, with its requirement IDs.
+>
+> 2. Implement two real tasks (add each to tasks.md first, then build it, then check it off):
+>    a. Money as integer cents. REQ-DIFF-02 and task 3.2 say money normalizes to { amountMinor, currency }, but template/src/normalize.ts parses money into a floating-point `value` (Number(...) / 100 and Math.round(value * 100) / 100), and template/src/diff.ts computes `delta` with floating-point rounding. Change the money normalizer to produce integer minor units (cents) with no floating-point arithmetic on the parsed digits (parse the whole and fractional digit strings into integers), store and compare money as integer cents, compute money deltas as integer cents, and format cents back to a currency string only at the edge (summary sentences, alert emails, dashboard). Update every consumer (diff, rules wentUp/wentDown and newItem filters such as price lte, summary, alert rendering, the apps' rules and filters) so behavior and the user-visible sentences stay the same. Add Vitest tests proving: "$1,234.56" becomes 123456 cents; "$0.10" plus "$0.20" style comparisons have no float error (for example a change from $0.10 to $0.30 gives a delta of exactly 20 cents); amounts above 2^31 cents still parse exactly; and existing summaries still read the same.
+>    b. Placeholder contact URL. apps/bonus-watch/src/app.ts and apps/listing-watch/src/app.ts ship contactUrl values on example.com, a documentation-only domain, so the honest User-Agent names a contact page nobody can visit. template/src/config.ts already refuses to start when a third-party site is watched with a placeholder contact. Make this clean: the apps must not present an example.com URL as if it were a real contact. Choose the smallest clear design, for example: make the app-level contactUrl optional; WHEN every watched URL is on a loopback or reserved host (the fixture and demo setups) the User-Agent uses an explicit local-only contact token that clearly says so; IF any watch targets a real host and GHOST_CONTACT_URL is unset or a placeholder THEN config refuses to start with the existing clear message. Update the apps, config, README text that mentions the contact URL, the requirement (REQ-FETCH-02 / REQ-FETCH-SEC-01) and the implementation notes, and add Vitest tests for each branch.
+>    Keep `npm run typecheck` green; template code must stay importable from the apps only through @ghost-watcher/template.
+>
+> 3. Hooks. Kiro's current hook format is .kiro/hooks/<name>.json with "version": "v1" and a "hooks" array (fields: name, description, trigger in PascalCase such as PostFileSave or Stop, matcher regex against the file path, action with type "command" + command or type "agent" + prompt, timeout in seconds, enabled). Check the two files in .kiro/hooks/ against that format and fix anything invalid. The test-on-save matcher "\\.(ts|js)$" also fires for files outside the source tree; narrow it to template/, apps/ and e2e/ source and test files. Add one agent hook, money-guard.json, that fires on edits to template/src/normalize.ts, diff.ts or rules.ts and re-states the integer-cents rule and asks for a unit test. Keep the steering files accurate: update tech.md / structure.md / product.md where anything you changed makes them wrong (for example the money representation).
+>
+> 4. Append a new section "## Kiro pass 2 (kiro-cli v3, bonus credits)" to KIRO-LOG.md listing: each spec change (criteria tightened, tasks checked, tasks added), each source and test file you changed and why, the hook changes, and anything you could not do. Leave a line "Credits used: TO BE FILLED" for the operator to fill in.
+>
+> If run_command is available, run `npm run typecheck` and `npm run test:unit` when you finish and fix any failures you caused. Do not run the Playwright suite yourself; the operator will.
+
+### Spec changes
+
+- **Requirements (`requirements.md`).** Every acceptance criterion is now one sentence in strict EARS
+  form (WHEN, WHILE, IF ... THEN, WHERE or ubiquitous, each with THE SYSTEM SHALL) and states one
+  testable behavior. Requirement IDs are unchanged. The first draft's "Tests SHALL ..." and mixed
+  criteria were rewritten or split. Requirements that the build had changed now describe the code:
+  - REQ-FETCH-01 (robots refusal is a `blocked` outcome, not `skipped`; no allow-on-failure opt-in),
+    REQ-FETCH-03 (the interval runs from the last attempt; Crawl-delay is a gap between requests),
+    REQ-FETCH-05 (back-off, 429/503, layout-changed errors), REQ-STORE-01 to 03 (`BlobStore` and
+    `GhostStore`, not `SnapshotStore`), REQ-DIFF-05 (percent is percentage points, not a ratio),
+    REQ-DASH-03 to 06 (five ghost states, `acknowledgedAt`, real endpoints), REQ-DASH-08 (ports 3138
+    and 3139), REQ-ALERTS-01 (`deliver`, not `send`), REQ-WATCH-02 and 04 (`url` kind, `pattern`,
+    `itemRemoved`, `itemChanged`).
+  - New requirements: REQ-STORE-05 (legacy money snapshots), REQ-RULES-08 (`itemRemoved`,
+    `itemChanged`), REQ-RULES-09 (severity), REQ-ALERTS-06 (one message per check, delivery
+    failures).
+  - Money and contact URL: REQ-DIFF-02 (integer cents, exact deltas, no rounding past the safe
+    range), REQ-RULES-01, 02 and 06 (`minDelta` and filter targets compared exactly), REQ-FETCH-02
+    (optional contact URL, local-only User-Agent) and REQ-FETCH-SEC-01 (refusal rules).
+- **Design (`design.md`).** Rewritten to match the code: module layout, `FetchOutcome`, `BlobStore` and
+  `GhostStore`, the `Value` and `Diff` types, the runner sequence with back-off, the dashboard routes
+  and ghost states, the contact URL policy (section 4.2), the money rules (section 7) and the test
+  plan. It no longer claims a `dashboard-state.json` file or a `SnapshotStore` port.
+- **Tasks (`tasks.md`).**
+  - Checked: 3.2 and the two new tasks 21.1 (money) and 21.2 (contact URL), after code and tests
+    landed. New task 6.9 (`itemRemoved`, `itemChanged`, severities) is checked because code and tests
+    exist.
+  - Unchecked on review: 19.3 (later checked: the operator's run passed after one fix) and 19.4 (one config
+    test builds the real AWS SDK clients, which breaks REQ-TEST-06.1).
+  - Reworded to match the code: 2.1, 3.5, 5.2, 6.6, 9.2, 9.4, 10.1 to 10.4, 11.5, 12.2, 14.3, 14.4,
+    17.2, 17.4, 18.2, 18.4, 19.5, 20.2, and the intro of the implementation notes.
+  - Added, unchecked: 21.3 (duplicate watch ids test), 21.4 (apps import only the public API test),
+    21.5 (no raw HTML in snapshots test), 21.6 (injectable cloud client factory, fake clients in the
+    config test), 21.7 (restart tests for interval and acknowledgment), 21.8 (in-flight card state
+    test), 21.9 (palette contrast test), 21.10 (JSDoc `any` in `template/src/ui/*.js`), 21.11
+    (User-Agent shown in startup output and the dashboard footer).
+  - Implementation notes now record the money, contact URL, percent, `wentUp` and dates, robots
+    outcomes, acknowledgment, demo ports and test-gap differences.
+
+### Source and test files changed
+
+- `template/src/normalize.ts`: money is `{ amountMinor, currency, display }`. Digit strings are parsed
+  into integers with `BigInt` (`minorFromDigits`, `parseMoney`, `minorFromDecimal`); amounts beyond
+  `Number.MAX_SAFE_INTEGER` cents fall back to text. `formatMinor` replaces `formatMoney` and formats
+  with integer division. `compareMinorToMajor` and `compareToTarget` compare cents with a target in
+  dollars exactly. `upgradeStoredValue` converts legacy decimal money. `canonical` uses cents.
+  Why: REQ-DIFF-02 and task 3.2 required integer cents; the code used floats.
+- `template/src/diff.ts`: money deltas are exact integer cents (no rounding).
+- `template/src/rules.ts`: filters use `compareToTarget`; `minDelta` for money is converted exactly
+  (`meetsMinDelta`). App-facing units (dollars) are unchanged.
+- `template/src/summary.ts`: the money delta in sentences uses `formatMinor`; sentences read the same.
+- `template/src/store/ghost-store.ts`: snapshots read from the store are upgraded from decimal money,
+  so existing `.ghost-data` folders raise no false change after the upgrade. (Not in the request;
+  added to protect "signal, not noise".)
+- `template/src/fetcher.ts`, `template/src/app.ts`, `template/src/config.ts`, `template/src/index.ts`:
+  `contactUrl` is optional; `buildUserAgent` takes `localOnly` and `LOCAL_ONLY_CONTACT` is exported;
+  `loadDeps` never sends a placeholder contact, uses the local-only token when every watch is on a
+  loopback or reserved host, and refuses to start for a real host without a real contact URL.
+- `apps/bonus-watch/src/app.ts`, `apps/listing-watch/src/app.ts`: removed the `example.com`
+  `contactUrl`.
+- Tests: new `template/test/money.test.ts` (123456 cents, float traps, exact 20 cent delta, amounts
+  above 2^31 cents and at the safe limit, exact filters and `minDelta`, legacy upgrade, unchanged
+  summaries); rewrote the contact URL tests in `template/test/guard.test.ts` (every branch); added a
+  `buildUserAgent` local-only test in `politeness.test.ts`; adjusted `adapters.test.ts`,
+  `extract-diff.test.ts`, `normalize.test.ts`, `runner-server.test.ts` for cents and the new User-Agent;
+  added contact URL tests to both app test files and updated their money assertions.
+- Docs: `README.md` (contact URL and hooks text), `template/README.md` (example without a contact URL,
+  money and `wentUp` notes), `docs/demo-script.md` (User-Agent line).
+- Steering: `tech.md` (money representation, User-Agent and contact rules), `structure.md`
+  (`normalize.ts`, `guard.ts`, demo ports, hooks), `product.md` (User-Agent wording).
+
+### Hook changes
+
+- `test-on-save.json`: the matcher was `\.(ts|js)$`, which also fired for config files, `node_modules`
+  and `.ghost-e2e` output. It is now `(^|/)(template/(src|test)|apps/[^/]+/(src|test|fixtures)|e2e)/.*\.(ts|js)$`
+  (checked against sample paths). Added `"enabled": true`.
+- `full-suite-on-stop.json`: already valid for schema `v1` (PascalCase `Stop`, `command` action,
+  timeout in seconds). Added `"enabled": true` only.
+- `money-guard.json` (new): an `agent` hook on `PostFileSave` for `template/src/normalize.ts`,
+  `diff.ts` and `rules.ts`. Its prompt restates the integer-cents rule and asks for a unit test.
+- I checked the hook schema against the field list in the request, not against the Kiro
+  documentation (no network access was allowed in this pass).
+
+### Not done
+
+- Section 21 tasks 21.3 to 21.11 are recorded but not built; they are gaps found in review, outside
+  the two requested implementation tasks. Task 19.4 stays open until 21.6 is done.
+- The README screenshots in `docs/` were not regenerated.
+- Verified at the end of this pass: `npm run typecheck` and `npm run test:unit` pass.
+
+### Follow-up after the Stop hook's full-suite run
+
+- `e2e/bonus-watch.spec.ts` still expected the old `example.com` User-Agent; it now expects the
+  local-only token. The bonus-watch spec passes, the other 11 e2e tests passed in the full run, and
+  task 19.3 is checked.

@@ -81,5 +81,5 @@ test('bonus-watch: a bonus change makes the ghost glow and lands in the outbox',
   const log = (await (await request.get(`${FIXTURES}/__fixture/log`)).json()) as Array<{ path: string; userAgent: string }>;
   expect(log.some((entry) => entry.path.startsWith('/members/'))).toBe(false);
   expect(log.length).toBeGreaterThan(0);
-  for (const entry of log) expect(entry.userAgent).toMatch(/^GhostWatcher\/0\.1\.0 \(\+https:\/\/example\.com\//);
+  for (const entry of log) expect(entry.userAgent).toBe('GhostWatcher/0.1.0 (local-only, no public contact; page-change watcher)');
 });

@@ -67,40 +67,88 @@ describe('contact URL honesty', () => {
     expect(visitsThirdParty('https://www.lanternfield-bank.com/offer')).toBe(true);
   });
 
-  const watchAt = (url: string) =>
+  const watchAt = (url: string, id = 'lantern') =>
     defineWatch({
-      id: 'lantern',
+      id,
       name: 'Lanternfield',
       url,
       intervalMs: 6 * HOUR_MS,
       fields: [{ name: 'bonus', label: 'Bonus', selector: '.bonus', kind: 'money' }],
       rules: [rules.wentUp('bonus')],
     });
-  const appAt = (url: string): GhostApp =>
+  const appAt = (urls: string[], contactUrl?: string): GhostApp =>
     defineApp({
       id: 'test-app',
       name: 'Test Crypt',
       tagline: 'Testing',
       version: '0.1.0',
-      contactUrl: 'https://example.com/about',
+      ...(contactUrl === undefined ? {} : { contactUrl }),
       alertTo: ['tester@example.com'],
       copy: { watchNoun: 'pages', quiet: 'Quiet.' },
-      watches: [watchAt(url)],
+      watches: urls.map((url, index) => watchAt(url, `lantern-${index}`)),
     });
   const env = { GHOST_STORE: 'memory', GHOST_ALERTS: 'console' };
+  const REAL = 'https://www.lanternfield-bank.com/offer';
+  const LOCAL = 'http://127.0.0.1:3131/offer';
+  const LOCAL_ONLY_UA = 'GhostWatcher/0.1.0 (local-only, no public contact; page-change watcher)';
 
-  it('refuses to visit a real site while the contact URL is still a placeholder', async () => {
-    await expect(loadDeps(appAt('https://www.lanternfield-bank.com/offer'), { env })).rejects.toBeInstanceOf(ConfigError);
-    await expect(loadDeps(appAt('https://www.lanternfield-bank.com/offer'), { env })).rejects.toThrow(/GHOST_CONTACT_URL/);
+  it('refuses a real site when no contact URL is configured at all', async () => {
+    const attempt = loadDeps(appAt([REAL]), { env });
+    await expect(attempt).rejects.toBeInstanceOf(ConfigError);
+    await expect(attempt).rejects.toThrow(/GHOST_CONTACT_URL/);
+    await expect(attempt).rejects.toThrow(/must identify itself/);
   });
 
-  it('accepts a real site once GHOST_CONTACT_URL names a reachable page, and local fixtures without one', async () => {
-    const real = await loadDeps(appAt('https://www.lanternfield-bank.com/offer'), {
-      env: { ...env, GHOST_CONTACT_URL: 'https://stubborn-otter.dev/ghost-watcher' },
-    });
+  it('refuses a real site while the only contact URL is a placeholder, whether from the app or the environment', async () => {
+    const fromApp = loadDeps(appAt([REAL], 'https://example.com/about'), { env });
+    await expect(fromApp).rejects.toBeInstanceOf(ConfigError);
+    await expect(fromApp).rejects.toThrow(/placeholder https:\/\/example\.com\/about/);
+    await expect(fromApp).rejects.toThrow(/GHOST_CONTACT_URL/);
+    const fromEnv = loadDeps(appAt([REAL]), { env: { ...env, GHOST_CONTACT_URL: 'https://crypt.example/me' } });
+    await expect(fromEnv).rejects.toThrow(/placeholder https:\/\/crypt\.example\/me/);
+    await expect(loadDeps(appAt([REAL]), { env: { ...env, GHOST_CONTACT_URL: '  ' } })).rejects.toThrow(/must identify itself/);
+  });
+
+  it('refuses when only some of the watches are local', async () => {
+    await expect(loadDeps(appAt([LOCAL, REAL]), { env })).rejects.toThrow(/lanternfield-bank\.com/);
+  });
+
+  it('accepts a real site once GHOST_CONTACT_URL names a reachable page', async () => {
+    const real = await loadDeps(appAt([REAL]), { env: { ...env, GHOST_CONTACT_URL: 'https://stubborn-otter.dev/ghost-watcher' } });
     expect(real.describe.userAgent).toBe('GhostWatcher/0.1.0 (+https://stubborn-otter.dev/ghost-watcher; page-change watcher)');
-    const fixture = await loadDeps(appAt('http://127.0.0.1:3131/offer'), { env });
-    expect(fixture.describe.userAgent).toContain('+https://example.com/about');
+    expect(real.app.contactUrl).toBe('https://stubborn-otter.dev/ghost-watcher');
+  });
+
+  it('accepts a real site when the app carries a real contact URL, and lets the environment override it', async () => {
+    const fromApp = await loadDeps(appAt([REAL], 'https://stubborn-otter.dev/app'), { env });
+    expect(fromApp.describe.userAgent).toContain('+https://stubborn-otter.dev/app;');
+    const overridden = await loadDeps(appAt([REAL], 'https://stubborn-otter.dev/app'), {
+      env: { ...env, GHOST_CONTACT_URL: 'https://stubborn-otter.dev/env' },
+    });
+    expect(overridden.describe.userAgent).toContain('+https://stubborn-otter.dev/env;');
+  });
+
+  it('sends the explicit local-only token when every watch is on a loopback or reserved host', async () => {
+    const fixture = await loadDeps(appAt([LOCAL]), { env });
+    expect(fixture.describe.userAgent).toBe(LOCAL_ONLY_UA);
+    expect(fixture.app.contactUrl).toBeUndefined();
+    const reserved = await loadDeps(appAt(['https://www.example.com/offer', 'https://bank.invalid/offer', 'http://localhost:3131/']), { env });
+    expect(reserved.describe.userAgent).toBe(LOCAL_ONLY_UA);
+    expect(reserved.fetcher).toMatchObject({ userAgent: LOCAL_ONLY_UA });
+  });
+
+  it('never presents a placeholder contact URL, even for local watches', async () => {
+    const fromApp = await loadDeps(appAt([LOCAL], 'https://example.com/about'), { env });
+    expect(fromApp.describe.userAgent).toBe(LOCAL_ONLY_UA);
+    expect(fromApp.app.contactUrl).toBeUndefined();
+    const fromEnv = await loadDeps(appAt([LOCAL]), { env: { ...env, GHOST_CONTACT_URL: 'https://example.org/me' } });
+    expect(fromEnv.describe.userAgent).not.toContain('example.org');
+    expect(fromEnv.describe.userAgent).toBe(LOCAL_ONLY_UA);
+  });
+
+  it('keeps a real contact URL for local watches when one is configured', async () => {
+    const deps = await loadDeps(appAt([LOCAL]), { env: { ...env, GHOST_CONTACT_URL: 'https://stubborn-otter.dev/ghost-watcher' } });
+    expect(deps.describe.userAgent).toContain('+https://stubborn-otter.dev/ghost-watcher;');
   });
 });
 
@@ -130,7 +178,6 @@ describe('dashboard server refuses cross-origin writes', () => {
       name: 'Test Crypt',
       tagline: 'Testing',
       version: '0.1.0',
-      contactUrl: 'https://example.com/about',
       alertTo: ['tester@example.com'],
       copy: { watchNoun: 'pages', quiet: 'Quiet.' },
       watches: [

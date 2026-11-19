@@ -24,21 +24,24 @@ describe('normalizeWhitespace', () => {
 
 describe('parseMoney', () => {
   it.each([
-    ['$300', 300],
-    ['$1,500.00', 1500],
-    ['$ 250.00', 250],
-    ['USD 1200', 1200],
-    ['1,200 USD', 1200],
-    ['$2.5k', 2500],
-    ['Earn a $400 bonus', 400],
-  ])('reads %s as %d', (raw, value) => {
-    expect(parseMoney(raw)?.value).toBe(value);
+    ['$300', 30000],
+    ['$1,500.00', 150000],
+    ['$ 250.00', 25000],
+    ['USD 1200', 120000],
+    ['1,200 USD', 120000],
+    ['$2.5k', 250000],
+    ['Earn a $400 bonus', 40000],
+    ['$1,234.56', 123456],
+    ['$0.10', 10],
+    ['$12.5', 1250],
+  ])('reads %s as %d cents', (raw, amountMinor) => {
+    expect(parseMoney(raw)?.amountMinor).toBe(amountMinor);
   });
   it('prefers an amount with a currency symbol over earlier bare numbers', () => {
-    expect(parseMoney('Open by 12/31 and earn $300')?.value).toBe(300);
+    expect(parseMoney('Open by 12/31 and earn $300')?.amountMinor).toBe(30000);
   });
   it('keeps the currency', () => {
-    expect(parseMoney('£75')).toEqual({ value: 75, currency: 'GBP' });
+    expect(parseMoney('£75')).toEqual({ amountMinor: 7500, currency: 'GBP' });
   });
   it('returns null when there is no number at all', () => {
     expect(parseMoney('Bonus ended')).toBeNull();
@@ -105,7 +108,7 @@ describe('normalizeValue and equality', () => {
     expect(displayValue(null)).toBe('nothing');
   });
   it('has stable canonical keys', () => {
-    expect(canonical(normalizeValue('$300', 'money'))).toBe('money:USD:300.00');
+    expect(canonical(normalizeValue('$300', 'money'))).toBe('money:USD:30000');
     expect(canonical(null)).toBe('∅');
   });
   it('reads dates as day numbers for comparisons', () => {

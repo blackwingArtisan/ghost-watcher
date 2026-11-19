@@ -6,7 +6,7 @@ export { diff, compareValues, fingerprint, isEmptyDiff, type Diff, type FieldCha
 export { evaluateRules, matchesFilter, describeRule, describeCondition, type Finding } from './rules';
 export { describeFieldChange, describeItem, sentences, textChange, wordDiff, changedWindow, type WordSegment } from './summary';
 export { parseRobots, isAllowed, crawlDelayMs, productToken, type RobotsPolicy } from './robots';
-export { PoliteFetcher, buildUserAgent, type Fetcher, type FetchOutcome, type PoliteFetcherOptions, type Transport } from './fetcher';
+export { PoliteFetcher, buildUserAgent, LOCAL_ONLY_CONTACT, type Fetcher, type FetchOutcome, type PoliteFetcherOptions, type Transport } from './fetcher';
 export { systemClock, manualClock, type Clock, type ManualClock } from './clock';
 export { MemoryBlobStore, FileBlobStore, type BlobStore } from './store/blob';
 export { GhostStore, type WatchStatus } from './store/ghost-store';

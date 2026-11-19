@@ -13,7 +13,6 @@ export function buildApp(env: Env = process.env): GhostApp {
     name: 'The Bonus Crypt',
     tagline: 'Ghosts that haunt bank and card bonus pages, and wail the moment the terms change.',
     version: '0.1.0',
-    contactUrl: 'https://example.com/ghost-watcher/bonus-watch',
     alertTo: ['bonus.hunter@example.com'],
     theme: { accent: '#8dffb4', accentSecondary: '#e8c66a', sky: '#0d1414', moon: '#efe7c8', crest: 'Crypt' },
     copy: {

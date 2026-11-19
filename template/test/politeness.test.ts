@@ -54,6 +54,11 @@ Sitemap: https://example.com/sitemap.xml
 });
 
 describe('buildUserAgent', () => {
+  it('says plainly that a local-only watcher has no public contact, and ignores any contact URL it is given', () => {
+    const expected = 'GhostWatcher/0.1.0 (local-only, no public contact; page-change watcher)';
+    expect(buildUserAgent({ version: '0.1.0', localOnly: true })).toBe(expected);
+    expect(buildUserAgent({ version: '0.1.0', localOnly: true, contactUrl: 'https://example.com/x' })).toBe(expected);
+  });
   it('names the product, version and a contact URL', () => {
     expect(UA).toBe('GhostWatcher/0.1.0 (+https://example.com/ghost-watcher; page-change watcher)');
   });

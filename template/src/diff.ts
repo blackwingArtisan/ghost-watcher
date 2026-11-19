@@ -17,7 +17,10 @@ export interface FieldChange {
   type: 'added' | 'removed' | 'changed';
   before: MaybeValue;
   after: MaybeValue;
-  /** `after - before` when both values are numeric (money, number, percent, date in days). */
+  /**
+   * `after - before` when both values are numeric: integer minor units (cents) for money, days for
+   * dates, otherwise the plain difference.
+   */
   delta?: number;
 }
 
@@ -40,7 +43,10 @@ export function compareValues(field: string, before: MaybeValue, after: MaybeVal
   const change: FieldChange = { field, type: 'changed', before, after };
   const a = numericValue(before);
   const b = numericValue(after);
-  if (a !== null && b !== null && before.kind === after.kind) change.delta = Math.round((b - a) * 100) / 100;
+  if (a !== null && b !== null && before.kind === after.kind) {
+    // Money is integer cents, so its delta is exact. Other kinds are rounded to hide float dust.
+    change.delta = before.kind === 'money' ? b - a : Math.round((b - a) * 100) / 100;
+  }
   return change;
 }
 

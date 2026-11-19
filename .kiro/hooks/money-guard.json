@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Money stays integer cents",
+      "description": "When normalize.ts, diff.ts or rules.ts is saved, restate the integer-cents rule for money and ask for a unit test that proves it.",
+      "trigger": "PostFileSave",
+      "matcher": "(^|/)template/src/(normalize|diff|rules)\\.ts$",
+      "action": {
+        "type": "agent",
+        "prompt": "You just saved template/src/normalize.ts, diff.ts or rules.ts. Check the change against the Ghost Watcher money rule: money is an integer number of minor units (`amountMinor`, cents), never a floating-point amount. Parse the whole and fractional digit strings into integers (BigInt is fine) with no Number(...) / 100 and no Math.round(x * 100) / 100 on parsed digits. Store, compare and subtract cents, so a money delta is an exact integer number of cents. Convert cents to a currency string only at the edge (summary sentences, alert emails, the dashboard) with formatMinor. App authors still write dollars in where.* filters and minDelta, and the template converts those targets exactly with compareMinorToMajor or compareToTarget. If this edit touches any money parsing, comparison, delta, filter or formatting code, add or update a Vitest test in template/test/money.test.ts that covers it, including one case that floating point gets wrong (for example $0.10 to $0.30 must give a delta of exactly 20 cents, and $4.35 must parse to 435 cents). Then run `npm run typecheck && npm run test:unit` and fix any failure. If the edit does not touch money, say so in one sentence and stop."
+      },
+      "timeout": 300,
+      "enabled": true
+    }
+  ]
+}

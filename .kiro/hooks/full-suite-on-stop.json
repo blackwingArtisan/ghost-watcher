@@ -9,7 +9,8 @@
         "type": "command",
         "command": "npm test"
       },
-      "timeout": 300
+      "timeout": 300,
+      "enabled": true
     }
   ]
 }

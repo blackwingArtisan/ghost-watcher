@@ -4,7 +4,7 @@
  */
 import type { Diff, FieldChange, ListChange } from './diff';
 import type { ListItem } from './extract';
-import { numericValue, textOf, type MaybeValue } from './normalize';
+import { compareMinorToMajor, compareToTarget, textOf, type MaybeValue } from './normalize';
 import { describeFieldChange, describeItem, finish, sentences } from './summary';
 import type { FilterCondition, ListSpec, Rule, RuleKind, Severity, Watch } from './watch';
 
@@ -80,21 +80,23 @@ function sameText(a: string, b: string | number): boolean {
 
 function conditionHolds(value: MaybeValue, condition: FilterCondition): boolean {
   const text = textOf(value);
-  const number = numericValue(value);
   const target = condition.value;
+  // Numeric targets are in the units an app author writes (dollars for money); money is compared
+  // exactly in integer cents.
+  const order = typeof target === 'number' ? compareToTarget(value, target) : null;
   switch (condition.op) {
     case 'eq':
-      return typeof target === 'number' ? number === target : !Array.isArray(target) && sameText(text, target);
+      return typeof target === 'number' ? order === 0 : !Array.isArray(target) && sameText(text, target);
     case 'neq':
       return !conditionHolds(value, { ...condition, op: 'eq' });
     case 'lt':
-      return number !== null && typeof target === 'number' && number < target;
+      return order !== null && order < 0;
     case 'lte':
-      return number !== null && typeof target === 'number' && number <= target;
+      return order !== null && order <= 0;
     case 'gt':
-      return number !== null && typeof target === 'number' && number > target;
+      return order !== null && order > 0;
     case 'gte':
-      return number !== null && typeof target === 'number' && number >= target;
+      return order !== null && order >= 0;
     case 'contains':
       return text.toLowerCase().includes(String(target).toLowerCase());
     case 'in': {
@@ -124,6 +126,16 @@ function quoteMatching(text: string, pattern: string): string {
   return finish(`"${sentence}"`);
 }
 
+/** `minDelta` is in the units an app author writes: dollars for money, which `delta` holds as cents. */
+function meetsMinDelta(change: FieldChange, delta: number, minDelta: number | undefined): boolean {
+  if (!minDelta) return true;
+  if (change.after?.kind === 'money') {
+    const order = compareMinorToMajor(delta, minDelta);
+    return order !== null && order >= 0;
+  }
+  return delta >= minDelta;
+}
+
 function evaluateFieldRule(rule: Extract<Rule, { field: string }>, change: FieldChange, watch: Watch): string | null {
   const label = fieldLabel(watch, change.field);
   switch (rule.kind) {
@@ -131,7 +143,7 @@ function evaluateFieldRule(rule: Extract<Rule, { field: string }>, change: Field
     case 'wentDown': {
       if (change.type !== 'changed' || change.delta === undefined || change.after?.kind === 'date') return null;
       const delta = rule.kind === 'wentUp' ? change.delta : -change.delta;
-      if (delta <= 0 || delta < (rule.minDelta ?? 0)) return null;
+      if (delta <= 0 || !meetsMinDelta(change, delta, rule.minDelta)) return null;
       return describeFieldChange(label, change);
     }
     case 'changed':

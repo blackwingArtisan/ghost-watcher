@@ -22,7 +22,7 @@ export function buildApp(env: Env = process.env) {
     name: 'The Haunted Till',
     tagline: 'Ghosts that watch a shop for price drops.',
     version: '0.1.0',
-    contactUrl: 'https://example.com/price-watch', // sent in the User-Agent
+    // contactUrl: 'https://your-domain.example/price-watch', // add a real page before watching live sites
     alertTo: ['shopper@example.com'],
     copy: { watchNoun: 'shop pages', quiet: 'Nothing has stirred yet.' },
     theme: { accent: '#ffb86b', crest: 'Till' },
@@ -120,7 +120,7 @@ their `test/` folders and the root `e2e/` folder.
 | Module | Responsibility |
 | --- | --- |
 | `watch.ts` | `defineWatch`, the `rules` and `where` builders, validation |
-| `normalize.ts` | Whitespace, money, number, percent, date and URL normalizers, and canonical keys |
+| `normalize.ts` | Whitespace, money (integer cents), number, percent, date and URL normalizers, and canonical keys |
 | `extract.ts` | HTML to watched values with cheerio: fields, lists, attributes, `pattern` captures |
 | `diff.ts` | Semantic diff of two snapshots: field changes with deltas, and list items added, removed or changed by identity |
 | `rules.ts` | Evaluates rules against a diff, applies filters, and dedupes to the most specific and loudest finding |
@@ -130,7 +130,7 @@ their `test/` folders and the root `e2e/` folder.
 | `runner.ts` | The check pipeline, interval gate, back-off and single-flight checks |
 | `store/` | `BlobStore` port (memory, file, S3) and `GhostStore` (snapshots, status, alerts, acknowledgements) |
 | `alerts/` | `AlertSink` port (outbox, console, fan-out, SES) and the email renderer |
-| `config.ts` | Environment-driven adapter selection (`loadDeps`); refuses a placeholder contact URL for real sites |
+| `config.ts` | Environment-driven adapter selection (`loadDeps`); picks the User-Agent contact and refuses a missing or placeholder contact URL for real sites |
 | `guard.ts` | Dashboard request guard: loopback or `GHOST_ALLOWED_HOSTS` Host only, same-origin POSTs only |
 | `server.ts`, `view.ts`, `ui/` | The dashboard: JSON API, view model, shared renderer, client script and theme |
 | `cli.ts` | `check`, `serve`, `demo`, `list` |
@@ -139,7 +139,7 @@ their `test/` folders and the root `e2e/` folder.
 
 | Rule | Fires when |
 | --- | --- |
-| `rules.wentUp(field, { minDelta? })` | A numeric, money, percent or date value increases |
+| `rules.wentUp(field, { minDelta? })` | A numeric, money or percent value increases (dates are reported by `changed`, in days) |
 | `rules.wentDown(field, { minDelta? })` | It decreases |
 | `rules.changed(field)` | The normalized value changes. It is skipped when a more specific rule already fired for the same field |
 | `rules.appeared(field, { matching? })` | The region appears, or a sentence matching the phrase is new |
@@ -149,7 +149,9 @@ their `test/` folders and the root `e2e/` folder.
 | `rules.itemChanged(list, field, { direction? })` | A field of an existing item changes, optionally only `up` or `down` |
 
 Filters: `where.eq`, `neq`, `lt`, `atMost`, `gt`, `atLeast`, `oneOf`, `contains`.
-Text filters ignore case; numeric filters compare normalized numbers.
+Text filters ignore case; numeric filters compare normalized numbers. Money is held as integer cents
+internally, and filter targets and `minDelta` are written in major units (`where.atMost('price', 2100)`
+means $2,100), so comparisons are exact.
 
 Every rule takes `severity` (`whisper`, `moan` or `shriek`) and an optional `label`. No rule fires
 on the first check of a watch.

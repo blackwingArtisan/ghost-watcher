@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { diff, evaluateRules, extract, type Watch } from '@ghost-watcher/template';
+import { diff, evaluateRules, extract, loadDeps, type Watch } from '@ghost-watcher/template';
 import { startFixtureServer, type FixtureServer } from '@ghost-watcher/template/testing';
 import { listingSite } from '../fixtures/site';
 import { FILTERS, buildApp } from '../src/app';
@@ -36,7 +36,7 @@ describe('listing-watch watches against its fixture pages', () => {
     expect(items[0]?.values).toMatchObject({
       id: { text: 'LR-2041' },
       beds: { value: 2 },
-      price: { value: 2300 },
+      price: { amountMinor: 230000 },
       link: { href: 'https://hollowmere.example.com/rentals/listing/LR-2041?sid=1' },
     });
   });
@@ -80,6 +80,28 @@ describe('listing-watch watches against its fixture pages', () => {
 
   it('Old Mill Lofts: leasing opens', () => {
     expect(findings('old-mill-lofts', 1, 2).map((f) => f.summary)).toEqual(['Leasing now says "Now leasing: 12 units available for January move-in."']);
+  });
+});
+
+describe('listing-watch contact URL', () => {
+  const LOCAL_ONLY_UA = 'GhostWatcher/0.1.0 (local-only, no public contact; page-change watcher)';
+  const memory = { GHOST_STORE: 'memory', GHOST_ALERTS: 'console' };
+
+  it('ships without a contact URL, so no example.com page is presented as a contact', () => {
+    expect(buildApp({}).contactUrl).toBeUndefined();
+  });
+
+  it('starts on its local fixture site with the local-only User-Agent', async () => {
+    const deps = await loadDeps(buildApp({}), { env: memory });
+    expect(deps.describe.userAgent).toBe(LOCAL_ONLY_UA);
+    expect(deps.describe.userAgent).not.toContain('example');
+  });
+
+  it('refuses a real host until GHOST_CONTACT_URL names a real page', async () => {
+    const live = buildApp({ LISTING_SITE_ORIGIN: 'https://pages.lanternfield-bank.com' });
+    await expect(loadDeps(live, { env: memory })).rejects.toThrow(/GHOST_CONTACT_URL/);
+    const env = { ...memory, GHOST_CONTACT_URL: 'https://stubborn-otter.dev/ghost-watcher' };
+    expect((await loadDeps(live, { env })).describe.userAgent).toContain('+https://stubborn-otter.dev/ghost-watcher;');
   });
 });
 

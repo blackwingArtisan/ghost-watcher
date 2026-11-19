@@ -33,7 +33,8 @@ lacks, add it to the template in a generic form.
 1. **Signal, not noise.** Alert on meaning, not markup. Whitespace, date formats, tracking parameters,
    ad slots and "page generated at" stamps never cause an alert. Only the watched values do.
 2. **A good neighbor.** Respect robots.txt, never check a page more than once per configured interval
-   (default 6 hours), identify honestly in the User-Agent with a contact URL, and back off on errors.
+   (default 6 hours), identify honestly in the User-Agent with a contact URL (or an explicit
+   local-only token for the fixture sites), and back off on errors.
 3. **Explain every alert.** Each alert says what changed, from what to what, and which rule fired, in
    one plain sentence a non-developer understands.
 4. **Free by default.** Everything runs locally with no accounts. Paid services (email, cloud storage)

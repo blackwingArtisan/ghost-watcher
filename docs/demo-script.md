@@ -15,7 +15,7 @@ fire on every timestamp and rotating banner, so people mute them.
 - The demo has already taken each ghost's first sighting. No alerts fired, because a baseline is
   not a change.
 - Point out the ghost behind bars: robots.txt asks watchers to stay out of the members area, so
-  Ghost Watcher never requests it. Every visit sends an honest User-Agent with a contact URL.
+  Ghost Watcher never requests it. Every visit sends an honest User-Agent that says it is local-only; a real run names a contact URL.
 - Click **Let a night pass**. The invented bank site changes its terms overnight and every ghost
   looks again. Lanternfield and Mossgate glow. Bramblewick sleeps: its page was only reformatted.
 - Read the Spirit mail: "Bonus went up from $300 to $400 (+$100)." Open **Read the letter** to

@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { diff, evaluateRules, extract, type Watch } from '@ghost-watcher/template';
+import { diff, evaluateRules, extract, loadDeps, type Watch } from '@ghost-watcher/template';
 import { startFixtureServer, type FixtureServer } from '@ghost-watcher/template/testing';
 import { bonusSite } from '../fixtures/site';
 import { buildApp } from '../src/app';
@@ -34,8 +34,8 @@ describe('bonus-watch watches against its fixture pages', () => {
   it('reads every watched value on the baseline pages', () => {
     const watch = app.watches[0] as Watch;
     const values = extract(pageFor(watch, 1), watch).fields;
-    expect(values.bonus).toMatchObject({ value: 300 });
-    expect(values.minDeposit).toMatchObject({ value: 5000 });
+    expect(values.bonus).toMatchObject({ amountMinor: 30000 });
+    expect(values.minDeposit).toMatchObject({ amountMinor: 500000 });
     expect(values.deadline).toMatchObject({ iso: '2027-01-15' });
     expect(values.finePrint).toMatchObject({ kind: 'text' });
   });
@@ -78,6 +78,28 @@ describe('bonus-watch watches against its fixture pages', () => {
       'moan: Annual fee went up from $0 to $95 (+$95).',
       'shriek: Fine print now says "Bonus not available if you have opened any Mossgate card in the past 48 months."',
     ]);
+  });
+});
+
+describe('bonus-watch contact URL', () => {
+  const LOCAL_ONLY_UA = 'GhostWatcher/0.1.0 (local-only, no public contact; page-change watcher)';
+  const memory = { GHOST_STORE: 'memory', GHOST_ALERTS: 'console' };
+
+  it('ships without a contact URL, so no example.com page is presented as a contact', () => {
+    expect(buildApp({}).contactUrl).toBeUndefined();
+  });
+
+  it('starts on its local fixture site with the local-only User-Agent', async () => {
+    const deps = await loadDeps(buildApp({}), { env: memory });
+    expect(deps.describe.userAgent).toBe(LOCAL_ONLY_UA);
+    expect(deps.describe.userAgent).not.toContain('example');
+  });
+
+  it('refuses a real host until GHOST_CONTACT_URL names a real page', async () => {
+    const live = buildApp({ BONUS_SITE_ORIGIN: 'https://pages.lanternfield-bank.com' });
+    await expect(loadDeps(live, { env: memory })).rejects.toThrow(/GHOST_CONTACT_URL/);
+    const env = { ...memory, GHOST_CONTACT_URL: 'https://stubborn-otter.dev/ghost-watcher' };
+    expect((await loadDeps(live, { env })).describe.userAgent).toContain('+https://stubborn-otter.dev/ghost-watcher;');
   });
 });
 

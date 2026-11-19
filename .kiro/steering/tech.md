@@ -32,10 +32,13 @@ the local adapter. Tests never construct a real cloud client and never touch the
 
 - Fetch and honor `robots.txt` for the watcher's User-Agent token before any page fetch; cache it.
 - Minimum interval between checks of the same URL defaults to 6 hours; honor `Crawl-delay`.
-- User-Agent: `GhostWatcher/<version> (+<contact url>)`.
+- User-Agent: `GhostWatcher/<version> (+<contact url>; page-change watcher)`. When every watched URL is
+  on a loopback or reserved host (the fixture and demo sites) and no real contact URL is configured, it
+  is `GhostWatcher/<version> (local-only, no public contact; page-change watcher)`.
 - Timeouts on every request; at most one request per host at a time.
-- The contact URL must be a page a site operator can visit; placeholder domains are only for the
-  local fixture sites.
+- The contact URL must be a page a site operator can visit. `contactUrl` is optional on an app and
+  `GHOST_CONTACT_URL` overrides it. A placeholder domain (`example.com` and the other reserved names)
+  is never sent as a contact. Watching a real host without a real contact URL stops the start.
 
 ## Dashboard safety
 
@@ -45,6 +48,10 @@ the local adapter. Tests never construct a real cloud client and never touch the
 ## Code style
 
 - Pure functions for normalize, extract, diff and rules; side effects live in adapters and the runner.
+- Money is integer minor units (`amountMinor`, cents). Parse digit strings into integers (no
+  `Number(...) / 100`, no `Math.round(x * 100) / 100`), compare and subtract cents, and format cents
+  to a currency string only for display text. App authors still write dollars in `where.*` filters and
+  `minDelta`; the template converts them exactly (`compareMinorToMajor`).
 - No `any`. Prefer discriminated unions for results (`ok` / `skipped` / `error`).
 - Small modules with one responsibility. Public API is re-exported from `template/src/index.ts`.
 - Professional wording in code and docs. Sample data uses invented names, `example.com` emails and

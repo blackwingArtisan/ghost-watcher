@@ -50,7 +50,6 @@ const app: GhostApp = defineApp({
   name: 'Test Crypt',
   tagline: 'Testing',
   version: '0.1.0',
-  contactUrl: 'https://example.com/about',
   alertTo: ['tester@example.com'],
   copy: { watchNoun: 'pages', quiet: 'Quiet.' },
   watches: [watch],
@@ -113,7 +112,7 @@ describe('Runner', () => {
     await runner.check(watch);
     const result = await runner.check(watch, { force: true });
     expect(result).toMatchObject({ status: 'error', message: expect.stringContaining('layout may have changed') });
-    expect((await store.latestSnapshot('lantern'))?.fields.bonus).toMatchObject({ value: 300 });
+    expect((await store.latestSnapshot('lantern'))?.fields.bonus).toMatchObject({ amountMinor: 30000 });
   });
 
   it('records robots.txt refusals as blocked', async () => {

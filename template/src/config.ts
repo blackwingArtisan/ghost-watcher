@@ -6,7 +6,8 @@
  *   GHOST_STORE            file (default) | memory | s3      (s3 needs GHOST_S3_BUCKET)
  *   GHOST_ALERTS           outbox (default) | console | ses  (ses needs GHOST_SES_FROM)
  *   GHOST_ALERT_TO         comma-separated recipients (defaults to the app's invented demo address)
- *   GHOST_CONTACT_URL      contact URL sent in the User-Agent (defaults to the app's)
+ *   GHOST_CONTACT_URL      contact URL sent in the User-Agent (overrides the app's optional one; required
+ *                          for real sites, unnecessary when every watch is on a loopback or reserved host)
  *   GHOST_INTERVAL_MINUTES override every watch's minimum check interval
  *   GHOST_HOST_GAP_MS      minimum gap between requests to one host (default 1000)
  *   GHOST_TIMEOUT_MS       request timeout (default 15000)
@@ -152,16 +153,24 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
   const clock = options.clock ?? systemClock;
   const dataDir = resolve(cwd, env.GHOST_DATA_DIR ?? '.ghost-data');
 
-  const contactUrl = env.GHOST_CONTACT_URL ?? baseApp.contactUrl;
-  if (!contactUrl) throw new ConfigError('Set GHOST_CONTACT_URL: the watcher must identify itself to the sites it visits.');
-  const userAgent = buildUserAgent({ version: baseApp.version, contactUrl });
+  // A contact URL counts only if a site operator could visit it. A placeholder is never sent: real
+  // sites need a real contact, and local fixture sites get an explicit local-only token instead.
+  const configured = env.GHOST_CONTACT_URL?.trim() || baseApp.contactUrl?.trim() || undefined;
+  const contactUrl = configured && !isPlaceholderContact(configured) ? configured : undefined;
   const remote = baseApp.watches.find((w) => visitsThirdParty(w.url));
-  if (isPlaceholderContact(contactUrl) && remote) {
+  if (!contactUrl && remote) {
+    const where = `"${remote.name}" watches ${new URL(remote.url).host}`;
     throw new ConfigError(
-      `"${remote.name}" watches ${new URL(remote.url).host}, but the contact URL is still the placeholder ${contactUrl}. ` +
-        'Set GHOST_CONTACT_URL to a page you control so the site operator can reach you.',
+      configured
+        ? `${where}, but the contact URL is still the placeholder ${configured}. ` +
+            'Set GHOST_CONTACT_URL to a page you control so the site operator can reach you.'
+        : `${where}, so the watcher must identify itself. ` +
+            'Set GHOST_CONTACT_URL to a page you control so the site operator can reach you.',
     );
   }
+  const userAgent = buildUserAgent(
+    contactUrl ? { version: baseApp.version, contactUrl } : { version: baseApp.version, localOnly: true },
+  );
 
   const intervalOverride = env.GHOST_INTERVAL_MINUTES;
   const app: GhostApp = {

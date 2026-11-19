@@ -4,7 +4,7 @@
  */
 import type { ListItem } from './extract';
 import type { FieldChange } from './diff';
-import { displayValue, formatMoney, textOf, type MaybeValue } from './normalize';
+import { displayValue, formatMinor, textOf, type MaybeValue } from './normalize';
 import type { ListSpec } from './watch';
 
 /** Splits text into sentences so a long block of fine print can be diffed by sentence. */
@@ -42,7 +42,7 @@ function formatDelta(change: FieldChange): string {
   const size = Math.abs(change.delta);
   switch (change.after.kind) {
     case 'money':
-      return ` (${sign}${formatMoney(size, change.after.currency)})`;
+      return ` (${sign}${formatMinor(size, change.after.currency)})`;
     case 'percent':
       return ` (${sign}${size} points)`;
     case 'date': {

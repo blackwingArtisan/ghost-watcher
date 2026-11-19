@@ -24,7 +24,6 @@ export function buildApp(env: Env = process.env): GhostApp {
     name: 'Haunted Listings',
     tagline: 'Ghosts that prowl rental listings and city permit filings, and knock only when something fits.',
     version: '0.1.0',
-    contactUrl: 'https://example.com/ghost-watcher/listing-watch',
     alertTo: ['night.owl.renter@example.com'],
     theme: { accent: '#ffad5c', accentSecondary: '#b89cff', sky: '#140f1f', moon: '#ffe3c2', crest: 'Lantern' },
     copy: {

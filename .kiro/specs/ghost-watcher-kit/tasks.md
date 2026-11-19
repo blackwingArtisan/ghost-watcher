@@ -1,7 +1,8 @@
 # Tasks: Ghost Watcher Kit
 
 Numbered implementation checklist. Each task references the requirement(s) it satisfies. Tasks are
-grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
+grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`. A task is checked only when
+code and a test implement it. Section 21 holds work found in the pass 2 review.
 
 ## 1. Project scaffolding
 
@@ -17,7 +18,7 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 
 ## 2. Watch definitions (watch.ts)
 
-- [x] 2.1 Define `FieldKind`, `FieldSpec`, `ListFieldSpec`, `ListSpec`, `ItemFilter`, `Rule`, and
+- [x] 2.1 Define `FieldKind`, `FieldSpec`, `ListFieldSpec`, `ListSpec`, `FilterCondition`, `Rule`, and
       `Watch` types. (REQ-WATCH-01, REQ-WATCH-02, REQ-WATCH-03, REQ-WATCH-04)
 - [x] 2.2 Implement `defineWatch` with validation: required fields, unique ids in a registry, and a
       default `intervalMs` of six hours when omitted. (REQ-WATCH-01)
@@ -26,10 +27,11 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 ## 3. Normalizers (normalize.ts)
 
 - [x] 3.1 Implement the whitespace normalizer (collapse and trim). (REQ-DIFF-01)
-- [x] 3.2 Implement the money normalizer to `{ amountMinor, currency }`. (REQ-DIFF-02)
+- [x] 3.2 Implement the money normalizer to `{ amountMinor, currency }`. (REQ-DIFF-02) The first
+      build stored a floating-point `value`; pass 2 completed this in 21.1.
 - [x] 3.3 Implement the number normalizer ignoring grouping separators. (REQ-DIFF-03)
 - [x] 3.4 Implement the date normalizer to canonical `YYYY-MM-DD`. (REQ-DIFF-04)
-- [x] 3.5 Implement the percent normalizer to a canonical ratio. (REQ-DIFF-05)
+- [x] 3.5 Implement the percent normalizer to a number of percentage points. (REQ-DIFF-05)
 - [x] 3.6 Implement the URL normalizer that strips tracking query parameters. (REQ-DIFF-06)
 - [x] 3.7 Implement the unparseable-value fallback to `text`. (design.md §7)
 - [x] 3.8 Add unit tests for each normalizer covering equality, inequality, and noise cases that must
@@ -49,7 +51,8 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 
 - [x] 5.1 Implement field diff producing `added`, `removed`, and `changed` changes with normalized
       before/after values. (REQ-DIFF-07)
-- [x] 5.2 Implement list diff producing `itemAdded` and `itemRemoved` by item identity. (REQ-DIFF-07)
+- [x] 5.2 Implement list diff producing `itemAdded`, `itemRemoved` and `itemChanged` by item identity.
+      (REQ-DIFF-07)
 - [x] 5.3 Implement the first-run baseline by diffing against an empty previous snapshot.
       (REQ-DIFF-09)
 - [x] 5.4 Keep `diff` a pure function with no side effects. (REQ-DIFF-08)
@@ -63,11 +66,13 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 - [x] 6.3 Implement `changed` for any field value change. (REQ-RULES-03)
 - [x] 6.4 Implement `appeared` for fields that were absent and are now present. (REQ-RULES-04)
 - [x] 6.5 Implement `disappeared` for fields that were present and are now absent. (REQ-RULES-05)
-- [x] 6.6 Implement `newItem` with `ItemFilter` support (`eq`, `lte`, `gte`, `contains`) over list
-      additions. (REQ-RULES-06)
+- [x] 6.6 Implement `newItem` with `FilterCondition` support (`eq`, `neq`, `lt`, `lte`, `gt`, `gte`,
+      `contains`, `in`) over list additions. (REQ-RULES-06)
 - [x] 6.7 Keep rule builders pure functions of a diff. (REQ-RULES-07)
 - [x] 6.8 Add unit tests for each builder covering fire and no-fire cases, plus noise cases that assert
       no alert. (REQ-TEST-03)
+- [x] 6.9 Implement `itemRemoved`, `itemChanged` (with direction) and the severities, and dedupe findings
+      to one per change. (REQ-WATCH-04, REQ-RULES-08, REQ-RULES-09)
 
 ## 7. Summary (summary.ts)
 
@@ -88,20 +93,21 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 
 - [x] 9.1 Define the `Fetcher` port and the `FetchResult` discriminated union (`ok`/`skipped`/`error`).
       (REQ-FETCH-01)
-- [x] 9.2 Implement `HttpFetcher`: fetch and cache robots.txt, enforce the User-Agent, apply request
+- [x] 9.2 Implement `PoliteFetcher`: fetch and cache robots.txt, enforce the User-Agent, apply request
       timeouts, and hold a per-host concurrency lock. (REQ-FETCH-01, REQ-FETCH-02, REQ-FETCH-04)
 - [x] 9.3 Honor `Crawl-delay` between requests to the same host. (REQ-FETCH-03)
-- [x] 9.4 Return `skipped` with reason `robots` when disallowed, and `error` on network/timeout/non-2xx
+- [x] 9.4 Return `blocked` when robots.txt disallows the page, and `error` on network/timeout/non-2xx
       without retrying within the run. (REQ-FETCH-01, REQ-FETCH-05)
 - [x] 9.5 Add unit/integration tests using a local fixture robots.txt and pages on `127.0.0.1`.
       (REQ-TEST-04, REQ-TEST-02)
 
 ## 10. Snapshot store (store/)
 
-- [x] 10.1 Define the `SnapshotStore` port and the `Snapshot` data model. (REQ-STORE-01, REQ-STORE-04)
-- [x] 10.2 Implement `MemorySnapshotStore` for tests. (REQ-STORE-02)
-- [x] 10.3 Implement `JsonFileSnapshotStore` writing under `<app>/.ghost-data/snapshots/`. (REQ-STORE-02)
-- [x] 10.4 Implement `S3SnapshotStore` using AWS SDK v3, constructed lazily only when selected.
+- [x] 10.1 Define the `BlobStore` port, `GhostStore` and the `Snapshot` data model. (REQ-STORE-01,
+      REQ-STORE-04)
+- [x] 10.2 Implement `MemoryBlobStore` for tests. (REQ-STORE-02)
+- [x] 10.3 Implement `FileBlobStore` writing under `<app>/.ghost-data/store/`. (REQ-STORE-02)
+- [x] 10.4 Implement `S3BlobStore` using AWS SDK v3, constructed lazily only when selected.
       (REQ-STORE-03)
 - [x] 10.5 Add unit tests for the local stores (round-trip a snapshot); do not construct a real S3
       client. (REQ-TEST-04, REQ-TEST-06)
@@ -114,15 +120,15 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 - [x] 11.3 Implement `ConsoleAlertSink` for dev use. (REQ-ALERTS-02)
 - [x] 11.4 Implement `SesEmailAlertSink` using Amazon SES v2, constructed lazily only when selected.
        (REQ-ALERTS-03)
-- [x] 11.5 Add unit tests for the local sinks against a temp outbox; do not construct a real SES
-       client or send email. (REQ-TEST-04, REQ-TEST-06)
+- [x] 11.5 Add unit tests for the local sinks against a temp outbox, and for the SES and S3 adapters
+       with fake clients. (REQ-TEST-04)
 
 ## 12. Clock and config (config.ts)
 
 - [x] 12.1 Define the `Clock` port and provide `systemClock` and `fixedClock`. (REQ-NF-01, design §4.1)
-- [x] 12.2 Implement environment-driven adapter selection: require `GHOST_CONTACT_URL`, and select the
-       store and sink from `GHOST_STORE` and `GHOST_ALERTS`, defaulting to local. (REQ-FETCH-02,
-       REQ-STORE-03, REQ-ALERTS-03, REQ-NF-04)
+- [x] 12.2 Implement environment-driven adapter selection: select the store and sink from
+       `GHOST_STORE` and `GHOST_ALERTS`, defaulting to local. (REQ-STORE-03, REQ-ALERTS-03,
+       REQ-NF-04) The contact URL rules moved to 21.2.
 - [x] 12.3 Build the `Deps` bundle shared by the runner and server. (design §11)
 
 ## 13. Check runner (runner.ts)
@@ -146,9 +152,10 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
        (REQ-DASH-01)
 - [x] 14.2 Render one ghost card per watch showing name, URL, last check time, and last check status.
        (REQ-DASH-02)
-- [x] 14.3 Derive ghost state (`dormant`/`glowing`/`error`) from the outbox and a local
-       `dashboard-state.json` file, rendering the glow for unacknowledged alerts. (REQ-DASH-03)
-- [x] 14.4 Implement `POST /api/ghosts/:id/acknowledge` marking alerts acknowledged and persisting it.
+- [x] 14.3 Derive ghost state (`unborn`/`dormant`/`restless`/`blocked`/`lost`) from the stored status
+       and alerts, rendering the glow for unacknowledged alerts. (REQ-DASH-03)
+- [x] 14.4 Implement `POST /api/ghosts/:id/acknowledge` recording the acknowledgment time in the
+       store.
        (REQ-DASH-04)
 - [x] 14.5 Implement `POST /api/ghosts/:id/check` triggering "check now" with `force: true`, honoring
        robots and concurrency, with an in-flight card state. (REQ-DASH-05)
@@ -173,12 +180,12 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 ## 17. bonus-watch app
 
 - [x] 17.1 Create the app package importing only from `@ghost-watcher/template`. (REQ-BONUS-06)
-- [x] 17.2 Implement `src/watches.ts` with invented example banks and bonus fields: bonus amount
+- [x] 17.2 Implement the watches in `src/app.ts` with invented example banks and bonus fields: bonus amount
        (money), minimum deposit (money), deadline (date), fine print (text). (REQ-BONUS-01,
        REQ-BONUS-02)
 - [x] 17.3 Attach rules: `wentUp`/`wentDown` on bonus amount, `changed` on deadline and fine print,
        `appeared`/`disappeared` where meaningful. (REQ-BONUS-03)
-- [x] 17.4 Implement `src/theme.ts` with dashboard copy and palette. (REQ-BONUS-01, REQ-DASH-07)
+- [x] 17.4 Set the dashboard copy and palette in `src/app.ts`. (REQ-BONUS-01, REQ-DASH-07)
 - [x] 17.5 Build the fixture site serving numbered bonus page versions plus robots.txt and the
        `POST /__fixture/advance` and `GET /__fixture/log` endpoints. (REQ-BONUS-04, REQ-TEST-01)
 - [x] 17.6 Configure dashboard port 3130 and fixtures port 3131. (REQ-DASH-08)
@@ -189,11 +196,11 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 ## 18. listing-watch app
 
 - [x] 18.1 Create the app package importing only from `@ghost-watcher/template`. (REQ-LISTING-06)
-- [x] 18.2 Implement `src/watches.ts` with apartment listings and city building permits as lists with
+- [x] 18.2 Implement the watches in `src/app.ts` with apartment listings and city building permits as lists with
        item field specs and `identityBy`. (REQ-LISTING-01)
 - [x] 18.3 Add `newItem` rules with filters for price, beds, and neighborhood on listings, and permit
        type on permits. (REQ-LISTING-02, REQ-LISTING-03)
-- [x] 18.4 Implement `src/theme.ts` with dashboard copy and palette. (REQ-DASH-07)
+- [x] 18.4 Set the dashboard copy and palette in `src/app.ts`. (REQ-DASH-07)
 - [x] 18.5 Build the fixture site serving numbered listing and permit page versions plus robots.txt and
        the advance/log endpoints. (REQ-LISTING-04, REQ-TEST-01)
 - [x] 18.6 Configure dashboard port 3132 and fixtures port 3133. (REQ-DASH-08)
@@ -204,11 +211,14 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
 
 - [x] 19.1 `tsc --noEmit` passes for the whole workspace. (REQ-NF-01)
 - [x] 19.2 `vitest` unit and integration tests pass for the template. (REQ-TEST-03, REQ-TEST-04)
-- [x] 19.3 `playwright` end-to-end tests pass for both apps. (REQ-TEST-05)
-- [x] 19.4 Confirm no test scrapes a live site or constructs a real cloud client; all tests run only
-       against `127.0.0.1`. (REQ-TEST-02, REQ-TEST-06)
-- [x] 19.5 Confirm the default run uses only local adapters with no environment variables beyond the
-       required `GHOST_CONTACT_URL`. (REQ-NF-04, REQ-FETCH-02)
+- [x] 19.3 `playwright` end-to-end tests pass for both apps. (REQ-TEST-05) Re-run in pass 2 after the
+       money and contact URL changes: 11 passed in the full run, and the bonus-watch spec passed after
+       its User-Agent assertion was updated to the local-only token.
+- [ ] 19.4 Confirm no test scrapes a live site or constructs a real cloud client; all tests run only
+       against `127.0.0.1`. (REQ-TEST-02, REQ-TEST-06) Reopened in pass 2: one config test constructs
+       the real AWS SDK clients. See 21.6.
+- [x] 19.5 Confirm the default run uses only local adapters and needs no environment variables (the
+       local-only User-Agent covers the fixture sites). (REQ-NF-04, REQ-FETCH-02)
 
 ## 20. After review
 
@@ -216,15 +226,45 @@ grouped to mirror `design.md` and `structure.md`. Checkboxes use `- [ ]`.
        the dashboard server and the CLI (`GHOST_ALLOWED_HOSTS`), with unit, HTTP and Playwright
        tests. (REQ-DASH-SEC-01)
 - [x] 20.2 Refuse to start when a real third-party site is watched with a placeholder contact URL,
-       with unit tests. (REQ-FETCH-SEC-01)
+       with unit tests. (REQ-FETCH-SEC-01) Extended by 21.2.
 - [x] 20.3 In `demo` mode, take the baseline at startup and add the **Let a night pass** control
        (`POST /api/demo/next-night`), with a Playwright test against a demo instance on ports
        3138-3139. (REQ-DEMO-01)
 
+## 21. Pass 2: money, contact URL and review gaps
+
+- [x] 21.1 Money as integer minor units: parse money digit strings into integer cents, store and compare
+      `amountMinor`, compute money deltas in cents, format cents only for display, convert legacy
+      snapshots, and update diff, rules (`wentUp`, `wentDown`, filters, `minDelta`), summary, alert
+      rendering and tests. (REQ-DIFF-02, REQ-RULES-01, REQ-RULES-02, REQ-RULES-06, REQ-ALERTS-04,
+      REQ-STORE-05, REQ-TEST-03)
+- [x] 21.2 Optional contact URL: make `contactUrl` optional, send a local-only User-Agent token when every
+      watch is on a loopback or reserved host, refuse to start when a real host is watched without a
+      real contact URL, and remove the `example.com` contact URLs from both apps, with tests for each
+      branch. (REQ-FETCH-02, REQ-FETCH-SEC-01)
+- [ ] 21.3 Test that `defineApp` rejects two watches with the same id. (REQ-WATCH-01.4)
+- [ ] 21.4 Test that every app source and test file imports template code only from
+      `@ghost-watcher/template` or `@ghost-watcher/template/testing`. (REQ-WATCH-05.4, REQ-BONUS-06,
+      REQ-LISTING-06)
+- [ ] 21.5 Test that a stored snapshot contains no raw HTML. (REQ-STORE-04.2)
+- [ ] 21.6 Give `loadDeps` an injectable client factory for S3 and SES and replace the config test that
+      constructs the real AWS SDK clients with one that uses fakes. (REQ-STORE-03.4, REQ-ALERTS-03.4,
+      REQ-TEST-06.1)
+- [ ] 21.7 Test restarts: a new `Runner` and `GhostStore` over the same file store still honor the
+      interval and keep an acknowledgment. (REQ-FETCH-03.5, REQ-DASH-04.2)
+- [ ] 21.8 Test the in-flight `checking` flag of a ghost card while a check runs. (REQ-DASH-05.4)
+- [ ] 21.9 Test the contrast ratio of the dashboard text colors against the sky color in the app
+      palettes. (REQ-DASH-07.1)
+- [ ] 21.10 Replace the JSDoc `any` types in `template/src/ui/*.js` with named typedefs. (REQ-NF-03.1)
+- [ ] 21.11 Test that the `serve` startup output and the dashboard footer show the User-Agent in use,
+      including the local-only token. (REQ-FETCH-02.6)
+
 ## Implementation notes
 
-Every task above is implemented and covered by `npm test`. Where the build differs from the
-wording of a task, the difference is recorded here so the spec and the code stay in step.
+Every checked task above is implemented in code and covered by a test. Unchecked tasks are open
+work (section 21) or checks that are still open (19.4). Where the build differs from
+the first wording of a task or requirement, the difference is recorded here so the spec and the code
+stay in step.
 
 - **Names.** `HttpFetcher` is `PoliteFetcher`; `fixedClock` is `manualClock` (it can also advance
   and records how long the fetcher slept). The snapshot store is two layers: a small `BlobStore`
@@ -241,8 +281,22 @@ wording of a task, the difference is recorded here so the spec and the code stay
   (errors or a page whose layout changed).
 - **App layout.** Each app keeps its watches, copy and palette together in `src/app.ts`; the
   Playwright specs live in the root `e2e/` folder and each app has Vitest tests in `test/`.
-- **Contact URL.** Each app ships a default contact URL; `GHOST_CONTACT_URL` overrides it, and the
-  config refuses to start without one.
+- **Contact URL.** The first build shipped an `example.com` contact URL in each app. Pass 2 removed
+  it: `contactUrl` is optional on an app, `GHOST_CONTACT_URL` supplies a real one, and when every
+  watch is on a loopback or reserved host the User-Agent carries a local-only token instead. A real
+  host with no real contact URL stops the start (REQ-FETCH-02, REQ-FETCH-SEC-01).
+- **Money.** The first build kept money as a floating-point `value`. Pass 2 stores integer
+  `amountMinor` (cents) and keeps the app-facing API in major units: `where.atMost('price', 2100)`
+  and `minDelta: 50` still mean dollars, and the template converts them to cents without floats.
+- **Percent.** Percent values are percentage points (`4.5` for `4.5%`), not ratios (REQ-DIFF-05).
+- **Dates and `wentUp`.** `wentUp` and `wentDown` ignore dates; `changed` reports date moves in days.
+- **Robots outcomes.** A robots.txt refusal is a `blocked` result, not `skipped` with reason
+  `robots`. The `skipped` reasons are `interval` and `backoff`.
+- **Acknowledgment.** The store keeps one `acknowledgedAt` time per watch. Alerts created at or before
+  it count as acknowledged. There is no `dashboard-state.json`.
+- **Demo ports.** The demo-mode end-to-end test uses ports 3138 and 3139.
+- **Test gaps.** Task 19.4 is reopened because one config test builds the real AWS SDK clients (it
+  never calls them). Section 21 lists the other gaps found in pass 2.
 - **Cloud adapters.** Tests exercise `S3BlobStore` and `SesEmailAlertSink` with fake clients. One
   config test lets `loadDeps` construct the real AWS SDK clients to prove the wiring, but nothing
   ever calls `send` on them.

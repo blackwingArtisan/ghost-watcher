@@ -8,13 +8,21 @@ import type { FieldKind } from './watch';
 export type Value =
   | { kind: 'text'; text: string }
   | { kind: 'number'; value: number; display: string }
-  | { kind: 'money'; value: number; currency: string; display: string }
+  | { kind: 'money'; amountMinor: number; currency: string; display: string }
   | { kind: 'date'; iso: string; display: string }
   | { kind: 'percent'; value: number; display: string }
   | { kind: 'url'; href: string; display: string };
 
 /** A watched value, or `null` when the region was not found on the page. */
 export type MaybeValue = Value | null;
+
+/** The money shape written by versions before integer minor units: a decimal `value` in major units. */
+export interface LegacyMoneyValue {
+  kind: 'money';
+  value: number;
+  currency: string;
+  display: string;
+}
 
 const SMART_PUNCTUATION: Array<[RegExp, string]> = [
   [/[‘’‚′]/g, "'"],
@@ -36,44 +44,90 @@ const PREFIXED_MONEY = new RegExp(String.raw`(?:\b(USD|EUR|GBP|CAD)\s?|([$€£]
 const SUFFIXED_MONEY = new RegExp(String.raw`${AMOUNT}\s?(USD|EUR|GBP|CAD)\b`);
 const PLAIN_AMOUNT = new RegExp(AMOUNT);
 
-function amount(whole: string, cents: string | undefined): number {
-  return Number(whole.replace(/,/g, '')) + (cents ? Number(cents.padEnd(2, '0')) / 100 : 0);
+const MAX_SAFE_MINOR = BigInt(Number.MAX_SAFE_INTEGER);
+
+/**
+ * Integer minor units (cents) from the digit strings of an amount: "1,234" and "56" become 123456.
+ * The digits are parsed as integers and never pass through floating point. Returns null when the
+ * result would not fit exactly in a JavaScript number.
+ */
+export function minorFromDigits(whole: string, fraction = '', multiplier = 1n): number | null {
+  const digits = whole.replace(/,/g, '');
+  if (!/^\d+$/.test(digits) || !/^\d{0,2}$/.test(fraction)) return null;
+  const minor = (BigInt(digits) * 100n + BigInt(fraction.padEnd(2, '0'))) * multiplier;
+  return minor <= MAX_SAFE_MINOR ? Number(minor) : null;
 }
 
 /**
  * Reads the first money amount in a string. Amounts with a currency symbol or code win over bare
- * numbers, so "Open by 12/31 and earn $300" reads as $300.
+ * numbers, so "Open by 12/31 and earn $300" reads as $300. The amount is returned in integer minor
+ * units; amounts too large to hold exactly are not money (null).
  */
-export function parseMoney(raw: string): { value: number; currency: string } | null {
+export function parseMoney(raw: string): { amountMinor: number; currency: string } | null {
   const text = normalizeWhitespace(raw);
-  let value: number;
+  let amountMinor: number | null;
   let currency = 'USD';
   const prefixed = PREFIXED_MONEY.exec(text);
   const suffixed = prefixed ? null : SUFFIXED_MONEY.exec(text);
   if (prefixed) {
     const [, code, symbol, whole = '', cents, thousands] = prefixed;
-    value = amount(whole, cents) * (thousands ? 1000 : 1);
+    amountMinor = minorFromDigits(whole, cents, thousands ? 1000n : 1n);
     currency = code ?? (symbol ? CURRENCY_SYMBOLS[symbol] : undefined) ?? 'USD';
   } else if (suffixed) {
     const [, whole = '', cents, code = 'USD'] = suffixed;
-    value = amount(whole, cents);
+    amountMinor = minorFromDigits(whole, cents);
     currency = code;
   } else {
     const plain = PLAIN_AMOUNT.exec(text);
     if (!plain) return null;
-    value = amount(plain[1] ?? '', plain[2]);
+    amountMinor = minorFromDigits(plain[1] ?? '', plain[2]);
   }
-  return { value: Math.round(value * 100) / 100, currency };
+  return amountMinor === null ? null : { amountMinor, currency };
 }
 
-export function formatMoney(value: number, currency = 'USD'): string {
-  const whole = Number.isInteger(value);
-  return new Intl.NumberFormat('en-US', {
+/** Integer minor units from a plain decimal string such as "1234.5" (used to upgrade stored values). */
+export function minorFromDecimal(text: string): number | null {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(text.trim());
+  return match ? minorFromDigits(match[1] ?? '', match[2]) : null;
+}
+
+/**
+ * Formats integer minor units as a currency string for people: 30000 is "$300" and 123456 is
+ * "$1,234.56". This is the only place minor units become decimals, and it does so with integer math.
+ */
+export function formatMinor(amountMinor: number, currency = 'USD'): string {
+  const absolute = BigInt(Math.abs(amountMinor));
+  const cents = absolute % 100n;
+  const formatted = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency,
-    minimumFractionDigits: whole ? 0 : 2,
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(absolute / 100n);
+  const text = cents === 0n ? formatted.replace(/\.00$/, '') : formatted.replace(/\.00$/, `.${String(cents).padStart(2, '0')}`);
+  return amountMinor < 0 ? `-${text}` : text;
+}
+
+/**
+ * Compares an amount in minor units with a target in major units (the unit app authors write, so
+ * `where.atMost('price', 2100)` means $2,100). Exact: both sides are scaled to integers.
+ * Returns null when the target is not a plain finite number.
+ */
+export function compareMinorToMajor(amountMinor: number, target: number): -1 | 0 | 1 | null {
+  if (!Number.isFinite(target)) return null;
+  let scaled: bigint;
+  let scale = 0;
+  if (Number.isInteger(target)) {
+    scaled = BigInt(target);
+  } else {
+    const match = /^(-?)(\d+)\.(\d+)$/.exec(String(target));
+    if (!match) return null;
+    scaled = BigInt(`${match[1]}${match[2]}${match[3]}`);
+    scale = (match[3] ?? '').length;
+  }
+  const left = BigInt(amountMinor) * 10n ** BigInt(scale);
+  const right = scaled * 100n;
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 const NUMBER_PATTERN = /-?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?/;
@@ -171,7 +225,7 @@ export function normalizeValue(raw: string, kind: FieldKind, baseUrl?: string): 
   switch (kind) {
     case 'money': {
       const money = parseMoney(text);
-      return money ? { kind: 'money', ...money, display: formatMoney(money.value, money.currency) } : { kind: 'text', text };
+      return money ? { kind: 'money', ...money, display: formatMinor(money.amountMinor, money.currency) } : { kind: 'text', text };
     }
     case 'number': {
       const value = parseNumber(text);
@@ -203,7 +257,7 @@ export function canonical(value: MaybeValue): string {
     case 'number':
       return `number:${value.value}`;
     case 'money':
-      return `money:${value.currency}:${value.value.toFixed(2)}`;
+      return `money:${value.currency}:${value.amountMinor}`;
     case 'date':
       return `date:${value.iso}`;
     case 'percent':
@@ -217,12 +271,16 @@ export function valuesEqual(a: MaybeValue, b: MaybeValue): boolean {
   return canonical(a) === canonical(b);
 }
 
-/** Numeric reading of a value, for comparisons and filters. Dates compare by day number. */
+/**
+ * Numeric reading of a value, for comparisons and deltas. Money reads as integer minor units, dates
+ * as day numbers. Use `compareToTarget` to compare a value with a number written by an app author.
+ */
 export function numericValue(value: MaybeValue): number | null {
   if (value === null) return null;
   switch (value.kind) {
-    case 'number':
     case 'money':
+      return value.amountMinor;
+    case 'number':
     case 'percent':
       return value.value;
     case 'date':
@@ -230,6 +288,29 @@ export function numericValue(value: MaybeValue): number | null {
     default:
       return null;
   }
+}
+
+/**
+ * Compares a value with a target number as an app author writes it (major units for money).
+ * Returns null when the value is not numeric or the target is unusable.
+ */
+export function compareToTarget(value: MaybeValue, target: number): -1 | 0 | 1 | null {
+  if (value?.kind === 'money') return compareMinorToMajor(value.amountMinor, target);
+  const number = numericValue(value);
+  if (number === null || !Number.isFinite(target)) return null;
+  return number < target ? -1 : number > target ? 1 : 0;
+}
+
+/**
+ * Upgrades a stored value written by an earlier version (money with a decimal `value`) to integer
+ * minor units. Current values pass through unchanged.
+ */
+export function upgradeStoredValue(value: MaybeValue | LegacyMoneyValue): MaybeValue {
+  if (value === null || value.kind !== 'money' || !('value' in value)) return value as MaybeValue;
+  const amountMinor = minorFromDecimal(value.value.toFixed(2));
+  return amountMinor === null
+    ? { kind: 'text', text: value.display }
+    : { kind: 'money', amountMinor, currency: value.currency, display: value.display };
 }
 
 /** Human-readable form of a value for alerts and the dashboard. */

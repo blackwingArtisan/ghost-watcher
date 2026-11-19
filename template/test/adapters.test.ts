@@ -176,7 +176,6 @@ describe('configuration', () => {
     name: 'Demo',
     tagline: 'Demo app',
     version: '0.1.0',
-    contactUrl: 'https://example.com/about',
     alertTo: ['someone@example.com'],
     copy: { watchNoun: 'pages', quiet: 'Quiet.' },
     watches: [defineWatch({ id: 'w', name: 'W', url: 'https://example.com', fields: [{ name: 'a', selector: 'a', kind: 'text' }], rules: [] })],
@@ -187,16 +186,16 @@ describe('configuration', () => {
     expect(deps.describe.alerts).toBe('outbox');
     expect(deps.describe.store).toMatch(/^local files/);
     expect(deps.outbox?.dir).toBe(join(dir, 'outbox'));
-    expect(deps.describe.userAgent).toContain('+https://example.com/about');
+    expect(deps.describe.userAgent).toBe('GhostWatcher/0.1.0 (local-only, no public contact; page-change watcher)');
   });
 
   it('applies interval, recipient and contact overrides', async () => {
     const deps = await loadDeps(app, {
-      env: { GHOST_DATA_DIR: dir, GHOST_INTERVAL_MINUTES: '30', GHOST_ALERT_TO: 'a@example.com, b@example.com', GHOST_CONTACT_URL: 'https://example.org/me', GHOST_STORE: 'memory', GHOST_ALERTS: 'outbox,console' },
+      env: { GHOST_DATA_DIR: dir, GHOST_INTERVAL_MINUTES: '30', GHOST_ALERT_TO: 'a@example.com, b@example.com', GHOST_CONTACT_URL: 'https://stubborn-otter.dev/me', GHOST_STORE: 'memory', GHOST_ALERTS: 'outbox,console' },
     });
     expect(deps.app.watches[0]?.intervalMs).toBe(30 * 60_000);
     expect(deps.app.alertTo).toEqual(['a@example.com', 'b@example.com']);
-    expect(deps.describe.userAgent).toContain('example.org/me');
+    expect(deps.describe.userAgent).toContain('+https://stubborn-otter.dev/me');
     expect(deps.describe.alerts).toBe('outbox + console');
   });
 
@@ -205,7 +204,6 @@ describe('configuration', () => {
     await expect(loadDeps(app, { env: { GHOST_DATA_DIR: dir, GHOST_ALERTS: 'ses' } })).rejects.toThrow(/GHOST_SES_FROM/);
     await expect(loadDeps(app, { env: { GHOST_DATA_DIR: dir, GHOST_ALERTS: 'pigeon' } })).rejects.toThrow(/outbox, console or ses/);
     await expect(loadDeps(app, { env: { GHOST_DATA_DIR: dir, GHOST_INTERVAL_MINUTES: '-5' } })).rejects.toThrow(/non-negative/);
-    await expect(loadDeps({ ...app, contactUrl: '' }, { env: { GHOST_DATA_DIR: dir } })).rejects.toThrow(/GHOST_CONTACT_URL/);
   });
 
   it('wires the real cloud adapters when selected (constructed, never called)', async () => {

@@ -8,7 +8,7 @@ inclusion: always
 /template                 the skeleton (package "@ghost-watcher/template")
   src/
     watch.ts              watch definitions and field specs (types + defineWatch helper)
-    normalize.ts          whitespace, money, number, date, percent normalizers
+    normalize.ts          whitespace, money (integer cents), number, date, percent, url normalizers
     extract.ts            HTML -> watched values (fields and lists) using cheerio
     diff.ts               semantic diff of two extracted snapshots
     rules.ts              rule builders (wentUp, wentDown, changed, appeared, disappeared, newItem)
@@ -18,6 +18,7 @@ inclusion: always
     alerts/               AlertSink port + outbox, console and SES adapters
     runner.ts             check runner: fetch -> extract -> diff -> rules -> alerts -> store
     summary.ts            plain-English sentences for changes
+    guard.ts              Host and Origin checks for the dashboard
     server.ts             dashboard HTTP server and JSON API
     ui/                   dashboard client script, shared renderer and stylesheet
     testing/              fixture site server shared by app tests (export "./testing")
@@ -37,6 +38,7 @@ inclusion: always
 /apps/listing-watch       app 2: listings and permits watcher (same layout)
 /e2e                      Playwright end-to-end specs that drive both dashboards
 /.kiro                    steering, specs and hooks used to build this repo
+  hooks/                  test-on-save, full-suite-on-stop and money-guard (JSON, schema v1)
 ```
 
 ## Conventions
@@ -46,4 +48,4 @@ inclusion: always
   `POST /__fixture/advance` and `GET /__fixture/log` for tests.
 - Data written at runtime goes to `<app>/.ghost-data/` (git-ignored).
 - Ports: bonus-watch dashboard 3130, fixtures 3131; listing-watch dashboard 3132, fixtures 3133;
-  e2e runs use 3134 to 3137.
+  e2e runs use 3134 to 3137, and the demo-mode e2e run uses 3138 and 3139.

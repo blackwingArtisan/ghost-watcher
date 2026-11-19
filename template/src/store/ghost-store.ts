@@ -3,6 +3,8 @@
  * history), per-watch status (for intervals, back-off and acknowledgments) and alert history.
  */
 import type { Snapshot } from '../diff';
+import type { ListItem } from '../extract';
+import { upgradeStoredValue, type LegacyMoneyValue, type MaybeValue } from '../normalize';
 import type { Alert } from '../alerts/types';
 import type { BlobStore } from './blob';
 
@@ -29,6 +31,19 @@ export interface GhostStoreOptions {
 
 const stamp = (iso: string) => iso.replace(/[:.]/g, '-');
 
+type StoredValue = MaybeValue | LegacyMoneyValue;
+
+/** Upgrades values written by earlier versions (money as a decimal) so an upgrade raises no false change. */
+function upgradeSnapshot(snapshot: Snapshot): Snapshot {
+  const upgrade = (values: Record<string, MaybeValue>): Record<string, MaybeValue> =>
+    Object.fromEntries(Object.entries(values).map(([name, value]) => [name, upgradeStoredValue(value as StoredValue)]));
+  const lists: Record<string, ListItem[]> = {};
+  for (const [name, items] of Object.entries(snapshot.lists)) {
+    lists[name] = items.map((item) => ({ ...item, values: upgrade(item.values) }));
+  }
+  return { ...snapshot, fields: upgrade(snapshot.fields), lists };
+}
+
 export class GhostStore {
   private readonly historyLimit: number;
   private readonly alertLimit: number;
@@ -51,8 +66,9 @@ export class GhostStore {
     return this.blobs.put(key, `${JSON.stringify(value, null, 2)}\n`);
   }
 
-  latestSnapshot(watchId: string): Promise<Snapshot | null> {
-    return this.readJson<Snapshot>(`snapshots/${watchId}/latest.json`);
+  async latestSnapshot(watchId: string): Promise<Snapshot | null> {
+    const snapshot = await this.readJson<Snapshot>(`snapshots/${watchId}/latest.json`);
+    return snapshot ? upgradeSnapshot(snapshot) : null;
   }
 
   async saveSnapshot(snapshot: Snapshot): Promise<void> {
@@ -68,7 +84,7 @@ export class GhostStore {
     const snapshots: Snapshot[] = [];
     for (const key of keys) {
       const snapshot = await this.readJson<Snapshot>(key);
-      if (snapshot) snapshots.push(snapshot);
+      if (snapshot) snapshots.push(upgradeSnapshot(snapshot));
     }
     return snapshots;
   }

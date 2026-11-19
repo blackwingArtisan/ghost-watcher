@@ -37,7 +37,7 @@ This repo holds one reusable template and two apps built from it, each in its ow
   rules, copy and colors. Everything else comes from `@ghost-watcher/template`.
 - **Polite fetching.** robots.txt is parsed per RFC 9309 (longest match wins, `*` and `$`
   wildcards, Crawl-delay) and cached. Disallowed pages are never requested. Every request sends an
-  honest User-Agent with a contact URL. Each URL has a minimum check interval, each host gets one
+  honest User-Agent (a contact URL, or an explicit local-only token for the fixture sites). Each URL has a minimum check interval, each host gets one
   request at a time, and errors trigger exponential back-off.
 - **Semantic diff.** Values are normalized by kind (money, number, percent, date, URL, text) before
   comparing. Lists are matched by identity, so reordering is not a change. The first check records
@@ -163,10 +163,12 @@ names the missing variable.
 `npm run serve -w @ghost-watcher/bonus-watch` (or the listing app). Free instances sleep and do not
 keep files across restarts. For durable state, use the S3 adapter.
 
-**Contact URL.** The demo apps identify themselves with a placeholder contact URL on `example.com`,
-which is fine for the local fixture sites. The watcher refuses to start if any watch points at a
-real third-party site while the contact URL is still on a documentation-only domain, so set
-`GHOST_CONTACT_URL` to a page you control before watching live sites.
+**Contact URL.** The apps ship without a contact URL. While every watch is on this machine or on a
+documentation-only domain (the fixture and demo sites), the User-Agent says
+`local-only, no public contact`. The watcher refuses to start if any watch points at a real
+third-party site and `GHOST_CONTACT_URL` is unset or names a documentation-only domain such as
+`example.com`, so set it to a page you control before watching live sites. A placeholder is never
+sent as a contact.
 
 ## Built with Kiro
 
@@ -177,8 +179,10 @@ Kiro planned this repo before any code was written. Everything it used and produ
 - [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): requirements in EARS notation,
   the design, and the task list. Kiro generated all three. Every task is now checked off, with
   implementation notes.
-- [`.kiro/hooks/`](.kiro/hooks/): a hook that type-checks and runs the unit tests on every save, and
-  one that runs the full suite when an agent turn ends. Both use Kiro's `v1` hook file format
+- [`.kiro/hooks/`](.kiro/hooks/): a hook that type-checks and runs the unit tests when a source or test
+  file under `template/`, `apps/` or `e2e/` is saved, one that runs the full suite when an agent turn
+  ends, and an agent hook (`money-guard`) that restates the integer-cents money rule when
+  `normalize.ts`, `diff.ts` or `rules.ts` is saved. They use Kiro's `v1` hook file format
   (`PostFileSave` and `Stop` triggers), which Kiro IDE 1.0 and CLI V3 load from `.kiro/hooks/*.json`.
 
 [`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the exact prompt, the files produced, the

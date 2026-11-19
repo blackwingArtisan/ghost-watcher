@@ -28,8 +28,13 @@ export interface GhostApp {
   name: string;
   tagline: string;
   version: string;
-  /** Public page describing the watcher, used in the User-Agent so site operators can identify it. */
-  contactUrl: string;
+  /**
+   * Public page describing the watcher, used in the User-Agent so site operators can identify it.
+   * Optional: leave it out unless you run the app against real sites. `GHOST_CONTACT_URL` overrides
+   * it. An app that only watches loopback or reserved hosts needs none and sends a local-only
+   * User-Agent; an app that watches a real host cannot start without a contact URL on a real domain.
+   */
+  contactUrl?: string;
   theme: Theme;
   copy: AppCopy;
   watches: Watch[];
