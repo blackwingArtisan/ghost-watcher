@@ -1,8 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
+import { origin, ports } from './ports';
 
-const DEMO = 'http://127.0.0.1:3138';
-const DEMO_FIXTURES = 'http://127.0.0.1:3139';
+const DEMO = origin(ports.demoDashboard);
+const DEMO_FIXTURES = origin(ports.demoFixtures);
+const BONUS_DASHBOARD = origin(ports.bonusDashboard);
 
 test.describe.configure({ mode: 'serial' });
 
@@ -64,7 +66,7 @@ test('demo mode: the first sighting is already taken, and one key press lets a n
   const receipt = baitAndSwitch.locator('.receipt');
   await expect(receipt).toContainText(/sha256 [0-9a-f]{8}…[0-9a-f]{4} → [0-9a-f]{8}…[0-9a-f]{4}/);
   const copy = await receipt.getByRole('link', { name: 'archived copy' }).getAttribute('href');
-  expect(copy).toMatch(/\/__wayback\/web\/\d{14}\/http:\/\/127\.0\.0\.1:3139\/mossgate\/nightfall-card$/);
+  expect(copy).toMatch(new RegExp(`\\/__wayback\/web\\/\\d{14}\\/http:\\/\\/127\\.0\\.0\\.1:${ports.demoFixtures}\\/mossgate\\/nightfall-card$`));
   expect(await (await page.request.get(copy as string)).text()).toContain('past 48 months');
   // The stone shows the change itself: the old value struck through, the new one beside it.
   const bonusReading = lanternfield.locator('.reading[data-changed="true"]').filter({ hasText: 'Bonus' });
@@ -142,10 +144,10 @@ test('the dashboard refuses cross-origin writes and unknown hosts', async ({ req
 });
 
 test('serve mode has no demo controls', async ({ page, request }) => {
-  await page.goto('http://127.0.0.1:3134');
+  await page.goto(BONUS_DASHBOARD);
   await expect(page.getByRole('button', { name: 'Summon every ghost' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Let a night pass' })).toHaveCount(0);
-  expect((await request.post('http://127.0.0.1:3134/api/demo/next-night')).status()).toBe(404);
+  expect((await request.post(`${BONUS_DASHBOARD}/api/demo/next-night`)).status()).toBe(404);
   await expect(page.getByRole('button', { name: 'Rewind to calm' })).toHaveCount(0);
-  expect((await request.post('http://127.0.0.1:3134/api/demo/rewind')).status()).toBe(404);
+  expect((await request.post(`${BONUS_DASHBOARD}/api/demo/rewind`)).status()).toBe(404);
 });

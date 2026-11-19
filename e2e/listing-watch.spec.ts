@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
+import { origin, ports } from './ports';
 
-const DASHBOARD = 'http://127.0.0.1:3136';
-const FIXTURES = 'http://127.0.0.1:3137';
+const DASHBOARD = origin(ports.listingDashboard);
+const FIXTURES = origin(ports.listingFixtures);
 const OUTBOX = '.ghost-e2e/listing-watch/outbox/outbox.jsonl';
 
 async function outboxSummaries(): Promise<string[]> {

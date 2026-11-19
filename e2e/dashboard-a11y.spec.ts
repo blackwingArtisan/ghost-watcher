@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { origin, ports } from './ports';
 
 /**
  * Checks that hold for every app built on the skeleton: the dashboard fits a phone, works from the
@@ -7,8 +8,8 @@ import AxeBuilder from '@axe-core/playwright';
  * they never trigger a check, so they leave the other specs' state alone.
  */
 const DASHBOARDS = [
-  { app: 'bonus-watch', url: 'http://127.0.0.1:3134', title: 'The Bonus Crypt', motif: 'stone', crest: 'Crypt' },
-  { app: 'listing-watch', url: 'http://127.0.0.1:3136', title: 'Haunted Listings', motif: 'house', crest: 'Lantern' },
+  { app: 'bonus-watch', url: origin(ports.bonusDashboard), title: 'The Bonus Crypt', motif: 'stone', crest: 'Crypt' },
+  { app: 'listing-watch', url: origin(ports.listingDashboard), title: 'Haunted Listings', motif: 'house', crest: 'Lantern' },
 ];
 
 for (const { app, url, title } of DASHBOARDS) {

@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
+import { origin, ports } from './ports';
 
-const DASHBOARD = 'http://127.0.0.1:3134';
-const FIXTURES = 'http://127.0.0.1:3135';
+const DASHBOARD = origin(ports.bonusDashboard);
+const FIXTURES = origin(ports.bonusFixtures);
 const OUTBOX = '.ghost-e2e/bonus-watch/outbox/outbox.jsonl';
 
 interface OutboxLine {

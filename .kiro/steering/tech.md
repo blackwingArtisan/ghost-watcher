@@ -63,3 +63,4 @@ the local adapter. Tests never construct a real cloud client and never touch the
 - Each app has an end-to-end test that drives the real dashboard against a local fixture server,
   changes the fixture, and asserts that the ghost glows and an alert reaches the outbox.
 - Never scrape live sites in tests.
+- E2E ports come only from `e2e/ports.ts`: `GHOST_E2E_PORT` is the base (default 3134, integer 1024 to 65530) and the six servers use base+0 to base+5; no spec or config hardcodes a port.
