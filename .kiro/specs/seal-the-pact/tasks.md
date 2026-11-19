@@ -62,50 +62,50 @@ injected `Clock` or stored ISO strings, money in integer cents, apps import only
 
 ## Session B: server, dashboard, demo and Playwright
 
-- [ ] 14. Turn the feature on for the right app: `copy.pacts: true` in `apps/bonus-watch/src/app.ts`;
+- [x] 14. Turn the feature on for the right app: `copy.pacts: true` in `apps/bonus-watch/src/app.ts`;
       listing-watch stays unchanged. (PACT 9.8, 11.5)
-- [ ] 15. Add the routes in `template/src/server.ts`: `GET`, `POST` and `DELETE`
+- [x] 15. Add the routes in `template/src/server.ts`: `GET`, `POST` and `DELETE`
       `/api/ghosts/:id/pact`, the 1 KiB `readJsonBody` helper, the status codes of design §8, and 404
       for apps without `copy.pacts`. The existing guard covers the foreign-origin case. (PACT 9.1–9.8)
-- [ ] 16. Extend `template/src/view.ts`: `DashboardState.app.pacts`, `GhostView.pact` (from
+- [x] 16. Extend `template/src/view.ts`: `DashboardState.app.pacts`, `GhostView.pact` (from
       `store.pactRecord`), `GhostView.canSeal`, `FieldRow.pact`, the verified `GhostDetail.pact`, and
       `PactView`. (PACT 9.1, 9.9, 10.1–10.4, 10.9, 10.10)
-- [ ] 17. Write `template/test/pact-server.test.ts` on a real `createDashboardServer` over
+- [x] 17. Write `template/test/pact-server.test.ts` on a real `createDashboardServer` over
       `127.0.0.1`: seal, 201 body, 409 `pact-exists`, 409 `no-snapshot`, 400, 413, `GET` states,
       `DELETE`, a foreign Origin, an unknown ghost, an app without `copy.pacts`, `/api/state` badges
       and `canSeal`, the dispute route carrying `pack.pact`. (PACT 9.1–9.9, 11.5)
-- [ ] 18. Render the pact in `template/src/ui/render.js`: the stone chip and the "I applied today"
+- [x] 18. Render the pact in `template/src/ui/render.js`: the stone chip and the "I applied today"
       button, the séance pact section and confirm panel, the extra table column, the pact note in Spirit
       mail and the haunting log, "Ask for the match", and the two pack titles and column headings. All
       values through `esc`; a pack without `pack.pact` renders as before. Add string-level tests to
       `pact-server.test.ts`, including a hostile watch name and archive note. (PACT 10.1–10.4, 10.9–10.11, 10.13, 11.3)
-- [ ] 19. Wire `template/src/ui/app.js`: the `pact-*` actions, the confirm and cancel flow with focus
+- [x] 19. Wire `template/src/ui/app.js`: the `pact-*` actions, the confirm and cancel flow with focus
       return, the toasts of design §9.5, and a refresh after each action. (PACT 10.5–10.8)
-- [ ] 20. Style the new parts in `template/src/ui/style.css`: the sealed chip, the warning state with
+- [x] 20. Style the new parts in `template/src/ui/style.css`: the sealed chip, the warning state with
       words as well as colour, the button above the `ghost__hit` overlay, the confirm panel, the table
       column, at the dashboard's existing contrast and with no new animation. (PACT 10.12)
-- [ ] 21. Seed the demo: add `seedDemoPacts` to `sealing.ts` (design §10), call it from `cli.ts` after
+- [x] 21. Seed the demo: add `seedDemoPacts` to `sealing.ts` (design §10), call it from `cli.ts` after
       the demo baseline and after rewind for pact-enabled apps, and make sure non-demo commands never
       seal on their own. (PACT 8.1–8.4, 8.7, 8.8)
-- [ ] 22. Write `apps/bonus-watch/test/pact.test.ts` on the bonus fixture site and a manual clock:
+- [x] 22. Write `apps/bonus-watch/test/pact.test.ts` on the bonus fixture site and a manual clock:
       seeded pacts are 40 days before now with `seeded: 'demo'`, no archiver call and the demo note;
       night 1 gives Lanternfield the match letter and Mossgate the dispute letter, both dated from the
       seed; night 2 adds a Lanternfield dispute pack; the pact file's `shasum` equals its record; the
       blocked ghost is skipped. (PACT 6.1, 6.3–6.5, 7.1–7.4, 8.1–8.5, 8.7)
-- [ ] 23. Write `e2e/seal-the-pact.spec.ts`, part 1 (bonus dashboard): seal a stone, see the chip and
+- [x] 23. Write `e2e/seal-the-pact.spec.ts`, part 1 (bonus dashboard): seal a stone, see the chip and
       the séance section and column, seal again with "Keep it" and with "Yes, replace", break the pact
       with confirmation, and the no-snapshot state. Ports only from `e2e/ports.ts`. (PACT 1.1, 1.3, 2.2, 2.3, 2.5, 10.1–10.3, 10.5, 10.7–10.10)
-- [ ] 24. Write part 2 (demo dashboard): rewind, see the seeded stone, press `N`, open the Lanternfield
+- [x] 24. Write part 2 (demo dashboard): rewind, see the seeded stone, press `N`, open the Lanternfield
       pack ("Bonus match", columns dated from `sealedAt` and `generatedAt`, 40 days apart, no
       `[Date you applied]`), open the Mossgate dispute pack with Exhibit A, rewind again and see the
       pact re-seeded. (PACT 6.1–6.5, 7.1, 7.3, 8.1–8.5, 10.11, 10.13)
-- [ ] 25. Write part 3: keyboard sealing (Tab and Enter), an axe scan of the stone and the séance with
+- [x] 25. Write part 3: keyboard sealing (Tab and Enter), an axe scan of the stone and the séance with
       the pact section open, and the confirmation focus return. (PACT 10.8, 10.12)
-- [ ] 26. Documentation: add one paragraph on sealing the pact to `README.md` (what "I applied today"
+- [x] 26. Documentation: add one paragraph on sealing the pact to `README.md` (what "I applied today"
       does, that the bonus match letter exists, that the demo pact is back-dated 40 days) and list
       `pact.ts` and `sealing.ts` in `.kiro/steering/structure.md`. Leave `KIRO-LOG.md` alone.
       (PACT 8.3, 11.4)
-- [ ] 27. Check task for Session B. Run `npm run typecheck`, `npm run test:unit` and
+- [x] 27. Check task for Session B. Run `npm run typecheck`, `npm run test:unit` and
       `GHOST_E2E_PORT=3840 npx playwright test`; all three must pass, including the existing specs
       and the a11y spec. Confirm no `package.json` changed. (PACT 11.1, 11.2)
 

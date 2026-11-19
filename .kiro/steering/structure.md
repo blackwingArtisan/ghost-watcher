@@ -20,6 +20,8 @@ inclusion: always
     summary.ts            plain-English sentences for changes
     history.ts            HistorySource port + Wayback CDX adapter (the Ghost of Terms Past)
     receipts.ts           snapshot hashes + PageArchiver port (Save Page Now) for shrieks
+    pact.ts               pact types and the pure comparison of a page with the sealed pact
+    sealing.ts            sealPact, breakPact and seedDemoPacts ("I applied today")
     noise.ts              page fingerprints, to count the noise a ghost slept through
     guard.ts              Host and Origin checks for the dashboard
     server.ts             dashboard HTTP server and JSON API

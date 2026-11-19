@@ -1925,3 +1925,158 @@ body[data-shriek='true'] .ghost[data-severity='shriek'][data-rising='true'] .gho
     transition: none !important;
   }
 }
+
+/* ---------- Seal the pact ---------- */
+
+.ghost__pact {
+  position: relative;
+  /* Above the whole-stone `.ghost__hit` overlay (z-index 3), so the button can be clicked. */
+  z-index: 4;
+  margin: 10px 0 0;
+  font: 400 0.8125rem/1.45 var(--sans);
+  color: var(--ink-dim);
+}
+.ghost__pact[data-pact='sealed'] {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 8px;
+}
+.ghost__pact[data-pact='sealed'] code,
+.ghost__pact[data-pact='sealed'] time,
+.ghost__pact[data-pact='sealed'] .pact-demo {
+  white-space: nowrap;
+}
+.ghost__pact[data-pact='sealed'] {
+  /* The chip is information only: let a click fall through to the stone. */
+  pointer-events: none;
+}
+.ghost__pact code {
+  font: 400 0.78rem/1.4 var(--mono);
+  color: var(--ink);
+}
+.ghost__pact-tag {
+  display: inline-block;
+  padding: 1px 9px;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+  border-radius: 999px;
+  color: var(--ink);
+  font: 600 0.72rem/1.6 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ghost__pact-tag--warn,
+.pact__warn {
+  border-color: var(--shriek);
+  color: var(--shriek);
+}
+.pact__warn {
+  display: inline-block;
+  padding: 0 8px;
+  border: 1px solid var(--shriek);
+  border-radius: 999px;
+  font: 600 0.72rem/1.6 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ghost__pact-why {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-dim);
+}
+.btn--seal {
+  border-color: color-mix(in srgb, var(--accent-2) 65%, transparent);
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+}
+.btn--seal:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent-2) 24%, transparent);
+}
+.btn--seal:disabled {
+  cursor: not-allowed;
+}
+.pact-demo {
+  display: inline-block;
+  padding: 0 7px;
+  border: 1px dashed color-mix(in srgb, var(--ink-dim) 60%, transparent);
+  border-radius: 999px;
+  color: var(--ink-dim);
+  font: 600 0.64rem/1.6 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.pact {
+  margin-top: 22px;
+}
+.pact__facts {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+}
+.pact__facts div {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr;
+  gap: 10px;
+}
+.pact__facts dt {
+  font: 500 0.66rem/1.8 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.pact__facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.pact__hash {
+  font: 400 0.78rem/1.5 var(--mono);
+  color: var(--ink);
+}
+.pact__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+.pact__confirm {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--shriek) 60%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--shriek) 10%, transparent);
+}
+.pact__confirm p {
+  margin: 0 0 10px;
+}
+.values td.pact-value {
+  color: var(--ink-dim);
+}
+.values tr[data-pact-differs='true'] td.pact-value {
+  color: var(--ink);
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+.pact-note {
+  margin: 6px 0 2px;
+  font: 400 0.85rem/1.5 var(--sans);
+  color: var(--ink-dim);
+}
+.pact-note__tag {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 70%, transparent);
+  border-radius: 999px;
+  color: var(--ink);
+  font: 600 0.64rem/1.6 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .pact__facts div {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}

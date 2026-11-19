@@ -3,9 +3,11 @@ import type { Alert } from './alerts/types';
 import type { GhostDeps } from './config';
 import type { Fickleness, PastHeadline, PastTimeline } from './history';
 import { displayValue, type MaybeValue } from './normalize';
+import type { PactArchive, PactReading, PactRecord } from './pact';
+import { shortHash } from './receipts';
 import { describeRule } from './rules';
 import { nextEligibleAt } from './runner';
-import { describeItem, wordDiff, type WordSegment } from './summary';
+import { describeItem, letterDate, wordDiff, type WordSegment } from './summary';
 import type { Severity, Tone, Watch } from './watch';
 
 export type GhostState = 'unborn' | 'dormant' | 'restless' | 'blocked' | 'lost';
@@ -20,6 +22,42 @@ export interface Reading {
   tone?: Tone;
   /** A list item that matched the rules, shown across the whole card. */
   match?: boolean;
+}
+
+/** What the dashboard knows of a ghost's pact. Never carries the snapshot body. */
+export interface PactView {
+  state: 'sealed' | 'corrupt';
+  sealedAt?: string;
+  /** "Oct 10, 2026" */
+  sealedDate?: string;
+  snapshotTakenAt?: string;
+  sha256?: string;
+  shortHash?: string;
+  archive?: PactArchive;
+  seeded?: boolean;
+  /** Corrupt only. */
+  reason?: string;
+}
+
+/** The pact record as the dashboard shows it. */
+export function pactViewOf(record: PactRecord): PactView {
+  return {
+    state: 'sealed',
+    sealedAt: record.sealedAt,
+    sealedDate: letterDate(record.sealedAt),
+    snapshotTakenAt: record.snapshotTakenAt,
+    sha256: record.sha256,
+    shortHash: shortHash(record.sha256),
+    archive: record.archive,
+    seeded: record.seeded === 'demo',
+  };
+}
+
+/** `null` when there is no pact. */
+export function pactViewOfReading(reading: { status: 'none' } | { status: 'sealed'; record: PactRecord } | { status: 'corrupt'; reason: string }): PactView | null {
+  if (reading.status === 'none') return null;
+  if (reading.status === 'corrupt') return { state: 'corrupt', reason: reading.reason };
+  return pactViewOf(reading.record);
 }
 
 export interface GhostView {
@@ -45,6 +83,9 @@ export interface GhostView {
   /** From the Ghost of Terms Past: the past change worth a ribbon, and how fickle the page is. */
   headline: PastHeadline | null;
   fickleness: Fickleness | null;
+  /** Pact-enabled apps only: the sealed pact (or its damage), and whether "I applied today" can work. */
+  pact?: PactView | null;
+  canSeal?: boolean;
 }
 
 export interface FieldRow {
@@ -56,6 +97,8 @@ export interface FieldRow {
   /** Long text values are shown as one block with inline insertions and deletions. */
   long: boolean;
   segments: WordSegment[] | null;
+  /** Pact-enabled apps with a sealed pact: the value the pact holds ("the day you applied"). */
+  pact?: string | null;
 }
 
 /** A dimmed letter in Spirit mail from the Ghost of Terms Past: a change found in archived copies. */
@@ -103,6 +146,7 @@ export interface DashboardState {
     disclaimer: string | null;
     feedName: string;
     disputes: boolean;
+    pacts: boolean;
     userAgent: string;
     store: string;
     alerts: string;
@@ -160,11 +204,13 @@ function stoneValue(value: MaybeValue): string {
 }
 
 export async function ghostView(deps: GhostDeps, watch: Watch): Promise<GhostView> {
-  const [status, unread, snapshot, past] = await Promise.all([
+  const pacts = deps.app.copy.pacts === true;
+  const [status, unread, snapshot, past, pactReading] = await Promise.all([
     deps.store.status(watch.id),
     deps.store.unacknowledged(watch.id),
     deps.store.latestSnapshot(watch.id),
     deps.store.pastTimeline(watch.id),
+    pacts ? deps.store.pactRecord(watch.id) : null,
   ]);
   let state: GhostState = 'unborn';
   if (status.lastOutcome === 'blocked') state = 'blocked';
@@ -236,6 +282,7 @@ export async function ghostView(deps: GhostDeps, watch: Watch): Promise<GhostVie
     rules: watch.rules.map((rule) => describeRule(rule, watch)),
     headline: past?.headline ?? null,
     fickleness: past?.fickleness ?? null,
+    ...(pactReading ? { pact: pactViewOfReading(pactReading), canSeal: snapshot !== null } : {}),
   };
 }
 
@@ -314,6 +361,7 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
       disclaimer: app.copy.disclaimer ?? null,
       feedName: app.copy.feedName ?? 'Spirit mail',
       disputes: app.copy.disputes ?? false,
+      pacts: app.copy.pacts ?? false,
       userAgent: deps.describe.userAgent,
       store: deps.describe.store,
       alerts: deps.describe.alerts,
@@ -329,15 +377,18 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
 }
 
 export async function ghostDetail(deps: GhostDeps, watch: Watch): Promise<GhostDetail> {
-  const [view, history, alerts, unread, letters, past] = await Promise.all([
+  const pacts = deps.app.copy.pacts === true;
+  const [view, history, alerts, unread, letters, past, pactReading] = await Promise.all([
     ghostView(deps, watch),
     deps.store.history(watch.id, 2),
     deps.store.alerts(watch.id),
     deps.store.unacknowledged(watch.id),
     letterIndex(deps),
     deps.store.pastTimeline(watch.id),
+    pacts ? deps.store.pact(watch.id) : null,
   ]);
   const [current, previous] = history;
+  const sealed = pactReading?.status === 'sealed' ? pactReading.pact : null;
   const fields: FieldRow[] = watch.fields.map((field) => {
     const now = current ? displayValue(current.fields[field.name] ?? null) : '—';
     const before = previous ? displayValue(previous.fields[field.name] ?? null) : null;
@@ -351,6 +402,7 @@ export async function ghostDetail(deps: GhostDeps, watch: Watch): Promise<GhostD
       changed,
       long,
       segments: long && changed && before !== null ? wordDiff(before, now) : null,
+      ...(sealed ? { pact: displayValue(sealed.snapshot.fields[field.name] ?? null) } : {}),
     };
   });
   const lists: ListView[] = watch.lists.map((list) => {
@@ -370,10 +422,19 @@ export async function ghostDetail(deps: GhostDeps, watch: Watch): Promise<GhostD
   const unreadIds = new Set(unread.map((a) => a.id));
   return {
     ...view,
+    ...(pactReading ? { pact: pactViewOfFull(pactReading) } : {}),
     fields,
     lists,
     alerts: alerts.slice(0, 40).map((alert) => ({ ...alert, acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null })),
     snapshots: history.map((s) => s.takenAt),
     past,
   };
+}
+
+/** The verified pact: a snapshot that fails its hash shows as corrupt even when `pact.json` parses. */
+function pactViewOfFull(reading: PactReading): PactView | null {
+  if (reading.status === 'none') return null;
+  if (reading.status === 'corrupt') return { state: 'corrupt', reason: reading.reason };
+  const { snapshot: _body, ...record } = reading.pact;
+  return pactViewOf(record);
 }

@@ -1,5 +1,5 @@
 // Dashboard client: keeps the graveyard live, opens séances, and sends "check now" and "lay to rest".
-import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderStats, renderTally } from './render.js';
+import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderStats, renderTally, shortHash } from './render.js';
 
 const $ = (/** @type {string} */ sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 const initial = document.getElementById('initial-state');
@@ -7,6 +7,8 @@ let state = JSON.parse(initial ? initial.textContent || '{}' : '{}');
 /** @type {string | null} */
 let openId = null;
 let busy = 0;
+/** The pact confirmation open in the séance: which ghost, which question, and the button that asked. @type {{ id: string; kind: 'replace' | 'break'; opener: string } | null} */
+let pendingConfirm = null;
 
 const dialog = /** @type {HTMLDialogElement} */ ($('#seance'));
 
@@ -67,14 +69,16 @@ function riseAfterNight(results) {
 async function refresh() {
   state = await api('/api/state');
   paint();
-  if (openId && dialog.open) await openSeance(openId, false);
+  // An open confirmation is left alone, so a poll never takes the question away from the reader.
+  if (openId && dialog.open && !pendingConfirm) await openSeance(openId, false);
 }
 
 /** @param {string} id @param {boolean} [show] */
 async function openSeance(id, show = true) {
   openId = id;
   const detail = await api(`/api/ghosts/${encodeURIComponent(id)}`);
-  $('#seance-body').innerHTML = renderDetail(detail, state.generatedAt, { disputes: state.app.disputes });
+  const confirm = pendingConfirm && pendingConfirm.id === id ? pendingConfirm.kind : null;
+  $('#seance-body').innerHTML = renderDetail(detail, state.generatedAt, { disputes: state.app.disputes, confirm });
   if (show && !dialog.open) dialog.showModal();
 }
 
@@ -85,6 +89,53 @@ async function openDispute(id, alertId) {
   $('#seance-body').innerHTML = renderDispute(pack);
   if (!dialog.open) dialog.showModal();
   dialog.scrollTop = 0;
+}
+
+/** @param {string} id */
+function ghostName(id) {
+  const ghost = (state.ghosts || []).find((/** @type {any} */ g) => g.id === id);
+  return ghost ? ghost.name : id;
+}
+
+/**
+ * Calls a pact route and returns the status and body, so a 409 can be explained rather than thrown.
+ * @param {string} id @param {'POST' | 'DELETE'} method @param {object} [body]
+ */
+async function pactRequest(id, method, body) {
+  const response = await fetch(`/api/ghosts/${encodeURIComponent(id)}/pact`, {
+    method,
+    headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    ...(body ? { body: JSON.stringify(body) } : {}),
+  });
+  const data = await response.json().catch(() => ({}));
+  return { status: response.status, data };
+}
+
+/** @param {string} selector */
+function focusSoon(selector) {
+  requestAnimationFrame(() => /** @type {HTMLElement | null} */ (document.querySelector(selector))?.focus());
+}
+
+/** Seals the pact, then explains the outcome in a toast. @param {string} id @param {boolean} confirmReplace */
+async function sealPact(id, confirmReplace) {
+  const name = ghostName(id);
+  const { status, data } = await pactRequest(id, 'POST', confirmReplace ? { confirmReplace: true } : {});
+  if (status === 201) {
+    const hash = shortHash(data.pact.sha256);
+    const hashOnly = !data.archive.saved && /^Could not reach/.test(data.archive.note || '');
+    toast(
+      hashOnly
+        ? `Pact sealed for ${name} with its hash only. The archive could not be reached.`
+        : `Pact sealed for ${name}. Hash ${hash}.`,
+    );
+  } else if (status === 409 && data.code === 'no-snapshot') {
+    toast('Nothing to seal yet. Summon the ghost for a first look.');
+  } else if (status === 409 && data.code === 'pact-exists') {
+    toast('A pact already exists. Open the séance to replace it.');
+  } else {
+    throw new Error(`${status} ${data.error || 'The pact could not be sealed'}`);
+  }
+  await refresh();
 }
 
 /** @param {string} targetId */
@@ -146,6 +197,40 @@ document.addEventListener('click', (event) => {
     void withBusy(() => openDispute(id, target.dataset.alert || ''));
   } else if (action === 'copy') {
     void copyText(target.dataset.target || '');
+  } else if (action === 'pact-seal') {
+    const inSeance = Boolean(target.closest('#seance'));
+    void withBusy(async () => {
+      await sealPact(id, false);
+      focusSoon(inSeance ? '#seance [data-action="pact-ask-replace"]' : `#ghost-${CSS.escape(id)} .ghost__hit`);
+    });
+  } else if (action === 'pact-ask-replace' || action === 'pact-ask-break') {
+    pendingConfirm = { id, kind: action === 'pact-ask-replace' ? 'replace' : 'break', opener: String(action) };
+    void withBusy(async () => {
+      await openSeance(id, false);
+      focusSoon('#seance [data-action="pact-cancel"]');
+    });
+  } else if (action === 'pact-cancel') {
+    const opener = pendingConfirm ? pendingConfirm.opener : '';
+    pendingConfirm = null;
+    void withBusy(async () => {
+      await openSeance(id, false);
+      focusSoon(`#seance [data-action="${opener}"]`);
+    });
+  } else if (action === 'pact-confirm-replace') {
+    pendingConfirm = null;
+    void withBusy(async () => {
+      await sealPact(id, true);
+      focusSoon('#seance [data-action="pact-ask-replace"]');
+    });
+  } else if (action === 'pact-confirm-break') {
+    pendingConfirm = null;
+    void withBusy(async () => {
+      const { status, data } = await pactRequest(id, 'DELETE');
+      if (status !== 200) throw new Error(`${status} ${data.error || 'The pact could not be broken'}`);
+      toast(`Pact broken for ${ghostName(id)}.`);
+      await refresh();
+      focusSoon('#seance [data-action="pact-seal"]');
+    });
   } else if (action === 'check') {
     const card = document.getElementById(`ghost-${id}`);
     if (card) card.dataset.checking = 'true';
@@ -228,6 +313,13 @@ document.addEventListener('keydown', (event) => {
 
 dialog.addEventListener('close', () => {
   openId = null;
+  pendingConfirm = null;
+});
+// Escape answers an open pact question ("Keep it") before it closes the séance.
+dialog.addEventListener('cancel', (event) => {
+  if (!pendingConfirm) return;
+  event.preventDefault();
+  /** @type {HTMLElement | null} */ (document.querySelector('#seance [data-action="pact-cancel"]'))?.click();
 });
 dialog.addEventListener('click', (event) => {
   if (event.target === dialog) dialog.close();

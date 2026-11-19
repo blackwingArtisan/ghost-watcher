@@ -62,6 +62,17 @@ the receipt into a dispute pack: a letter to the bank with the old and new terms
 archived link and both hashes, and prefilled CFPB complaint text. Bramblewick only reformatted its
 page, and its ghost slept straight through it.
 
+**Seal the pact.** On the day you apply, press **I applied today** on the bank's stone in the Bonus
+Crypt. The ghost seals that page as your pact: the snapshot, its SHA-256, a permanent copy from the
+Internet Archive when archiving is on, and the date. From then on every change is judged against the
+pact as well as against last night, so a slow drift in small steps still raises a flag, and the dispute
+pack quotes what the page promised the day you applied against what it says now. When the bank
+improves its terms after you applied, the pack becomes a **bonus match** letter that asks for the
+better terms. Replacing or breaking a pact always asks first. In the demo the pact is back-dated 40
+days, so the first night already reads "Oct 10, the day you applied" against "Nov 19, what it says
+now" (the date depends on the day you run it), and the demo pact has no archived copy because none
+could honestly be dated that far back.
+
 ![The Bonus Crypt after one night: four ghosts on tombstones, two glowing with the old values struck through beside the new ones, one asleep after a reformat-only change, one turned away by robots.txt, and Spirit mail with a Bait and switch letter](docs/bonus-crypt.png)
 
 ## Who it's for

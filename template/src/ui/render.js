@@ -73,13 +73,101 @@ export function renderReceipt(receipt) {
   return `<p class="receipt"><span class="receipt__tag">Receipt</span> ${link} · sha256 <code title="before: ${esc(receipt.before.sha256)}">${esc(shortHash(receipt.before.sha256))}</code> → <code title="after: ${esc(receipt.after.sha256)}">${esc(shortHash(receipt.after.sha256))}</code></p>`;
 }
 
+/** The bonus match variant: the page improved on what it promised the day you applied. @param {any} alert */
+export function isMatch(alert) {
+  const p = alert && alert.pact;
+  return Boolean(p && p.relation === 'differs' && p.tone === 'good' && !alert.stealth);
+}
+
+/** One plain sentence about the change against the pact. @param {any} alert */
+export function renderPactNote(alert) {
+  if (!alert || !alert.pact || !alert.pact.note) return '';
+  return `<p class="pact-note" data-relation="${esc(alert.pact.relation)}"><span class="pact-note__tag">Pact</span> ${esc(alert.pact.note)}</p>`;
+}
+
 /**
- * "Raise the dead": shown on every change that kept a receipt. It opens the dispute pack.
+ * "Raise the dead": shown on every change that kept a receipt. It opens the dispute pack, or the
+ * bonus match letter when the terms improved after the reader applied.
  * @param {any} alert
  */
 export function renderRaiseButton(alert) {
   if (!alert || !alert.receipt) return '';
-  return `<button type="button" class="btn btn--small btn--raise" data-action="dispute" data-id="${esc(alert.watchId)}" data-alert="${esc(alert.id)}" aria-label="Raise the dead: dispute pack for ${esc(alert.watchName)}">Raise the dead</button>`;
+  const match = isMatch(alert);
+  const label = match ? 'Ask for the match' : 'Raise the dead';
+  const aria = match ? `Ask for the match: bonus match letter for ${alert.watchName}` : `Raise the dead: dispute pack for ${alert.watchName}`;
+  return `<button type="button" class="btn btn--small btn--raise" data-action="dispute" data-id="${esc(alert.watchId)}" data-alert="${esc(alert.id)}" aria-label="${esc(aria)}">${label}</button>`;
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** "Oct 10 '26" @param {string} iso */
+export function compactDay(iso) {
+  const d = new Date(iso);
+  return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()} '${String(d.getUTCFullYear()).slice(-2)}`;
+}
+
+/** The pact line (or the "I applied today" button) on a stone. Apps without pacts have no `pact` key. @param {any} ghost */
+export function renderStonePact(ghost) {
+  const p = ghost.pact;
+  if (p === undefined) return '';
+  if (p && p.state === 'sealed') {
+    return `<p class="ghost__pact" data-pact="sealed" title="Sealed ${esc(p.sealedDate)} · SHA-256 ${esc(p.sha256)}"><span class="ghost__pact-tag">Pact sealed</span> <time datetime="${esc(p.sealedAt)}">${esc(compactDay(p.sealedAt))}</time> · <code>${esc(p.shortHash)}</code>${p.seeded ? ' <span class="pact-demo">demo</span>' : ''}</p>`;
+  }
+  if (p && p.state === 'corrupt') {
+    return '<p class="ghost__pact" data-pact="corrupt"><span class="ghost__pact-tag ghost__pact-tag--warn">Pact unreadable</span> Open the séance to fix it.</p>';
+  }
+  const why = ghost.canSeal ? '' : `<span class="ghost__pact-why" id="pact-why-${esc(ghost.id)}">Not seen yet. Summon the ghost first.</span>`;
+  return `<div class="ghost__pact" data-pact="none"><button type="button" class="btn btn--small btn--seal" data-action="pact-seal" data-id="${esc(ghost.id)}" aria-label="I applied today: seal the pact for ${esc(ghost.name)}"${
+    ghost.canSeal ? '' : ` disabled aria-describedby="pact-why-${esc(ghost.id)}"`
+  }>I applied today</button>${why}</div>`;
+}
+
+/**
+ * The pact section of the séance, with its confirmation step.
+ * @param {any} detail @param {'replace' | 'break' | null} [confirm]
+ */
+export function renderPactSection(detail, confirm = null) {
+  const p = detail.pact;
+  if (p === undefined) return '';
+  const name = esc(detail.name);
+  const id = esc(detail.id);
+  const seal = (/** @type {string} */ label) =>
+    `<button type="button" class="btn btn--small btn--seal" data-action="pact-seal" data-id="${id}" aria-label="${esc(label)}: seal the pact for ${name}"${detail.canSeal ? '' : ' disabled'}>${esc(label)}</button>`;
+  if (!p) {
+    return `<section class="pact" data-pact="none" aria-labelledby="pact-title"><h3 id="pact-title">The pact</h3><p class="muted small">No pact yet. Seal one on the day you apply.</p><div class="pact__actions">${seal('I applied today')}</div>${
+      detail.canSeal ? '' : '<p class="muted small">Not seen yet. Summon the ghost first.</p>'
+    }</section>`;
+  }
+  if (p.state === 'corrupt') {
+    return `<section class="pact" data-pact="corrupt" aria-labelledby="pact-title"><h3 id="pact-title">The pact <span class="pact__warn">unreadable</span></h3><p class="small">The pact cannot be read: ${esc(p.reason)}. Checks go on without it.</p><div class="pact__actions">${seal('Seal again')}<button type="button" class="btn btn--small" data-action="pact-ask-break" data-id="${id}" aria-label="Break the pact for ${name}">Break the pact</button></div>${renderPactConfirm(detail, confirm)}</section>`;
+  }
+  const archive = p.archive || {};
+  const copy = archive.archiveUrl && /^https?:\/\//i.test(archive.archiveUrl)
+    ? `<a href="${esc(archive.archiveUrl)}" target="_blank" rel="noopener noreferrer">archived copy</a>${archive.archivedBy ? ` held by ${esc(archive.archivedBy)}` : ''}`
+    : `hashes only${archive.note ? ` <span class="muted">(${esc(archive.note)})</span>` : ''}`;
+  return `<section class="pact" data-pact="sealed" aria-labelledby="pact-title"><h3 id="pact-title">The pact${p.seeded ? ' <span class="pact-demo">demo pact</span>' : ''}</h3>
+<dl class="pact__facts">
+<div><dt>Sealed</dt><dd><time datetime="${esc(p.sealedAt)}">${esc(p.sealedDate)}</time> · ${esc(clockTime(p.sealedAt))}</dd></div>
+<div><dt>Reading sealed</dt><dd>the page as the ghost saw it on <time datetime="${esc(p.snapshotTakenAt)}">${esc(clockTime(p.snapshotTakenAt))}</time> (${esc(ago(p.snapshotTakenAt, p.sealedAt))} when sealed)</dd></div>
+<div><dt>SHA-256</dt><dd><code class="pact__hash">${esc(p.sha256)}</code></dd></div>
+<div><dt>Copy</dt><dd>${copy}</dd></div>
+</dl>
+<p class="muted small">Check it yourself: <code>shasum -a 256 .ghost-data/store/pacts/${esc(detail.id)}/${esc(p.sha256)}.json</code></p>
+<div class="pact__actions"><button type="button" class="btn btn--small" data-action="pact-ask-replace" data-id="${id}" aria-label="Seal again: replace the pact for ${name}">Seal again</button><button type="button" class="btn btn--small" data-action="pact-ask-break" data-id="${id}" aria-label="Break the pact for ${name}">Break the pact</button></div>${renderPactConfirm(detail, confirm)}</section>`;
+}
+
+/** @param {any} detail @param {'replace' | 'break' | null} confirm */
+function renderPactConfirm(detail, confirm) {
+  if (!confirm) return '';
+  const p = detail.pact;
+  const when = p && p.sealedDate ? ` sealed ${esc(p.sealedDate)}` : '';
+  const id = esc(detail.id);
+  const text =
+    confirm === 'replace'
+      ? `<b>Replace the pact${when}?</b> The old one is deleted.`
+      : `<b>Break the pact${when}?</b> Its record and snapshot are deleted. Alerts already raised keep their own copy.`;
+  const yes = confirm === 'replace' ? 'Yes, replace' : 'Yes, break';
+  return `<div class="pact__confirm" role="group" aria-labelledby="pact-confirm-text" data-confirm="${esc(confirm)}"><p id="pact-confirm-text">${text}</p><button type="button" class="btn btn--small btn--raise" data-action="pact-confirm-${esc(confirm)}" data-id="${id}">${yes}</button> <button type="button" class="btn btn--small" data-action="pact-cancel" data-id="${id}">Keep it</button></div>`;
 }
 
 /**
@@ -92,19 +180,38 @@ export function renderDispute(pack) {
     .map((/** @type {any} */ row) => `<tr><th scope="row">${esc(row.label)}</th><td><code>${esc(row.value)}</code></td></tr>`)
     .join('');
   const c = pack.complaint;
-  return `<header class="dispute__head">
+  const pact = pack.pact;
+  const match = Boolean(pact && pact.variant === 'match');
+  const promised = Boolean(pact && pact.relation === 'differs');
+  const title = match ? 'Bonus match' : 'Dispute pack';
+  const intro = match
+    ? `The bank improved its terms after you applied. Ask it for the better terms. Fill in the bracketed blanks (${esc(pack.blanks.join(', '))}), then send it yourself. Nothing here is sent for you.`
+    : `Show the bank its own terms from the day you applied. Fill in the bracketed blanks (${esc(pack.blanks.join(', '))}), then send it yourself. Nothing here is sent for you.`;
+  const beforeHead = promised ? `${esc(pack.beforeDate)}, the day you applied: what the page promised` : `${esc(pack.beforeDate)}: what the page said`;
+  const complaint = match
+    ? ''
+    : `
+<section class="dispute__block">
+  <h3>3. If the bank says no: a CFPB complaint</h3>
+  <p class="muted small">At <a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">consumerfinance.gov/complaint</a> choose <b>${esc(c.product)}</b>, then <b>${esc(c.issue)}</b>, then <b>${esc(c.subIssue)}</b>.</p>
+  <label for="dispute-cfpb">What happened</label>
+  <textarea class="dispute__text" id="dispute-cfpb" readonly rows="7">${esc(c.whatHappened)}</textarea>
+  <button type="button" class="btn btn--small" data-action="copy" data-target="dispute-cfpb">Copy the complaint text</button>
+  <p class="muted small">Fair resolution: <span class="dispute__resolution">${esc(c.desiredResolution)}</span></p>
+</section>`;
+  return `<header class="dispute__head"${pact ? ` data-variant="${match ? 'match' : 'dispute'}"` : ''}>
   <div class="seance__ghost">${ghostSvg('restless')}</div>
   <div>
     <p class="eyebrow">Raise the dead · ${esc(pack.kind)}</p>
-    <h2 id="seance-title">Dispute pack: ${esc(pack.watchName)}</h2>
-    <p class="muted small">Show the bank its own terms from the day you applied. Fill in the bracketed blanks (${esc(pack.blanks.join(', '))}), then send it yourself. Nothing here is sent for you.</p>
+    <h2 id="seance-title">${title}: ${esc(pack.watchName)}</h2>
+    <p class="muted small">${intro}</p>
   </div>
 </header>
 <div class="seance__actions">
   <button type="button" class="btn" data-action="open" data-id="${esc(pack.watchId)}">Back to the séance</button>
 </div>
 <section class="dispute__terms">
-  <div class="dispute__side" data-side="before"><h3>${esc(pack.beforeDate)}: what the page said</h3><ul>${lines(pack.before)}</ul></div>
+  <div class="dispute__side" data-side="before"><h3>${beforeHead}</h3><ul>${lines(pack.before)}</ul></div>
   <div class="dispute__side" data-side="after"><h3>${esc(pack.afterDate)}: what it says now</h3><ul>${lines(pack.after)}</ul></div>
 </section>
 <section class="dispute__block">
@@ -117,15 +224,7 @@ export function renderDispute(pack) {
 <section class="dispute__block">
   <h3>2. Evidence</h3>
   <table class="values dispute__evidence"><tbody>${evidence}</tbody></table>
-</section>
-<section class="dispute__block">
-  <h3>3. If the bank says no: a CFPB complaint</h3>
-  <p class="muted small">At <a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">consumerfinance.gov/complaint</a> choose <b>${esc(c.product)}</b>, then <b>${esc(c.issue)}</b>, then <b>${esc(c.subIssue)}</b>.</p>
-  <label for="dispute-cfpb">What happened</label>
-  <textarea class="dispute__text" id="dispute-cfpb" readonly rows="7">${esc(c.whatHappened)}</textarea>
-  <button type="button" class="btn btn--small" data-action="copy" data-target="dispute-cfpb">Copy the complaint text</button>
-  <p class="muted small">Fair resolution: <span class="dispute__resolution">${esc(c.desiredResolution)}</span></p>
-</section>`;
+</section>${complaint}`;
 }
 
 /** @param {string} iso */
@@ -243,6 +342,7 @@ export function renderGhostCard(ghost, nowIso) {
     <dl class="readings">${readings}</dl>
     <p class="ghost__msg">${esc(ghost.lastMessage)}</p>
     ${fickle}${ignoredChip(ghost.ignored)}
+    ${renderStonePact(ghost)}
     <p class="ghost__when">${when}</p>
   </div>
 </article>`;
@@ -324,23 +424,26 @@ function renderLiveLetters(state) {
       return `<li class="feed__item" data-severity="${esc(a.severity)}" data-tone="${esc(a.tone || 'neutral')}" data-acknowledged="${entry.acknowledged}"${a.stealth ? ' data-stealth="true"' : ''}>
   <div class="feed__meta"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><button type="button" class="feed__watch" data-action="open" data-id="${esc(a.watchId)}">${esc(a.watchName)}</button><time datetime="${esc(a.createdAt)}">${esc(ago(a.createdAt, state.generatedAt))}</time></div>
   ${stealth}<p class="feed__summary">${esc(a.summary)}</p>
-  ${renderReceipt(a.receipt)}<div class="feed__actions">${letter}${state.app.disputes ? renderRaiseButton(a) : ''}</div>
+  ${renderPactNote(a)}${renderReceipt(a.receipt)}<div class="feed__actions">${letter}${state.app.disputes ? renderRaiseButton(a) : ''}</div>
 </li>`;
     })
     .join('\n');
 }
 
-/** @param {any} detail @param {string} [nowIso] @param {{ disputes?: boolean }} [options] */
+/** @param {any} detail @param {string} [nowIso] @param {{ disputes?: boolean; confirm?: 'replace' | 'break' | null }} [options] */
 export function renderDetail(detail, nowIso, options = {}) {
   const shortFields = detail.fields.filter((/** @type {any} */ f) => !f.long);
   const longFields = detail.fields.filter((/** @type {any} */ f) => f.long);
+  const sealed = Boolean(detail.pact && detail.pact.state === 'sealed');
   const fieldRows = shortFields
     .map(
-      (/** @type {any} */ f) => `<tr data-changed="${f.changed}"><th scope="row">${esc(f.label)}</th><td class="now">${esc(f.now)}</td><td class="before">${f.before === null ? '<span class="muted">—</span>' : f.changed ? esc(f.before) : '<span class="muted">unchanged</span>'}</td></tr>`,
+      (/** @type {any} */ f) => `<tr data-changed="${f.changed}"${sealed && f.pact !== undefined && f.pact !== f.now ? ' data-pact-differs="true"' : ''}><th scope="row">${esc(f.label)}</th><td class="now">${esc(f.now)}</td><td class="before">${f.before === null ? '<span class="muted">—</span>' : f.changed ? esc(f.before) : '<span class="muted">unchanged</span>'}</td>${
+        sealed ? `<td class="pact-value">${f.pact === undefined || f.pact === null ? '<span class="muted">—</span>' : esc(f.pact)}</td>` : ''
+      }</tr>`,
     )
     .join('');
   const table = shortFields.length
-    ? `<table class="values"><thead><tr><th scope="col">Watched value</th><th scope="col">Now</th><th scope="col">Before the last change</th></tr></thead><tbody>${fieldRows}</tbody></table>`
+    ? `<table class="values"><thead><tr><th scope="col">Watched value</th><th scope="col">Now</th><th scope="col">Before the last change</th>${sealed ? '<th scope="col">The day you applied</th>' : ''}</tr></thead><tbody>${fieldRows}</tbody></table>`
     : '';
   const blocks = longFields
     .map((/** @type {any} */ f) => {
@@ -365,7 +468,7 @@ export function renderDetail(detail, nowIso, options = {}) {
   const alerts = detail.alerts.length
     ? detail.alerts
         .map(
-          (/** @type {any} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div>${a.stealth ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>` : ''}<p>${esc(a.summary)}</p>${renderReceipt(a.receipt)}${options.disputes ? renderRaiseButton({ ...a, watchId: detail.id, watchName: detail.name }) : ''}<p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
+          (/** @type {any} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div>${a.stealth ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>` : ''}<p>${esc(a.summary)}</p>${renderPactNote(a)}${renderReceipt(a.receipt)}${options.disputes ? renderRaiseButton({ ...a, watchId: detail.id, watchName: detail.name }) : ''}<p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
         )
         .join('')
     : '<li class="muted">No alerts yet. The ghost has nothing to report.</li>';
@@ -388,6 +491,7 @@ export function renderDetail(detail, nowIso, options = {}) {
   <button type="button" class="btn" data-action="ack" data-id="${esc(detail.id)}" ${detail.unread ? '' : 'disabled'}>Lay to rest${detail.unread ? ` (${detail.unread})` : ''}</button>
 </div>
 ${fields}
+${renderPactSection(detail, options.confirm || null)}
 ${renderPast(detail.past)}
 ${lists}
 <section><h3>What makes it stir</h3><ul class="rules">${rules}</ul></section>

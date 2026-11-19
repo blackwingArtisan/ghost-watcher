@@ -68,13 +68,13 @@ export {
   type PactReading,
   type PactRecord,
 } from './pact';
-export { sealPact, breakPact, type SealDeps, type SealOptions, type SealResult } from './sealing';
+export { sealPact, breakPact, seedDemoPacts, type SealDeps, type SealOptions, type SealResult } from './sealing';
 export { Runner, backoffMs, nextEligibleAt, type CheckResult, type CheckOptions } from './runner';
 export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } from './app';
 export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env } from './config';
 export { createDashboardServer, listen, type DashboardOptions } from './server';
 export { checkRequest, allowedHostSet, parseHostList, hostnameOf, LOOPBACK_HOSTS, type GuardVerdict } from './guard';
-export { dashboardState, ghostDetail, ghostView, sortFeed, letterRank, ROUND_GAP_MS, type DashboardState, type GhostView, type GhostDetail } from './view';
+export { dashboardState, ghostDetail, ghostView, sortFeed, letterRank, ROUND_GAP_MS, type DashboardState, type GhostView, type GhostDetail, type PactView } from './view';
 export { runCli, parseFlags, describeResult, type CliOptions } from './cli';
 // Cloud adapters (opt-in). Importing them loads the AWS SDK, so they are exported from their own paths
 // in `config.ts` and here only as types.

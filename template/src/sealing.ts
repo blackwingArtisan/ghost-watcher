@@ -5,7 +5,7 @@
  */
 import type { Clock } from './clock';
 import type { Pact, PactArchive, PactRecord } from './pact';
-import { PACT_VERSION } from './pact';
+import { DEMO_PACT_AGE_DAYS, PACT_VERSION } from './pact';
 import { snapshotSha256, type PageArchiver } from './receipts';
 import type { GhostStore } from './store/ghost-store';
 import type { Watch } from './watch';
@@ -72,4 +72,48 @@ export async function sealPact(deps: SealDeps, watch: Pick<Watch, 'id' | 'name'>
 /** Removes the pact and its snapshot, readable or not. Succeeds when there is none. */
 export async function breakPact(deps: Pick<SealDeps, 'store'>, watchId: string): Promise<{ removed: boolean }> {
   return { removed: await deps.store.deletePact(watchId) };
+}
+
+export const DEMO_PACT_NOTE = 'Demo pact: back-dated for the demo, so no archived copy was made.';
+
+const DAY_MS = 86_400_000;
+
+/**
+ * The demo's pact: for every watch with a snapshot, seals that snapshot as if the reader had applied
+ * `ageDays` ago (40 by default). The sealed snapshot's `takenAt` is moved back to the same date, and
+ * its hash is taken over that back-dated document, so `shasum` on the stored file still matches.
+ * The archiver is never asked: no archive can honestly be dated in the past. Watches with no snapshot
+ * (a blocked page) are skipped and reported as `no-snapshot`. An existing pact is replaced.
+ */
+export async function seedDemoPacts(
+  deps: Pick<SealDeps, 'store' | 'clock'>,
+  watches: ReadonlyArray<Pick<Watch, 'id' | 'name'>>,
+  options: { ageDays?: number } = {},
+): Promise<SealResult[]> {
+  const ageDays = options.ageDays ?? DEMO_PACT_AGE_DAYS;
+  const results: SealResult[] = [];
+  for (const watch of watches) {
+    const latest = await deps.store.latestSnapshot(watch.id);
+    if (!latest) {
+      results.push({ status: 'no-snapshot' });
+      continue;
+    }
+    const existing = await deps.store.pact(watch.id);
+    const sealedAt = new Date(deps.clock.now().getTime() - ageDays * DAY_MS).toISOString();
+    const snapshot = { ...latest, takenAt: sealedAt };
+    const record: PactRecord = {
+      version: PACT_VERSION,
+      watchId: watch.id,
+      watchName: watch.name,
+      url: snapshot.url,
+      sealedAt,
+      snapshotTakenAt: sealedAt,
+      sha256: snapshotSha256(snapshot),
+      archive: { archiveUrl: null, archivedAt: null, archivedBy: null, note: DEMO_PACT_NOTE },
+      seeded: 'demo',
+    };
+    await deps.store.savePact(record, snapshot);
+    results.push({ status: 'sealed', pact: { ...record, snapshot }, replaced: existing.status === 'sealed' });
+  }
+  return results;
 }

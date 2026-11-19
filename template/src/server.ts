@@ -7,6 +7,9 @@
  *   POST /api/ghosts/:id/check          check now (skips the interval; robots.txt still applies)
  *   POST /api/ghosts/:id/acknowledge    lay the ghost to rest
  *   GET  /api/ghosts/:id/alerts/:alert/dispute   the dispute pack for a change that kept a receipt
+ *   GET  /api/ghosts/:id/pact           the sealed pact (apps with `copy.pacts` only; 404 otherwise)
+ *   POST /api/ghosts/:id/pact           seal the pact: "I applied today" (body `{}` or `{"confirmReplace":true}`)
+ *   DELETE /api/ghosts/:id/pact         break the pact
  *   POST /api/check-all                 check every watch now
  *   POST /api/demo/next-night           demo mode only: advance the fixture site, then check every watch
  *   POST /api/demo/rewind               demo mode only: back to the first sighting
@@ -24,7 +27,8 @@ import { fileURLToPath } from 'node:url';
 import type { GhostDeps } from './config';
 import { allowedHostSet, checkRequest } from './guard';
 import { disputePack } from './dispute';
-import { dashboardState, ghostDetail } from './view';
+import { breakPact, sealPact } from './sealing';
+import { dashboardState, ghostDetail, pactViewOf, pactViewOfReading } from './view';
 // The renderer is a plain ES module shared with the browser (no build step).
 import { renderPage } from './ui/render.js';
 
@@ -59,6 +63,38 @@ function send(res: ServerResponse, status: number, body: string | Buffer, type: 
     ...extra,
   });
   res.end(body);
+}
+
+/** Largest request body the pact routes accept. */
+export const MAX_JSON_BODY_BYTES = 1024;
+
+type JsonBody = { ok: true; value: Record<string, unknown> } | { ok: false; status: 400 | 413; error: string };
+
+/**
+ * Reads a small JSON object from the request. An empty body counts as `{}`. A body over `maxBytes`
+ * is discarded as it arrives (never buffered) and reported as 413.
+ */
+export async function readJsonBody(req: IncomingMessage, maxBytes = MAX_JSON_BODY_BYTES): Promise<JsonBody> {
+  const chunks: Buffer[] = [];
+  let size = 0;
+  let tooBig = false;
+  for await (const chunk of req) {
+    const part = typeof chunk === 'string' ? Buffer.from(chunk) : (chunk as Buffer);
+    size += part.length;
+    if (size > maxBytes) tooBig = true;
+    if (!tooBig) chunks.push(part);
+  }
+  if (tooBig) return { ok: false, status: 413, error: `The request body is larger than ${maxBytes} bytes` };
+  const text = Buffer.concat(chunks).toString('utf8').trim();
+  if (text === '') return { ok: true, value: {} };
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    return { ok: false, status: 400, error: 'The request body is not valid JSON' };
+  }
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return { ok: false, status: 400, error: 'The request body must be a JSON object' };
+  return { ok: true, value: value as Record<string, unknown> };
 }
 
 function json(res: ServerResponse, status: number, value: unknown): void {
@@ -177,11 +213,41 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       return json(res, 200, pack);
     }
 
-    const ghostRoute = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge))?$/.exec(path);
+    const ghostRoute = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge|pact))?$/.exec(path);
     if (ghostRoute) {
       const watch = deps.runner.watch(ghostRoute[1] ?? '');
       if (!watch) return json(res, 404, { error: 'No such ghost' });
       const action = ghostRoute[2];
+      if (action === 'pact') {
+        if (!deps.app.copy.pacts) return json(res, 404, { error: 'Not found' });
+        const sealDeps = { store: deps.store, clock: deps.clock, ...(deps.archive ? { archive: deps.archive } : {}) };
+        if (method === 'GET') {
+          const reading = await deps.store.pact(watch.id);
+          if (reading.status === 'none') return json(res, 200, { state: 'none', pact: null });
+          if (reading.status === 'corrupt') return json(res, 200, { state: 'corrupt', pact: pactViewOfReading(reading), reason: reading.reason });
+          const { snapshot: _body, ...record } = reading.pact;
+          return json(res, 200, { state: 'sealed', pact: pactViewOf(record) });
+        }
+        if (method === 'POST') {
+          const body = await readJsonBody(req);
+          if (!body.ok) return json(res, body.status, { error: body.error });
+          const result = await sealPact(sealDeps, watch, { confirmReplace: body.value.confirmReplace === true });
+          if (result.status === 'exists') return json(res, 409, { code: 'pact-exists', error: 'A pact already exists for this ghost', pact: pactViewOf(result.pact) });
+          if (result.status === 'no-snapshot') return json(res, 409, { code: 'no-snapshot', error: 'This ghost has no reading to seal yet' });
+          const { snapshot: _body, ...record } = result.pact;
+          return json(res, 201, {
+            state: 'sealed',
+            replaced: result.replaced,
+            pact: pactViewOf(record),
+            archive: { saved: record.archive.archiveUrl !== null, note: record.archive.note ?? null },
+          });
+        }
+        if (method === 'DELETE') {
+          const { removed } = await breakPact(sealDeps, watch.id);
+          return json(res, 200, { state: 'none', removed });
+        }
+        return json(res, 405, { error: 'Method not allowed' });
+      }
       if (method === 'GET' && !action) return json(res, 200, await ghostDetail(deps, watch));
       if (method === 'POST' && action === 'check') {
         const result = await deps.runner.check(watch, { force: true });
