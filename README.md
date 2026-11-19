@@ -88,6 +88,11 @@ One reusable template and two apps built from it, each in its own folder:
   while the headline offer stays put. In the demo, Mossgate keeps its 60,000 points but slips a
   48-month eligibility window into the terms; Spirit mail and the email lead with a "Bait and switch"
   banner instead of a routine fine-print note.
+- **The ghost keeps receipts.** Every shriek and every bait and switch carries proof of what the page
+  said: the SHA-256 of the stored snapshot before the change and of the one after it, plus, with
+  `GHOST_RECEIPTS=archive`, a permanent copy of the page from the Internet Archive's Save Page Now.
+  The letter, Spirit mail and the séance all show it, so you can show the bank its own terms from
+  the day you applied. Demo mode archives to the fixture site's stand-in Wayback Machine.
 - **Plain-English alerts.** The outbox writes each alert as an `.eml` file, an HTML preview and an
   index line. It works with no accounts. Amazon SES is an opt-in adapter.
 - **Two apps look like two apps.** The Bonus Crypt's ghosts haunt tombstones; Haunted Listings'
@@ -274,8 +279,14 @@ is selected by environment variable and loaded only when selected.
 | Alerts | `OutboxAlertSink` (`.eml`, HTML preview, `outbox.jsonl`), `ConsoleAlertSink` | `SesEmailAlertSink` (SES v2), `WebhookAlertSink` (ntfy, Discord, Slack or plain JSON) | `GHOST_ALERTS=outbox,console,ses,webhook` (comma-separated), `GHOST_SES_FROM`, `GHOST_ALERT_TO`, `GHOST_WEBHOOK_URL`, `GHOST_WEBHOOK_FORMAT` |
 | Fetching | `PoliteFetcher` over `fetch` | the same fetcher, pointed at real sites | `GHOST_CONTACT_URL`, `GHOST_HOST_GAP_MS`, `GHOST_TIMEOUT_MS` |
 | History | off (`demo` uses the fixture site's stand-in archive) | `WaybackHistorySource` (Internet Archive CDX API, free, no key) | `GHOST_HISTORY=wayback`, `GHOST_HISTORY_BASE`, `GHOST_HISTORY_LIMIT` |
+| Receipts | SHA-256 of the before and after snapshots | `SavePageNowArchiver` (Internet Archive Save Page Now, free, no key) | `GHOST_RECEIPTS=hashes\|archive`, `GHOST_ARCHIVE_BASE` |
 | Dashboard access | loopback hosts only | a deployed hostname | `GHOST_ALLOWED_HOSTS` (comma-separated; Render's `RENDER_EXTERNAL_HOSTNAME` is added automatically) |
 | Clock | `systemClock` | `manualClock` in tests | none |
+
+**Checking a receipt.** A receipt's hashes are taken over the exact bytes of the snapshot files, so
+anyone holding the data folder can confirm them:
+`shasum -a 256 .ghost-data/store/snapshots/<watch-id>/history/*.json` lists the same values the letter
+quotes. The archived copy lives with the Internet Archive, outside your machine.
 
 The S3 and SES adapters are written and type-checked, and they are tested with fake clients. They
 have never been run against AWS. A misconfigured selection fails at startup with a message that

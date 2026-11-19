@@ -43,7 +43,8 @@ function alertLine(alert: Alert): string {
 /** The short form a phone notification can show: one line per alert, then the page. */
 export function compactText(message: AlertMessage): string {
   const lines = message.alerts.map((a) => (message.alerts.length === 1 ? alertLine(a) : `- ${alertLine(a)}`));
-  return [...lines, message.url].join('\n');
+  const archived = message.alerts.find((a) => a.receipt?.archiveUrl)?.receipt?.archiveUrl;
+  return [...lines, message.url, ...(archived ? [`Receipt: ${archived}`] : [])].join('\n');
 }
 
 const NTFY_PRIORITY: Record<Alert['severity'], number> = { whisper: 2, moan: 3, shriek: 4 };

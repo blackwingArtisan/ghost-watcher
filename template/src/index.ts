@@ -29,6 +29,19 @@ export {
   type PastTimeline,
   type WaybackOptions,
 } from './history';
+export {
+  SavePageNowArchiver,
+  needsReceipt,
+  serializeJson,
+  sha256Hex,
+  shortHash,
+  snapshotSha256,
+  takeReceipt,
+  type PageArchiver,
+  type Receipt,
+  type ReceiptSide,
+  type SavePageNowOptions,
+} from './receipts';
 export { Runner, backoffMs, nextEligibleAt, type CheckResult, type CheckOptions } from './runner';
 export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } from './app';
 export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env } from './config';

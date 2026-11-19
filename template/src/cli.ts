@@ -101,6 +101,9 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
     // Ghost of Terms Past without leaving this machine.
     env.GHOST_HISTORY ??= 'wayback';
     env.GHOST_HISTORY_BASE ??= `${fixtures.origin}/__wayback`;
+    // ...and for Save Page Now, so every shriek in the demo carries an archived receipt.
+    env.GHOST_RECEIPTS ??= 'archive';
+    env.GHOST_ARCHIVE_BASE ??= `${fixtures.origin}/__wayback`;
     out(`Fixture site (invented pages) at ${fixtures.origin}  (POST ${fixtures.origin}/__fixture/advance to change it)`);
   }
 
@@ -156,7 +159,7 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
     const url = await listen(server, flags.port ?? Number(env.PORT ?? options.defaultPort), env.HOST ?? '127.0.0.1');
     out(`${deps.app.name} is haunting ${deps.app.watches.length} pages at ${url}`);
     out(`User-Agent: ${deps.describe.userAgent}`);
-    out(`Snapshots: ${deps.describe.store} | Alerts: ${deps.describe.alerts} | History: ${deps.describe.history}`);
+    out(`Snapshots: ${deps.describe.store} | Alerts: ${deps.describe.alerts} | History: ${deps.describe.history} | Receipts: ${deps.describe.receipts}`);
 
     const tickSeconds = Number(env.GHOST_TICK_SECONDS ?? 300);
     let timer: NodeJS.Timeout | undefined;

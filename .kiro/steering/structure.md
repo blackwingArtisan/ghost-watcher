@@ -15,9 +15,12 @@ inclusion: always
     robots.ts             robots.txt parser and matcher
     fetcher.ts            Fetcher port + PoliteFetcher (robots, rate limit, User-Agent)
     store/                BlobStore port (memory, file, S3) + GhostStore for snapshots and alerts
-    alerts/               AlertSink port + outbox, console and SES adapters
+    alerts/               AlertSink port + outbox, console, SES and webhook adapters
     runner.ts             check runner: fetch -> extract -> diff -> rules -> alerts -> store
     summary.ts            plain-English sentences for changes
+    history.ts            HistorySource port + Wayback CDX adapter (the Ghost of Terms Past)
+    receipts.ts           snapshot hashes + PageArchiver port (Save Page Now) for shrieks
+    noise.ts              page fingerprints, to count the noise a ghost slept through
     guard.ts              Host and Origin checks for the dashboard
     server.ts             dashboard HTTP server and JSON API
     ui/                   dashboard client script, shared renderer and stylesheet

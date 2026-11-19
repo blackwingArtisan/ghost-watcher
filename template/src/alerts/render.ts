@@ -1,4 +1,5 @@
 /** Renders one check run's alerts as an email (plain text and HTML). Pure. */
+import type { Receipt } from '../receipts';
 import type { Alert, AlertMessage } from './types';
 
 const SEVERITY_WORD: Record<Alert['severity'], string> = {
@@ -32,17 +33,42 @@ export interface RenderOptions {
   footer?: string;
 }
 
+/** The receipt lines of a letter: where the archived copy is, and the hashes of both snapshots. */
+export function receiptLines(receipt: Receipt): string[] {
+  return [
+    receipt.archiveUrl
+      ? `Archived copy: ${receipt.archiveUrl} (${receipt.archivedBy ?? 'archive'}${receipt.archivedAt ? `, saved ${receipt.archivedAt}` : ', requested just now'})`
+      : `Archived copy: none. ${receipt.note ?? ''}`.trim(),
+    `Before: sha256 ${receipt.before.sha256} (snapshot of ${receipt.before.takenAt})`,
+    `After:  sha256 ${receipt.after.sha256} (snapshot of ${receipt.after.takenAt})`,
+  ];
+}
+
+function receiptHtml(receipt: Receipt): string {
+  const mono = 'font:12px/1.5 ui-monospace,Menlo,monospace;color:#d8cff5;word-break:break-all';
+  const link = receipt.archiveUrl
+    ? `<a href="${escapeHtml(receipt.archiveUrl)}" style="color:#b9a4ff">Archived copy of the page</a> <span style="color:#9a93b8">(${escapeHtml(receipt.archivedBy ?? 'archive')})</span>`
+    : `<span style="color:#9a93b8">${escapeHtml(receipt.note ?? 'No archived copy.')}</span>`;
+  return `<tr><td style="padding:6px 22px 4px"><div style="border:1px dashed #4a3f78;border-radius:10px;padding:12px 14px">
+<div style="font:700 11px/1.4 system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#e8c66a;margin-bottom:6px">The ghost kept a receipt</div>
+<div style="font:13px/1.5 system-ui,sans-serif;color:#ece6ff;margin-bottom:6px">${link}</div>
+<div style="${mono}">before sha256 ${escapeHtml(receipt.before.sha256)}<br>after&nbsp; sha256 ${escapeHtml(receipt.after.sha256)}</div>
+</div></td></tr>`;
+}
+
 export function renderAlertMessage(options: RenderOptions): AlertMessage {
   const { appName, watch, alerts, createdAt } = options;
   const count = alerts.length;
   const loudest = alerts.some((a) => a.severity === 'shriek') ? 'shriek' : alerts.some((a) => a.severity === 'moan') ? 'moan' : 'whisper';
   const stealthy = alerts.some((a) => a.stealth);
+  const receipt = alerts.find((a) => a.receipt)?.receipt;
   const subject = `${loudest === 'shriek' ? '[!] ' : ''}${stealthy ? 'Bait and switch on ' : ''}${watch.name}: ${count === 1 ? alerts[0]?.summary ?? 'a change' : `${count} changes`}`.slice(0, 180);
 
   const text = [
     `${appName}: your ghost saw something on ${watch.name}.`,
     '',
     ...alerts.map((a) => `- [${SEVERITY_WORD[a.severity]}] ${a.stealth ? `BAIT AND SWITCH: ${a.stealth} ` : ''}${a.summary}\n  Rule: ${a.ruleLabel}`),
+    ...(receipt ? ['', 'The ghost kept a receipt:', ...receiptLines(receipt).map((line) => `  ${line}`)] : []),
     '',
     `Page: ${watch.url}`,
     `Checked: ${createdAt}`,
@@ -65,6 +91,7 @@ export function renderAlertMessage(options: RenderOptions): AlertMessage {
 <tr><td style="padding:22px 22px 6px;font:700 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.18em;text-transform:uppercase;color:#9a93b8">${escapeHtml(appName)}</td></tr>
 <tr><td style="padding:4px 22px 14px;font:600 22px/1.3 Georgia,serif;color:#f4f0ff">Your ghost saw something on ${escapeHtml(watch.name)}</td></tr>
 <tr><td style="padding:0 10px"><table role="presentation" style="width:100%;border-collapse:collapse">${rows}</table></td></tr>
+${receipt ? receiptHtml(receipt) : ''}
 <tr><td style="padding:16px 22px 6px;font:13px/1.5 system-ui,sans-serif;color:#b8b0d8"><a href="${escapeHtml(watch.url)}" style="color:#b9a4ff">Open the page</a> &middot; checked ${escapeHtml(createdAt)}</td></tr>
 ${options.footer ? `<tr><td style="padding:6px 22px 20px;font:12px/1.5 system-ui,sans-serif;color:#7f789c">${escapeHtml(options.footer)}</td></tr>` : '<tr><td style="padding:0 0 14px"></td></tr>'}
 </table></body></html>

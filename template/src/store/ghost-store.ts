@@ -7,6 +7,7 @@ import type { ListItem } from '../extract';
 import { upgradeStoredValue, type LegacyMoneyValue, type MaybeValue } from '../normalize';
 import type { Alert } from '../alerts/types';
 import type { PastTimeline } from '../history';
+import { serializeJson } from '../receipts';
 import type { BlobStore } from './blob';
 
 export type LastOutcome = 'baseline' | 'unchanged' | 'changed' | 'blocked' | 'error';
@@ -68,7 +69,8 @@ export class GhostStore {
   }
 
   private writeJson(key: string, value: unknown): Promise<void> {
-    return this.blobs.put(key, `${JSON.stringify(value, null, 2)}\n`);
+    // Receipts hash exactly these bytes (see receipts.ts), so keep the two in step.
+    return this.blobs.put(key, serializeJson(value));
   }
 
   async latestSnapshot(watchId: string): Promise<Snapshot | null> {

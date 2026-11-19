@@ -15,6 +15,11 @@
  *   GHOST_HISTORY          none (default) | wayback: on a first sighting, read archived copies of the page
  *   GHOST_HISTORY_BASE     archive origin (default https://web.archive.org; demo mode uses its fixture site)
  *   GHOST_HISTORY_LIMIT    archived copies to read per page, at most one a month (default 6)
+ *   GHOST_RECEIPTS         hashes (default) | archive: on a shriek or a bait and switch, keep the
+ *                          before and after snapshot hashes, and with `archive` also ask the Internet
+ *                          Archive's Save Page Now for a permanent copy of the page
+ *   GHOST_ARCHIVE_BASE     archive origin for receipts (default https://web.archive.org; demo mode
+ *                          uses its fixture site)
  *   GHOST_INTERVAL_MINUTES override every watch's minimum check interval
  *   GHOST_HOST_GAP_MS      minimum gap between requests to one host (default 1000)
  *   GHOST_TIMEOUT_MS       request timeout (default 15000)
@@ -24,6 +29,7 @@ import type { GhostApp } from './app';
 import { systemClock, type Clock } from './clock';
 import { PoliteFetcher, buildUserAgent, type Fetcher } from './fetcher';
 import { WAYBACK_BASE, WaybackHistorySource, type HistorySource } from './history';
+import { SavePageNowArchiver, type PageArchiver } from './receipts';
 import { ConsoleAlertSink, FanOutAlertSink, OutboxAlertSink } from './alerts/sinks';
 import { WEBHOOK_FORMATS, WebhookAlertSink, type WebhookFormat } from './alerts/webhook';
 import type { AlertSink } from './alerts/types';
@@ -44,7 +50,8 @@ export interface GhostDeps {
   clock: Clock;
   runner: Runner;
   history?: HistorySource;
-  describe: { store: string; alerts: string; userAgent: string; history: string };
+  archive?: PageArchiver;
+  describe: { store: string; alerts: string; userAgent: string; history: string; receipts: string };
 }
 
 export class ConfigError extends Error {
@@ -163,6 +170,22 @@ function makeHistory(env: Env, userAgent: string, hasContact: boolean): { histor
   return { history, label: `${history.label} (${limit} copies max)` };
 }
 
+function makeArchive(env: Env, userAgent: string, hasContact: boolean): { archive?: PageArchiver; label: string } {
+  const kind = env.GHOST_RECEIPTS ?? 'hashes';
+  if (kind === 'hashes' || kind === '') return { label: 'snapshot hashes' };
+  if (kind !== 'archive') throw new ConfigError(`GHOST_RECEIPTS must be hashes or archive, got "${kind}".`);
+  const base = env.GHOST_ARCHIVE_BASE?.trim() || WAYBACK_BASE;
+  const remote = visitsThirdParty(base);
+  if (remote && !hasContact) {
+    throw new ConfigError(
+      `GHOST_RECEIPTS=archive asks ${new URL(base).host} to keep copies of pages, so the watcher must identify itself. ` +
+        'Set GHOST_CONTACT_URL to a page you control.',
+    );
+  }
+  const archive = new SavePageNowArchiver({ userAgent, base, ...(remote ? {} : { label: 'the stand-in Wayback Machine' }) });
+  return { archive, label: `snapshot hashes + archived copies (${archive.label})` };
+}
+
 const RESERVED_SUFFIXES = ['.example', '.test', '.invalid', '.localhost'];
 const RESERVED_DOMAINS = ['example.com', 'example.net', 'example.org'];
 
@@ -254,7 +277,8 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
   const store = new GhostStore(blobs);
   const { sink, outbox, label: alertLabel } = await makeSink(env, dataDir);
   const { history, label: historyLabel } = makeHistory(env, userAgent, Boolean(contactUrl));
-  const runner = new Runner({ app, fetcher, store, sink, clock, ...(history ? { history } : {}) });
+  const { archive, label: receiptLabel } = makeArchive(env, userAgent, Boolean(contactUrl));
+  const runner = new Runner({ app, fetcher, store, sink, clock, ...(history ? { history } : {}), ...(archive ? { archive } : {}) });
 
   return {
     app,
@@ -266,6 +290,7 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
     clock,
     runner,
     ...(history ? { history } : {}),
-    describe: { store: storeLabel, alerts: alertLabel, userAgent, history: historyLabel },
+    ...(archive ? { archive } : {}),
+    describe: { store: storeLabel, alerts: alertLabel, userAgent, history: historyLabel, receipts: receiptLabel },
   };
 }

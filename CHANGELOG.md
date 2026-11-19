@@ -2,6 +2,10 @@
 
 ## 2026-11-18
 
+- **The ghost keeps receipts.** A shriek or a bait and switch now carries the SHA-256 of the
+  snapshots before and after the change, and with `GHOST_RECEIPTS=archive` a permanent copy of the
+  page from Internet Archive Save Page Now. Receipts appear in the letter, the webhook text, Spirit
+  mail and the séance. The fixture site stands in for Save Page Now in demo mode and in tests.
 - **The Ghost of Terms Past.** A `HistorySource` port and a Wayback Machine (CDX) adapter. On a
   ghost's first sighting, archived copies of the page run through the same extract, diff and rules,
   and the séance opens with the page's history. Tests replay real recorded Wayback responses; the

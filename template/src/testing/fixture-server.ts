@@ -14,6 +14,9 @@
  *
  *   GET  /__wayback/cdx/search/cdx?url=<url>&output=json&limit=-N   capture list (CDX JSON)
  *   GET  /__wayback/web/<timestamp>id_/<url>                        one archived copy
+ *   GET  /__wayback/save/<url>                                      Save Page Now: keeps a copy of the
+ *                                                                   page at the current version and
+ *                                                                   redirects to it
  */
 import { createServer, type Server } from 'node:http';
 
@@ -66,11 +69,21 @@ export interface RequestRecord {
   at: string;
 }
 
+/** A copy kept by the stand-in Save Page Now endpoint. */
+export interface SavedCopy {
+  stamp: string;
+  path: string;
+  version: number;
+  capturedAt: string;
+}
+
 export interface FixtureServer {
   origin: string;
   server: Server;
   readonly version: number;
   readonly log: RequestRecord[];
+  /** Copies kept by the stand-in Save Page Now endpoint, oldest first. */
+  readonly saved: SavedCopy[];
   advance(): number;
   reset(): void;
   close(): Promise<void>;
@@ -91,6 +104,7 @@ export async function startFixtureServer(site: FixtureSite, options: { port?: nu
   let outage = false;
   let requestNumber = 0;
   const log: RequestRecord[] = [];
+  const saved: SavedCopy[] = [];
   const pages = new Map(site.pages.map((page) => [page.path, page]));
 
   const server = createServer((req, res) => {
@@ -123,6 +137,7 @@ export async function startFixtureServer(site: FixtureSite, options: { port?: nu
         version = 1;
         outage = false;
         log.length = 0;
+        saved.length = 0;
         return reply(200, JSON.stringify({ version }), 'application/json');
       }
       if (method === 'POST' && action === 'version') {
@@ -149,14 +164,28 @@ export async function startFixtureServer(site: FixtureSite, options: { port?: nu
       const body = rows.length > 0 ? [['timestamp', 'original', 'statuscode'], ...rows] : [];
       return reply(200, JSON.stringify(body), 'application/json');
     }
+    const save = /^\/__wayback\/save\/(.+)$/.exec(url.pathname);
+    if (method === 'GET' && save) {
+      const target = `${save[1] ?? ''}${url.search}`;
+      const path = pagePathOf(target);
+      if (!path || !pages.has(path) || outage) return reply(path && pages.has(path) ? 503 : 404, '<h1>Could not save that page</h1>');
+      const capturedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+      const copy: SavedCopy = { stamp: waybackStamp(capturedAt), path, version, capturedAt };
+      saved.push(copy);
+      record(302);
+      res.writeHead(302, { Location: `/__wayback/web/${copy.stamp}/${target}`, 'Cache-Control': 'no-store' });
+      return res.end();
+    }
     const archived = /^\/__wayback\/web\/(\d{14})(?:id_)?\/(.+)$/.exec(url.pathname);
     if (method === 'GET' && archived) {
-      const past = (site.past ?? []).find((p) => waybackStamp(p.capturedAt) === archived[1]);
       const path = pagePathOf(archived[2] ?? '');
       const page = path ? pages.get(path) : undefined;
-      if (!past || !page) return reply(404, '<h1>Not in the archive</h1>');
+      const past = (site.past ?? []).find((p) => waybackStamp(p.capturedAt) === archived[1]);
+      const kept = [...saved].reverse().find((c) => c.stamp === archived[1] && c.path === path);
+      const copy = kept ?? (past ? { version: past.version, capturedAt: past.capturedAt } : undefined);
+      if (!copy || !page) return reply(404, '<h1>Not in the archive</h1>');
       requestNumber += 1;
-      return reply(200, page.render({ version: past.version, requestNumber, now: new Date(past.capturedAt) }));
+      return reply(200, page.render({ version: copy.version, requestNumber, now: new Date(copy.capturedAt) }));
     }
 
     if (method !== 'GET' && method !== 'HEAD') return reply(405, 'Method not allowed', 'text/plain');
@@ -184,6 +213,7 @@ export async function startFixtureServer(site: FixtureSite, options: { port?: nu
       return version;
     },
     log,
+    saved,
     advance() {
       version = Math.min(site.versions, version + 1);
       return version;
@@ -192,6 +222,7 @@ export async function startFixtureServer(site: FixtureSite, options: { port?: nu
       version = 1;
       outage = false;
       log.length = 0;
+      saved.length = 0;
     },
     close: () =>
       new Promise<void>((resolve) => {

@@ -10,6 +10,7 @@ import type { Fetcher } from './fetcher';
 import { buildPastTimeline, pastChangeCount, type HistorySource, type PastTimeline } from './history';
 import { pageFingerprint } from './noise';
 import { evaluateRules } from './rules';
+import { needsReceipt, takeReceipt, type PageArchiver } from './receipts';
 import { renderAlertMessage } from './alerts/render';
 import type { Alert, AlertSink, DeliveryReceipt } from './alerts/types';
 import type { GhostStore, WatchStatus } from './store/ghost-store';
@@ -44,6 +45,11 @@ export interface RunnerDeps {
   clock: Clock;
   /** Optional: archived copies of each page, read once on its first sighting (the Ghost of Terms Past). */
   history?: HistorySource;
+  /**
+   * Optional: asked to keep an archived copy of a page when a check finds a shriek or a bait and
+   * switch. Without it, receipts still carry the before and after snapshot hashes.
+   */
+  archive?: PageArchiver;
 }
 
 export interface CheckOptions {
@@ -172,6 +178,7 @@ export class Runner {
       return { status: 'unchanged', watchId: watch.id, snapshot, diff: changes, pageMoved: pageMoved || watchedMoved };
     }
 
+    const receipt = needsReceipt(findings) ? await takeReceipt(previous, snapshot, this.deps.archive) : undefined;
     const alerts: Alert[] = findings.map((finding, index) => ({
       id: `${watch.id}-${attemptAt.replace(/\D/g, '')}-${index + 1}`,
       watchId: watch.id,
@@ -188,6 +195,7 @@ export class Runner {
       ...(finding.after !== undefined ? { after: finding.after } : {}),
       ...(finding.item ? { item: finding.item } : {}),
       ...(finding.stealth ? { stealth: finding.stealth } : {}),
+      ...(receipt && (finding.severity === 'shriek' || finding.stealth) ? { receipt } : {}),
     }));
     await store.appendAlerts(watch.id, alerts);
     Object.assign(status, {

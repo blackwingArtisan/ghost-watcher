@@ -46,6 +46,12 @@ test('demo mode: the first sighting is already taken, and one click lets a night
   await expect(baitAndSwitch).toHaveCount(1);
   await expect(baitAndSwitch).toContainText('Bait and switch Bonus points stayed the same while the fine print changed.');
   await expect(baitAndSwitch).toContainText('Mossgate Nightfall Card');
+  // The ghost kept a receipt: an archived copy of the changed page and the hashes of both snapshots.
+  const receipt = baitAndSwitch.locator('.receipt');
+  await expect(receipt).toContainText(/sha256 [0-9a-f]{8}…[0-9a-f]{4} → [0-9a-f]{8}…[0-9a-f]{4}/);
+  const copy = await receipt.getByRole('link', { name: 'archived copy' }).getAttribute('href');
+  expect(copy).toMatch(/\/__wayback\/web\/\d{14}\/http:\/\/127\.0\.0\.1:3139\/mossgate\/nightfall-card$/);
+  expect(await (await page.request.get(copy as string)).text()).toContain('past 48 months');
   // The stone shows the change itself: the old value struck through, the new one beside it.
   const bonusReading = lanternfield.locator('.reading[data-changed="true"]').filter({ hasText: 'Bonus' });
   await expect(bonusReading.locator('del')).toHaveText('$300');
