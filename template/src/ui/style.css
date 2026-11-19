@@ -306,14 +306,20 @@ h1 {
 body[data-busy='true'] .masthead .btn--glow {
   cursor: progress;
 }
-.btn--night {
-  border-color: color-mix(in srgb, var(--moon) 45%, transparent);
-  background: rgba(8, 6, 20, 0.55);
-  color: var(--moon);
+/* Demo mode: the first thing to click glows and beckons a few times, then stops. */
+.btn--beckon {
+  animation: beckon 1.6s ease-in-out 0.8s 3;
 }
-.btn--night:hover {
-  background: rgba(8, 6, 20, 0.8);
-  box-shadow: 0 0 24px color-mix(in srgb, var(--moon) 30%, transparent);
+@keyframes beckon {
+  0%,
+  100% {
+    box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px color-mix(in srgb, var(--accent) 22%, transparent),
+      0 0 44px color-mix(in srgb, var(--accent) 75%, transparent);
+  }
 }
 .night-hint {
   margin: 0;

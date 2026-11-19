@@ -104,6 +104,7 @@ document.addEventListener('click', (event) => {
       await refresh();
     });
   } else if (action === 'next-night') {
+    target.classList.remove('btn--beckon');
     target.setAttribute('disabled', '');
     document.body.dataset.night = 'true';
     document.querySelectorAll('.ghost').forEach((card) => ((/** @type {HTMLElement} */ (card)).dataset.checking = 'true'));

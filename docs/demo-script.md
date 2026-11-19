@@ -1,7 +1,9 @@
 # Demo script (about 3 minutes)
 
 Setup: run `npm run bonus` and `npm run listing`, and open both dashboards
-(`http://127.0.0.1:3130` and `http://127.0.0.1:3132`). Both start with unborn ghosts.
+(`http://127.0.0.1:3130` and `http://127.0.0.1:3132`). Demo mode takes every ghost's first
+sighting at startup, so both dashboards open with their ghosts resting and one turned away by
+robots.txt.
 
 ## 1. The stakes (20 s)
 

@@ -94,6 +94,10 @@ export function themeVariables(deps: GhostDeps): Record<string, string> {
 export function createDashboardServer(deps: GhostDeps, options: DashboardOptions = {}): Server {
   const theme = { ...themeVariables(deps), ...options.themeOverrides };
   const allowedHosts = allowedHostSet(options.allowedHosts);
+  const currentState = async () => {
+    const state = await dashboardState(deps);
+    return options.demo ? { ...state, app: { ...state.app, demo: true } } : state;
+  };
 
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = new URL(req.url ?? '/', 'http://localhost');
@@ -104,7 +108,7 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
     if (!verdict.ok) return json(res, 403, { error: verdict.reason });
 
     if (method === 'GET' && path === '/') {
-      const state = await dashboardState(deps);
+      const state = await currentState();
       send(res, 200, renderPage(state, { css: '/ui/style.css', theme, demo: Boolean(options.demo) }), 'text/html; charset=utf-8', {
         'Cache-Control': 'no-store',
         'Content-Security-Policy':
@@ -113,7 +117,7 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       return;
     }
     if (method === 'GET' && path === '/healthz') return json(res, 200, { ok: true, app: deps.app.id });
-    if (method === 'GET' && path === '/api/state') return json(res, 200, await dashboardState(deps));
+    if (method === 'GET' && path === '/api/state') return json(res, 200, await currentState());
 
     const staticFile = STATIC[path];
     if (method === 'GET' && staticFile) {

@@ -12,8 +12,12 @@ test('demo mode: the first sighting is already taken, and one click lets a night
   await expect(lanternfield).toHaveAttribute('data-state', 'dormant');
   await expect(page.locator('#ghost-cinderhollow-members')).toHaveAttribute('data-state', 'blocked');
 
+  // The first thing to click is the glowing button, and the empty feed says so.
   const night = page.getByRole('button', { name: 'Let a night pass' });
   await expect(night).toBeVisible();
+  await expect(night).toHaveClass(/btn--glow/);
+  await expect(page.getByRole('button', { name: 'Summon every ghost' })).not.toHaveClass(/btn--glow/);
+  await expect(page.locator('#feed .feed__empty')).toContainText('Click Let a night pass');
   await night.click();
   await expect(page.locator('#toast')).toContainText('Night 1 passes.');
   await expect(page.locator('#toast')).toContainText('restless');

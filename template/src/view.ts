@@ -77,6 +77,8 @@ export interface DashboardState {
     userAgent: string;
     store: string;
     alerts: string;
+    /** True when the dashboard runs in demo mode (the server sets it). */
+    demo?: boolean;
   };
   ghosts: GhostView[];
   feed: FeedEntry[];

@@ -129,7 +129,10 @@ export function renderStats(state) {
 /** @param {any} state */
 export function renderFeed(state) {
   if (!state.feed.length) {
-    return `<li class="feed__empty">${esc(state.app.quiet)}</li>`;
+    const quiet = state.app.demo
+      ? 'Nothing has stirred yet. Click <b>Let a night pass</b> to see what the ghosts catch.'
+      : esc(state.app.quiet);
+    return `<li class="feed__empty">${quiet}</li>`;
   }
   return state.feed
     .map((/** @type {any} */ entry) => {
@@ -235,13 +238,14 @@ export function renderPage(state, assets) {
     <p class="tagline">${esc(state.app.tagline)}</p>
     <p class="stats" id="stats" aria-live="polite">${renderStats(state)}</p>
   </div>
-  <div class="masthead__actions">
-    <button type="button" class="btn btn--glow" data-action="check-all">Summon every ghost</button>${
+  <div class="masthead__actions">${
       assets.demo
         ? `
-    <button type="button" class="btn btn--night" data-action="next-night" aria-describedby="night-hint">Let a night pass</button>
+    <button type="button" class="btn btn--glow btn--beckon" data-action="next-night" aria-describedby="night-hint">Let a night pass</button>
+    <button type="button" class="btn" data-action="check-all">Summon every ghost</button>
     <p class="night-hint" id="night-hint">Demo: the invented fixture site changes overnight, then every ghost looks again.</p>`
-        : ''
+        : `
+    <button type="button" class="btn btn--glow" data-action="check-all">Summon every ghost</button>`
     }
   </div>
 </header>
