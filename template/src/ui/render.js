@@ -128,7 +128,11 @@ export function noiseSummary(results) {
 /** @param {any} ghost @param {string} [nowIso] */
 export function renderGhostCard(ghost, nowIso) {
   const readings = (ghost.readings || [])
-    .map((/** @type {any} */ r) => `<div class="reading"><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`)
+    .map((/** @type {any} */ r) =>
+      r.before !== undefined
+        ? `<div class="reading" data-changed="true"><dt>${esc(r.label)}</dt><dd><del aria-label="was ${esc(r.before)}">${esc(r.before)}</del> <ins aria-label="now ${esc(r.value)}">${esc(r.value)}</ins></dd></div>`
+        : `<div class="reading"><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`,
+    )
     .join('');
   const badge = ghost.unread > 0 ? `<span class="ghost__badge" data-severity="${esc(ghost.loudest)}" aria-label="${ghost.unread} unread">${ghost.unread}</span>` : '';
   const when = ghost.lastAttemptAt ? `Last visit ${esc(ago(ghost.lastAttemptAt, nowIso))}` : 'Never visited';

@@ -18,7 +18,7 @@ becoming `$300.00`. When something real changes, it wakes and tells you in one p
 >
 > New listing: 2 bd in Old Mill at 418 Bramble Row, Apt 3 for $1,950/mo.
 
-![The Bonus Crypt dashboard: four ghosts on tombstones, two glowing after their bonus pages changed, one turned away by robots.txt, and the Spirit mail feed of one-sentence alerts](docs/bonus-crypt.png)
+![The Bonus Crypt after one night: four ghosts on tombstones in a row, two glowing with the old values struck through beside the new ones, one asleep after a reformat-only change, one turned away by robots.txt, and the Spirit mail feed with a Bait and switch letter](docs/bonus-crypt.png)
 
 **Why a ghost?** A ghost haunts one page, sleeps until something it was told to care about changes,
 and will not walk through a door robots.txt has closed.
@@ -92,7 +92,9 @@ One reusable template and two apps built from it, each in its own folder:
   glows when something does, and fades when robots.txt says no or the page's layout has changed.
   Click a ghost to open the séance: what is on the page now, what it said before, and a word-level
   diff of the fine print. From there you can **Check now** or **Lay to rest**, or summon every ghost at once. The
-  dashboard works from the keyboard, respects reduced motion, and is readable on a phone.
+  dashboard works from the keyboard, respects reduced motion, is readable on a phone, and passes an
+  axe-core WCAG 2.1 AA scan in every state a demo night leaves behind. A changed value shows on its
+  stone, old value struck through, until you read the alert.
 - **Safe to leave running.** The dashboard answers only to `localhost` and loopback Host headers
   (plus any listed in `GHOST_ALLOWED_HOSTS`), which stops DNS-rebinding pages. Every POST must come
   from the dashboard's own origin, so another web page cannot make the ghosts go out and fetch.

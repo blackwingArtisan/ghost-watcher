@@ -10,7 +10,7 @@ import { GhostStore } from '../src/store/ghost-store';
 import { selectorText } from '../src/testing/noise-ratio';
 import { defineWatch, rules } from '../src/watch';
 import { ghostView } from '../src/view';
-import { noiseSummary } from '../src/ui/render.js';
+import { noiseSummary, renderGhostCard } from '../src/ui/render.js';
 
 describe('page text and fingerprints', () => {
   it('reads only the visible body text, with whitespace collapsed', () => {
@@ -82,6 +82,26 @@ describe('Runner noise counting', () => {
 
     const deps = { app, store, runner, clock, outbox: undefined } as unknown as Parameters<typeof ghostView>[0];
     expect((await ghostView(deps, watch)).ignored).toBe(2);
+  });
+
+  it('shows the change on the stone until it is read: the old value struck through, the new one beside it', async () => {
+    const clock = manualClock('2026-10-31T00:00:00Z');
+    const pages = [page('$300', '1'), page('$400', '2'), page('$450', '3')];
+    const store = new GhostStore(new MemoryBlobStore());
+    const runner = new Runner({ app, fetcher: new ListFetcher(pages, clock), store, sink, clock });
+    const deps = { app, store, runner, clock, outbox: undefined } as unknown as Parameters<typeof ghostView>[0];
+    for (let i = 0; i < pages.length; i += 1) {
+      await runner.check(watch);
+      clock.advance(1000);
+    }
+    // Two unread rises: the stone shows the value from before the first one.
+    const view = await ghostView(deps, watch);
+    expect(view.readings).toEqual([{ label: 'Bonus', value: '$450', before: '$300' }]);
+    expect(renderGhostCard(view, clock.now().toISOString())).toContain(
+      '<div class="reading" data-changed="true"><dt>Bonus</dt><dd><del aria-label="was $300">$300</del> <ins aria-label="now $450">$450</ins></dd></div>',
+    );
+    await store.acknowledge('lantern', clock.now().toISOString());
+    expect((await ghostView(deps, watch)).readings).toEqual([{ label: 'Bonus', value: '$450' }]);
   });
 
   it('says the page changed but nothing watched did', async () => {

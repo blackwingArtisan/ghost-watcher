@@ -13,6 +13,8 @@ export type GhostState = 'unborn' | 'dormant' | 'restless' | 'blocked' | 'lost';
 export interface Reading {
   label: string;
   value: string;
+  /** The value before the oldest unread change to this field, shown struck through on the stone. */
+  before?: string;
 }
 
 export interface GhostView {
@@ -135,7 +137,12 @@ export async function ghostView(deps: GhostDeps, watch: Watch): Promise<GhostVie
     if (readings.length >= 4) break;
     const value: MaybeValue = snapshot?.fields[field.name] ?? null;
     if (value && value.kind === 'text' && value.text.length > 40) continue;
-    readings.push({ label: field.label ?? field.name, value: snapshot ? displayValue(value) : '—' });
+    const shown = snapshot ? displayValue(value) : '—';
+    const changedBy = unread
+      .filter((alert) => alert.field === field.name && !alert.list && alert.before !== undefined)
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))[0];
+    const before = changedBy ? displayValue(changedBy.before ?? null) : undefined;
+    readings.push({ label: field.label ?? field.name, value: shown, ...(before !== undefined && before !== shown ? { before } : {}) });
   }
   for (const list of watch.lists) {
     readings.push({ label: list.label ?? list.name, value: snapshot ? `${snapshot.lists[list.name]?.length ?? 0} on page` : '—' });

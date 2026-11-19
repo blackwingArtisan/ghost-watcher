@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 const DEMO = 'http://127.0.0.1:3138';
@@ -45,6 +46,16 @@ test('demo mode: the first sighting is already taken, and one click lets a night
   await expect(baitAndSwitch).toHaveCount(1);
   await expect(baitAndSwitch).toContainText('Bait and switch Bonus points stayed the same while the fine print changed.');
   await expect(baitAndSwitch).toContainText('Mossgate Nightfall Card');
+  // The stone shows the change itself: the old value struck through, the new one beside it.
+  const bonusReading = lanternfield.locator('.reading[data-changed="true"]').filter({ hasText: 'Bonus' });
+  await expect(bonusReading.locator('del')).toHaveText('$300');
+  await expect(bonusReading.locator('ins')).toHaveText('$400');
+  await expect(page.locator('#ghost-bramblewick-savings .reading[data-changed="true"]')).toHaveCount(0);
+  // Every state a night can leave behind (restless, struck values, a bait and switch) passes axe.
+  // Colors are measured at rest, with every transition stilled.
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const scan = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(scan.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
   await expect(night).toBeEnabled();
 
   const state = (await (await page.request.get(`${DEMO_FIXTURES}/__fixture/state`)).json()) as { version: number };
