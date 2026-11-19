@@ -33,6 +33,25 @@ async function api(url, init) {
   return response.json();
 }
 
+/**
+ * One-shot entrance after a night: ghosts whose page changed rise out of their stones, and Spirit
+ * mail deals its letters in one by one. Reduced motion stills both (see style.css).
+ * @param {any[]} results
+ */
+function riseAfterNight(results) {
+  for (const result of results) {
+    if (result.status !== 'changed') continue;
+    const card = document.getElementById(`ghost-${result.watchId}`);
+    if (card) card.dataset.rising = 'true';
+  }
+  const feed = $('#feed');
+  feed.dataset.arriving = 'true';
+  setTimeout(() => {
+    delete feed.dataset.arriving;
+    document.querySelectorAll('.ghost[data-rising]').forEach((card) => delete (/** @type {HTMLElement} */ (card)).dataset.rising);
+  }, 2600);
+}
+
 async function refresh() {
   state = await api('/api/state');
   paint();
@@ -121,6 +140,7 @@ document.addEventListener('click', (event) => {
           );
         }
         await refresh();
+        if (night.moved) riseAfterNight(night.results);
       } finally {
         target.removeAttribute('disabled');
         setTimeout(() => (document.body.dataset.night = 'false'), 900);

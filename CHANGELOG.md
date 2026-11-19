@@ -15,6 +15,8 @@
 - **Dashboard.** "Let a night pass" leads in demo mode; each change shows on its stone, old value
   struck through; higher contrast, an axe-core WCAG 2.1 AA scan in Playwright, read letters no
   longer fade below AA; four stones in one row; Haunted Listings haunts houses instead of stones.
+  A night now ends with the woken ghosts rising out of their stones, the moon flaring and Spirit
+  mail dealing its letters in one by one, all still under reduced motion.
 - **Docs.** README hero rewrite with a hero GIF (`npm run hero` re-records it), a comparison with
   changedetection.io, Visualping and Distill, a Beyond Kiroween section, a timed demo script, Kiro
   MCP settings, and corrections to `KIRO-LOG.md` and the tech steering file.
