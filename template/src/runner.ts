@@ -7,16 +7,30 @@ import type { Clock } from './clock';
 import { diff, isEmptyDiff, type Diff, type Snapshot } from './diff';
 import { extract } from './extract';
 import type { Fetcher } from './fetcher';
+import { pageFingerprint } from './noise';
 import { evaluateRules } from './rules';
 import { renderAlertMessage } from './alerts/render';
 import type { Alert, AlertSink, DeliveryReceipt } from './alerts/types';
 import type { GhostStore, WatchStatus } from './store/ghost-store';
 import type { Watch } from './watch';
 
+/**
+ * `pageMoved` is true when the page's visible text differs from the previous visit. An `unchanged`
+ * result with `pageMoved` is noise the ghost ignored; a `changed` result always has `pageMoved`.
+ */
 export type CheckResult =
-  | { status: 'baseline'; watchId: string; snapshot: Snapshot }
-  | { status: 'unchanged'; watchId: string; snapshot: Snapshot; diff: Diff }
-  | { status: 'changed'; watchId: string; snapshot: Snapshot; diff: Diff; alerts: Alert[]; delivery?: DeliveryReceipt; deliveryError?: string }
+  | { status: 'baseline'; watchId: string; snapshot: Snapshot; pageMoved: false }
+  | { status: 'unchanged'; watchId: string; snapshot: Snapshot; diff: Diff; pageMoved: boolean }
+  | {
+      status: 'changed';
+      watchId: string;
+      snapshot: Snapshot;
+      diff: Diff;
+      alerts: Alert[];
+      pageMoved: true;
+      delivery?: DeliveryReceipt;
+      deliveryError?: string;
+    }
   | { status: 'skipped'; watchId: string; reason: 'interval' | 'backoff'; nextEligibleAt: string }
   | { status: 'blocked'; watchId: string; robotsUrl: string }
   | { status: 'error'; watchId: string; message: string };
@@ -107,6 +121,10 @@ export class Runner {
       return this.fail(status, watch, outcome.message);
     }
 
+    const page = pageFingerprint(outcome.html);
+    const pageMoved = status.pageFingerprint !== undefined && status.pageFingerprint !== page;
+    status.pageFingerprint = page;
+
     const extraction = extract(outcome.html, watch);
     const foundSomething =
       Object.values(extraction.fields).some((value) => value !== null) ||
@@ -124,20 +142,24 @@ export class Runner {
       Object.assign(status, { lastOutcome: 'baseline', lastMessage: 'First sighting recorded. The ghost now knows this page.' });
       await store.saveSnapshot(snapshot);
       await store.saveStatus(status);
-      return { status: 'baseline', watchId: watch.id, snapshot };
+      return { status: 'baseline', watchId: watch.id, snapshot, pageMoved: false };
     }
 
     const findings = evaluateRules(watch, changes);
     if (!isEmptyDiff(changes)) await store.saveSnapshot(snapshot);
     if (findings.length === 0) {
+      const watchedMoved = !isEmptyDiff(changes);
+      if (pageMoved || watchedMoved) status.ignoredChanges = (status.ignoredChanges ?? 0) + 1;
       Object.assign(status, {
         lastOutcome: 'unchanged',
-        lastMessage: isEmptyDiff(changes)
-          ? 'Nothing watched has changed.'
-          : 'Something moved, but no rule cares about it.',
+        lastMessage: watchedMoved
+          ? 'Something moved, but no rule cares about it.'
+          : pageMoved
+            ? 'The page changed, but nothing watched did.'
+            : 'Nothing watched has changed.',
       });
       await store.saveStatus(status);
-      return { status: 'unchanged', watchId: watch.id, snapshot, diff: changes };
+      return { status: 'unchanged', watchId: watch.id, snapshot, diff: changes, pageMoved: pageMoved || watchedMoved };
     }
 
     const alerts: Alert[] = findings.map((finding, index) => ({
@@ -174,10 +196,10 @@ export class Runner {
     });
     try {
       const delivery = await this.deps.sink.deliver(message);
-      return { status: 'changed', watchId: watch.id, snapshot, diff: changes, alerts, delivery };
+      return { status: 'changed', watchId: watch.id, snapshot, diff: changes, alerts, pageMoved: true, delivery };
     } catch (error) {
       const deliveryError = error instanceof Error ? error.message : String(error);
-      return { status: 'changed', watchId: watch.id, snapshot, diff: changes, alerts, deliveryError };
+      return { status: 'changed', watchId: watch.id, snapshot, diff: changes, alerts, pageMoved: true, deliveryError };
     }
   }
 

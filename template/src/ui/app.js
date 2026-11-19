@@ -1,5 +1,5 @@
 // Dashboard client: keeps the graveyard live, opens séances, and sends "check now" and "lay to rest".
-import { renderDetail, renderFeed, renderGraveyard, renderStats } from './render.js';
+import { noiseSummary, renderDetail, renderFeed, renderGraveyard, renderStats } from './render.js';
 
 const $ = (/** @type {string} */ sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 const initial = document.getElementById('initial-state');
@@ -115,7 +115,10 @@ document.addEventListener('click', (event) => {
           toast('The fixture site has no more nights to show. Restart the demo to begin again.');
         } else {
           const changed = night.results.filter((/** @type {any} */ r) => r.status === 'changed').length;
-          toast(`Night ${night.version - 1} passes. ${changed ? `${changed} ghost${changed === 1 ? '' : 's'} restless.` : 'All quiet.'}`);
+          const noise = noiseSummary(night.results);
+          toast(
+            `Night ${night.version - 1} passes. ${noise ? `${noise} ` : ''}${changed ? `${changed} ghost${changed === 1 ? '' : 's'} restless.` : 'All quiet.'}`,
+          );
         }
         await refresh();
       } finally {
@@ -130,8 +133,9 @@ document.addEventListener('click', (event) => {
       const { results } = await api('/api/check-all', { method: 'POST' });
       const changed = results.filter((/** @type {any} */ r) => r.status === 'changed').length;
       const blocked = results.filter((/** @type {any} */ r) => r.status === 'blocked').length;
+      const noise = noiseSummary(results);
       toast(
-        `${results.length} ghosts visited. ${changed ? `${changed} restless.` : 'All quiet.'}${blocked ? ` ${blocked} turned away by robots.txt.` : ''}`,
+        `${results.length} ghosts visited. ${noise ? `${noise} ` : ''}${changed ? `${changed} restless.` : 'All quiet.'}${blocked ? ` ${blocked} turned away by robots.txt.` : ''}`,
       );
       await refresh();
       target.removeAttribute('disabled');

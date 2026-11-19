@@ -7,7 +7,7 @@
  *            an annual fee and a 48-month eligibility clause; Bramblewick only reformats its page.
  * Version 3: Bramblewick's offer ends; Lanternfield's fine print adds a monthly fee clause.
  */
-import type { FixtureSite, PageContext } from '@ghost-watcher/template/testing';
+import type { FixtureSite, PageContext, WorthKnowing } from '@ghost-watcher/template/testing';
 
 const PROMOS = [
   'Spooky season savings: 0.50% APY on new CDs this week only.',
@@ -174,3 +174,15 @@ Disallow: /
     { path: '/members/cinderhollow/offers', title: 'Cinderhollow National Bank: member offers (disallowed by robots.txt)', render: cinderhollow },
   ],
 };
+
+/**
+ * The page changes a bonus hunter would want to hear about, night by night. Everything else the
+ * site does (timestamps, request ids, rotating promos, Bramblewick's reformat) is noise. Used by the
+ * noise-ratio comparison.
+ */
+export const bonusWorthKnowing: WorthKnowing[] = [
+  { version: 2, watchId: 'lanternfield-checking', why: 'bonus raised to $400, smaller deposit, later deadline' },
+  { version: 2, watchId: 'mossgate-nightfall', why: 'a $95 annual fee and a 48-month eligibility clause' },
+  { version: 3, watchId: 'lanternfield-checking', why: 'the fine print adds a $12 monthly fee' },
+  { version: 3, watchId: 'bramblewick-savings', why: 'the bonus offer ends' },
+];

@@ -30,6 +30,8 @@ export interface GhostView {
   nextEligibleAt: string | null;
   interval: string;
   checks: number;
+  /** Visits where the page changed but nothing worth an alert did. */
+  ignored: number;
   readings: Reading[];
   rules: string[];
 }
@@ -151,6 +153,7 @@ export async function ghostView(deps: GhostDeps, watch: Watch): Promise<GhostVie
     nextEligibleAt: next ? next.toISOString() : null,
     interval: formatInterval(watch.intervalMs),
     checks: status.checks,
+    ignored: status.ignoredChanges ?? 0,
     readings,
     rules: watch.rules.map((rule) => describeRule(rule, watch)),
   };

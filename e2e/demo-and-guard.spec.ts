@@ -20,8 +20,12 @@ test('demo mode: the first sighting is already taken, and one click lets a night
   await expect(page.locator('#feed .feed__empty')).toContainText('Click Let a night pass');
   await night.click();
   await expect(page.locator('#toast')).toContainText('Night 1 passes.');
+  await expect(page.locator('#toast')).toContainText('3 pages changed: 2 worth waking for, 1 ignored as noise.');
   await expect(page.locator('#toast')).toContainText('restless');
   await expect(lanternfield).toHaveAttribute('data-state', 'restless');
+  // Bramblewick's page was only reformatted: its ghost slept through it, and the stone says so.
+  await expect(page.locator('#ghost-bramblewick-savings .ghost__ignored')).toHaveText("Slept through 1 page change that didn't matter");
+  await expect(lanternfield.locator('.ghost__ignored')).toHaveCount(0);
   await expect(page.locator('#feed')).toContainText('Bonus went up from $300 to $400 (+$100).');
   await expect(night).toBeEnabled();
 

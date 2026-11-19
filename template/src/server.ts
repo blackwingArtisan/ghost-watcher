@@ -186,10 +186,17 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
 function publicResult(result: Awaited<ReturnType<GhostDeps['runner']['check']>>) {
   switch (result.status) {
     case 'changed':
-      return { status: result.status, watchId: result.watchId, alerts: result.alerts, delivery: result.delivery ?? null, deliveryError: result.deliveryError ?? null };
+      return {
+        status: result.status,
+        watchId: result.watchId,
+        pageMoved: true,
+        alerts: result.alerts,
+        delivery: result.delivery ?? null,
+        deliveryError: result.deliveryError ?? null,
+      };
     case 'unchanged':
     case 'baseline':
-      return { status: result.status, watchId: result.watchId };
+      return { status: result.status, watchId: result.watchId, pageMoved: result.pageMoved };
     default:
       return result;
   }

@@ -60,6 +60,27 @@ This repo holds one reusable template and two apps built from it, each in its ow
   including phone width, keyboard-only use and reduced motion.
   Every test runs against `127.0.0.1`; none touch a live site.
 
+## Signal, not noise
+
+`npm run noise` runs the same three nights of both fixture sites, checked every 6 hours, through
+three watchers that see the exact same responses: a whole-page watcher (alerts when the page's
+visible text changes, as a watcher with no filter does), a selector text watcher (the same CSS
+selectors Ghost Watcher uses, compared as raw text), and Ghost Watcher. Each cell is alerts sent
+(false alarms, changes missed). Vitest pins these numbers, so they cannot drift from the code.
+
+| App | Checked | Changes worth knowing | Whole-page watcher | Selector text watcher | Ghost Watcher |
+| --- | --- | --- | --- | --- | --- |
+| The Bonus Crypt | 3 pages, 33 visits | 4 | 33 (29 false, 0 missed) | 5 (1 false, 0 missed) | 4 (0 false, 0 missed) |
+| Haunted Listings | 4 pages, 44 visits | 6 | 44 (38 false, 0 missed) | 6 (0 false, 0 missed) | 6 (0 false, 0 missed) |
+| **Total** | 7 pages, 77 visits | 10 | **77 (67 false, 0 missed)** | **11 (1 false, 0 missed)** | **10 (0 false, 0 missed)** |
+
+The fixture pages are invented, but their noise is typical: a generated-at timestamp, a request id
+and a rotating promo on every page, plus one night where a bank only reformats its offer. The
+"changes worth knowing" are listed next to each fixture site (`bonusWorthKnowing`,
+`listingWorthKnowing`). The dashboard shows the same count live: each stone says how many page
+changes its ghost slept through, and every night's toast reads like
+"3 pages changed: 2 worth waking for, 1 ignored as noise."
+
 ## How to run
 
 You need Node.js 20.11 or newer.
@@ -101,6 +122,7 @@ It is git-ignored.
 npm test               # type-check, then unit and CLI tests, then Playwright end to end
 npm run test:unit      # Vitest only
 npm run test:e2e       # Playwright only (run `npx playwright install chromium` once first)
+npm run noise          # print the noise-ratio table above
 ```
 
 Playwright starts the fixture sites and dashboards itself on ports 3134 to 3139 (3138-3139 run one app in `demo` mode).

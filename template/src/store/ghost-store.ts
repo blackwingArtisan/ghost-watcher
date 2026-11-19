@@ -20,6 +20,10 @@ export interface WatchStatus {
   /** Alerts created at or before this instant count as acknowledged ("laid to rest"). */
   acknowledgedAt?: string;
   checks: number;
+  /** Fingerprint of the page's visible text at the last successful visit (see `noise.ts`). */
+  pageFingerprint?: string;
+  /** Visits where the page changed but no rule cared: noise the ghost slept through. */
+  ignoredChanges?: number;
 }
 
 export interface GhostStoreOptions {

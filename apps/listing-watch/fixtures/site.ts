@@ -8,7 +8,7 @@
  *            (two match); Old Mill Lofts opens leasing. Listing order is shuffled as noise.
  * Version 3: another matching listing, and one more permit.
  */
-import type { FixtureSite, PageContext } from '@ghost-watcher/template/testing';
+import type { FixtureSite, PageContext, WorthKnowing } from '@ghost-watcher/template/testing';
 
 interface Listing {
   id: string;
@@ -196,3 +196,16 @@ Crawl-delay: 0.2
     { path: '/old-mill-lofts', title: 'Old Mill Lofts: leasing status', render: oldMillLofts },
   ],
 };
+
+/**
+ * The page changes a renter with these filters would want to hear about, night by night. Reordered
+ * listings, footers and session counters are noise. Used by the noise-ratio comparison.
+ */
+export const listingWorthKnowing: WorthKnowing[] = [
+  { version: 2, watchId: 'larkspur-rentals', why: 'a 2 bd in Old Mill at $1,950, and a price cut into budget' },
+  { version: 2, watchId: 'vale-availability', why: 'a studio under $1,800' },
+  { version: 2, watchId: 'hollowmere-permits', why: 'a demolition and a 36-unit new build' },
+  { version: 2, watchId: 'old-mill-lofts', why: 'leasing opens' },
+  { version: 3, watchId: 'larkspur-rentals', why: 'a 2 bd in Larkspur Heights at $2,075' },
+  { version: 3, watchId: 'hollowmere-permits', why: 'a demolition on Cobweb Alley' },
+];

@@ -20,7 +20,8 @@
     "test:unit": "vitest run",
     "test:e2e": "playwright test",
     "bonus": "npm run demo -w @ghost-watcher/bonus-watch",
-    "listing": "npm run demo -w @ghost-watcher/listing-watch"
+    "listing": "npm run demo -w @ghost-watcher/listing-watch",
+    "noise": "tsx scripts/noise-ratio.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

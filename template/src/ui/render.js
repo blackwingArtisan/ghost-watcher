@@ -78,6 +78,29 @@ export function ghostSvg(state) {
 </svg>`;
 }
 
+/** How much noise a ghost slept through. @param {number | undefined} count */
+export function ignoredLine(count) {
+  if (!count) return '';
+  return `Slept through ${count} page change${count === 1 ? '' : 's'} that didn't matter`;
+}
+
+/** @param {number | undefined} count */
+function ignoredChip(count) {
+  return count ? `<p class="ghost__ignored" data-count="${count}">${esc(ignoredLine(count))}</p>` : '';
+}
+
+/**
+ * One line about a round of visits: how many pages changed, how many woke a ghost, how much was noise.
+ * @param {Array<{ status: string; pageMoved?: boolean }>} results
+ */
+export function noiseSummary(results) {
+  const woke = results.filter((r) => r.status === 'changed').length;
+  const moved = results.filter((r) => r.status === 'changed' || r.pageMoved).length;
+  const ignored = moved - woke;
+  if (moved === 0) return '';
+  return `${moved} page${moved === 1 ? '' : 's'} changed: ${woke} worth waking for, ${ignored} ignored as noise.`;
+}
+
 /** @param {any} ghost @param {string} [nowIso] */
 export function renderGhostCard(ghost, nowIso) {
   const readings = (ghost.readings || [])
@@ -99,6 +122,7 @@ export function renderGhostCard(ghost, nowIso) {
     <p class="ghost__sub">${esc(ghost.subtitle)}</p>
     <dl class="readings">${readings}</dl>
     <p class="ghost__msg">${esc(ghost.lastMessage)}</p>
+    ${ignoredChip(ghost.ignored)}
     <p class="ghost__when">${when}</p>
   </div>
 </article>`;
@@ -197,7 +221,9 @@ export function renderDetail(detail, nowIso) {
     <h2 id="seance-title">${esc(detail.name)}</h2>
     <p class="muted"><a href="${esc(detail.url)}" target="_blank" rel="noopener noreferrer">${esc(detail.url)}</a></p>
     <p class="muted small">${esc(detail.lastMessage)}</p>
-    <p class="muted small">Polite schedule: ${esc(detail.interval)} · ${next} · ${detail.checks} visits so far</p>
+    <p class="muted small">Polite schedule: ${esc(detail.interval)} · ${next} · ${detail.checks} visits so far</p>${
+      detail.ignored ? `\n    <p class="muted small seance__ignored">${esc(ignoredLine(detail.ignored))}: timestamps, banners and reformatting never wake it.</p>` : ''
+    }
   </div>
 </header>
 <div class="seance__actions">

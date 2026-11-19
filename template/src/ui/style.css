@@ -591,6 +591,15 @@ body[data-night='true']::after {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+.ghost__ignored {
+  display: inline-block;
+  margin: 8px 0 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, var(--ink-dim) 45%, transparent);
+  font: 400 0.72rem/1.3 var(--sans);
+  color: var(--ink-dim);
+}
 .ghost__when {
   margin: 8px 0 0;
   font: 400 0.72rem/1.2 var(--mono);

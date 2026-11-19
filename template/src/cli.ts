@@ -74,7 +74,7 @@ export function describeResult(result: CheckResult, name: string): string {
     case 'baseline':
       return `${head}: first sighting recorded`;
     case 'unchanged':
-      return `${head}: nothing new`;
+      return `${head}: nothing new${result.pageMoved ? ' (the page changed; ignored as noise)' : ''}`;
     case 'changed':
       return [`${head}: ${result.alerts.length} change(s)`, ...result.alerts.map((a) => `    - ${a.summary}`), result.delivery ? `    delivered via ${result.delivery.channel}: ${result.delivery.reference}` : `    delivery failed: ${result.deliveryError}`].join('\n');
     case 'skipped':
