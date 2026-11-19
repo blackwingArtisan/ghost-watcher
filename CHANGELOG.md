@@ -2,6 +2,17 @@
 
 ## 2026-11-18
 
+- **Proof of terms leads.** One tagline everywhere ("Banks edit the fine print at night. Ghost
+  Watcher keeps the receipts."), in the README, the Bonus Crypt's subtitle and the demo script. The
+  README opens with what the receipts are for, the 77-versus-10 noise result and the yearly stake,
+  backed by the CFPB's 2023 withheld-bonus order and a count of CFPB complaints about advertised
+  terms; `docs/sources.md` lists every outside number and the exact queries.
+- **A shorter README.** 372 lines down to 150: the value, a 60-second path, the For judges box, the
+  noise table and a comparison that now includes Doctor of Credit and r/churning. The full feature
+  list, run and test commands, architecture and adapters moved to `docs/details.md`. An illustrative,
+  labelled scenario shows the payback math, and the Pro tier names its buyers with a rough, sourced
+  market estimate.
+- **JUDGES.md** maps each judging criterion to files, commands and numbers.
 - **Haunted Listings looks like its own app.** A dusk sky over the houses, a "Window lit" line on
   the card naming the unit that matched ("2 bd $2,050 Larkspur Heights"), and its own feed name,
   "Knocks at the door". Lists can set a short `brief` template and a `matchLabel` for the card.

@@ -1,153 +1,92 @@
 # Ghost Watcher
 
-**Banks edit the fine print at night. Ghost Watcher reads it at night too.**
+**Banks edit the fine print at night. Ghost Watcher keeps the receipts.**
+
+**Bonus never paid? Show the bank its own terms from the day you applied.** Ghost Watcher watches the
+few bank and card offer pages you applied to, wakes only for changes that matter (10 alerts where a
+whole-page watcher sent 77, none false, none missed), and keeps dated, hashed, archived proof of
+every bonus cut and fine-print edit, with a dispute letter ready to send. For a bonus hunter that is
+$2,000 to $5,000 a year riding on pages that change without notice.
+
+It happens to real customers. In July 2023 the CFPB found that Bank of America had
+["illegally withheld promised credit card account bonuses"](https://www.consumerfinance.gov/about-us/newsroom/bank-of-america-for-illegally-charging-junk-fees-withholding-credit-card-rewards-opening-fake-accounts/)
+from tens of thousands of consumers, part of an order that included $90 million in CFPB penalties.
+The CFPB's public complaint database holds **22,055 complaints** filed as "didn't receive advertised
+or promotional terms" (credit cards) or "didn't receive terms that were advertised" (opening a
+checking or savings account) ([queries](docs/sources.md), checked 2026-11-18).
 
 [Try it in 60 seconds](#try-it-in-60-seconds) · [Signal, not noise](#signal-not-noise) ·
-[Why not a page watcher you already know?](#why-not-changedetectionio-visualping-or-distill) ·
-[Built with Kiro](#built-with-kiro) · [Kiro log](KIRO-LOG.md) · [Demo script](docs/demo-script.md)
+[Why not what you already use?](#why-not-what-you-already-use) · [Judges' map](JUDGES.md) ·
+[Kiro log](KIRO-LOG.md) · [Full details](docs/details.md)
+
+![The Bonus Crypt in 14 seconds: each stone already wears a ribbon from the archive, such as Lanternfield's "Bonus cut $200 in June"; then one night passes, the moon flushes red, two ghosts wake, the stones show $300 struck through beside $400, and Spirit mail fills with a Bait and switch letter](docs/bonus-crypt-night.gif)
 
 ### For judges
 
-Kiroween 2026, **Skeleton Crew**: one template, two apps that look and behave differently
-(the Bonus Crypt and Haunted Listings), each a single `app.ts` on the shared skeleton.
+Kiroween 2026, **Skeleton Crew**: one template, two apps that look and behave differently (the Bonus
+Crypt and Haunted Listings), each a single `app.ts` on the shared skeleton.
 
 | | Where to look |
 | --- | --- |
-| 60 seconds | `npm install && npm run bonus`, open http://127.0.0.1:3130, press **N** to let a night pass |
+| 60 seconds | `npm install && npm run bonus`, open http://127.0.0.1:3130/?night=1 (the night passes as it loads), then **Raise the dead** on the Bait and switch letter |
+| Criteria to evidence | [JUDGES.md](JUDGES.md): each judging criterion mapped to files, commands and numbers |
 | Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code |
-| Steering | [`.kiro/steering/`](.kiro/steering/): product, tech and structure, `inclusion: always` |
-| Hooks | [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and the `money-guard` agent hook Kiro wrote ([log](KIRO-LOG.md#what-kiro-built)) |
+| Steering and hooks | [`.kiro/steering/`](.kiro/steering/) (always included) and [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and Kiro's `money-guard` agent hook |
 | Who wrote what | [KIRO-LOG.md](KIRO-LOG.md#who-wrote-what) |
-| Tests | `npm test`: type-check, 216 Vitest tests and 16 Playwright tests, all against `127.0.0.1` |
-
-Ghost Watcher catches **terms drift**: the quiet bonus cut, the new monthly fee, the eligibility
-window slipped into the fine print while the headline offer stays the same. It is a skeleton for
-small, polite watchers. You name the parts of a page that matter (a bonus amount, a deadline, the
-fine print, a table of listings), and a ghost haunts them. It sleeps through the noise: timestamps,
-rotating banners, reordered lists, `$300` becoming `$300.00`. When something real changes, it wakes
-and tells you in one plain sentence:
-
-> Bonus went up from $300 to $400 (+$100).
->
-> **Bait and switch:** Bonus points stayed the same while the fine print changed. Fine print now says
-> "Bonus not available if you have opened any Mossgate card in the past 48 months."
->
-> New listing: 2 bd in Old Mill at 418 Bramble Row, Apt 3 for $1,950/mo.
-
-![The Bonus Crypt in 14 seconds: each stone already wears a ribbon from the archive, such as Lanternfield's "Bonus cut $200 in June", and the Ghost of Terms Past shows the cut from $500 to $300 before any night has passed; then one night passes, the moon flushes red, two ghosts wake, the stones show $300 struck through beside $400, and Spirit mail fills with a Bait and switch letter](docs/bonus-crypt-night.gif)
-
-**Why a ghost?** A ghost haunts one page, sleeps until something it was told to care about changes,
-and will not walk through a door robots.txt has closed.
-
-### A walkthrough (demo data, invented banks)
-
-You are eyeing Lanternfield's $300 checking bonus, so you give it a ghost. Before you have waited a
-single night, the **Ghost of Terms Past** reads the page's archived copies and tells you the bonus was
-$500 in March and was cut to $300 in June. The first night, the bonus rises to $400 and the ghost
-shrieks. The next night the headline still says $400, but the fine print has grown a $12 monthly fee:
-a bait and switch, flagged as one. Meanwhile Bramblewick reformatted its whole offer page, and its
-ghost slept straight through it.
+| Tests | `npm test`: type-check, 224 Vitest tests and 17 Playwright tests, all against `127.0.0.1` |
 
 ### Try it in 60 seconds
 
 ```sh
 npm install
-npm run bonus      # open http://127.0.0.1:3130 and click "Let a night pass"
+npm run bonus      # open http://127.0.0.1:3130/?night=1
 ```
 
-Everything runs on your machine against an invented fixture site. No accounts, keys or live sites.
+Everything runs on your machine against an invented bank site. No accounts, keys or live sites.
+Without `?night=1`, click **Let a night pass** (or press <kbd>N</kbd>); **Rewind to calm** starts
+over. `npm run listing` opens Haunted Listings on port 3132.
+
+## What one night looks like (demo data, invented banks)
+
+> Bonus went up from $300 to $400 (+$100).
+>
+> **Bait and switch:** Bonus points stayed the same while the fine print changed. Fine print now says
+> "Bonus not available if you have opened any Mossgate card in the past 48 months."
+
+Before a single night has passed, the **Ghost of Terms Past** reads each page's archived copies: the
+Lanternfield bonus was $500 in March and cut to $300 in June. When the first night raises it to $400,
+the ghost shrieks; when Mossgate slips an eligibility window under an unchanged headline, the letter
+leads with **Bait and switch**. Each of those keeps a **receipt** (the SHA-256 of the page before and
+after, plus a permanent copy from the Internet Archive's Save Page Now), and **Raise the dead** turns
+the receipt into a dispute pack: a letter to the bank with the old and new terms and their dates, the
+archived link and both hashes, and prefilled CFPB complaint text. Bramblewick only reformatted its
+page, and its ghost slept straight through it.
+
+![The Bonus Crypt after one night: four ghosts on tombstones, two glowing with the old values struck through beside the new ones, one asleep after a reformat-only change, one turned away by robots.txt, and Spirit mail with a Bait and switch letter](docs/bonus-crypt.png)
 
 ## Who it's for
 
-**Bonus hunters.** r/churning, the main community for bank and card sign-up bonuses, has roughly
-678,000 members ([The Hive Index](https://thehiveindex.com/communities/r-churning/), checked
-2026-11-18; Reddit stopped showing member counts on subreddit pages in 2025). Doctor of Credit's rule
-of thumb is that it is
+**Bonus hunters.** r/churning has roughly 678,000 members
+([The Hive Index](https://thehiveindex.com/communities/r-churning/), checked 2026-11-18), and Doctor
+of Credit's rule of thumb is that it is
 ["generally OK to open 10 or less bank accounts each year"](https://www.doctorofcredit.com/how-many-bank-accounts-can-i-safely-open-within-a-year-for-bank-bonus-purposes/).
-At $200 to $500 a bonus, that is $2,000 to $5,000 a year riding on pages that change without notice:
-a bonus raised the week after you applied, a waiting period quietly moved from 12 to 13 months, "no
-monthly fee" gone from the fine print. One missed change costs $100 or more.
+At $200 to $500 a bonus, that is $2,000 to $5,000 a year.
 
-**Same skeleton, other hauntings.** Haunted Listings watches rentals and building permits for
-renters and neighbors, and developers can point the template at any page that deserves a ghost.
+*An illustrative scenario, not a real customer:* Maya opens a $300 checking bonus. Nine days later
+the page says $400, and a $12 monthly fee has appeared in the fine print. Ghost Watcher wakes her the
+next morning with both changes in two sentences, and when the bonus does not post, she sends the
+bank its own terms from the day she applied. At about $4 a month, it pays for itself if it catches
+one $100 change every two years.
 
-## What's in this repo
-
-One reusable template and two apps built from it, each in its own folder:
-
-| Folder | What it is |
-| --- | --- |
-| [`template/`](template/) | The skeleton: watch definitions, polite fetching, semantic diff, rules, history, alerts, storage, the haunted dashboard and the CLI |
-| [`apps/bonus-watch/`](apps/bonus-watch/) | **The Bonus Crypt** watches bank and card sign-up bonus pages for changes to the amount, deposit, deadline and fine print |
-| [`apps/listing-watch/`](apps/listing-watch/) | **Haunted Listings** watches rental listings and city building permits, and only speaks up about items that match your filters |
-
-![The Bonus Crypt after one night: four ghosts on tombstones in a row, each with a ribbon from the archive; two glowing with the old values struck through beside the new ones, a raised annual fee in red, one asleep after a reformat-only change, one turned away by robots.txt, and the Spirit mail feed with a Bait and switch letter](docs/bonus-crypt.png)
-
-![A séance in Haunted Listings: the listings on the page, which ones are new, the rules that make the ghost stir, and the haunting log](docs/haunted-listings-seance.png)
-
-## What works
-
-- **Two complete apps on one skeleton.** Each app is a single `src/app.ts` of watch definitions,
-  rules, copy and colors. Everything else comes from `@ghost-watcher/template`.
-- **Polite fetching.** robots.txt is parsed per RFC 9309 (longest match wins, `*` and `$`
-  wildcards, Crawl-delay) and cached. Disallowed pages are never requested. Every request sends an
-  honest User-Agent (a contact URL, or an explicit local-only token for the fixture sites). Each URL has a minimum check interval, each host gets one
-  request at a time, and errors trigger exponential back-off.
-- **Semantic diff.** Values are normalized by kind (money, number, percent, date, URL, text) before
-  comparing. Lists are matched by identity, so reordering is not a change. The first check records
-  a baseline and never alerts.
-- **Rules that read like intent.** `wentUp`, `wentDown`, `changed`, `appeared` and `disappeared`
-  (optionally matching a phrase), plus `newItem`, `itemRemoved` and `itemChanged`, with filters
-  such as `where.atMost('price', 2100)`. Each rule has a loudness: whisper, moan or shriek.
-- **The Ghost of Terms Past.** On a ghost's first sighting it reads the page's archived copies from
-  the Internet Archive's Wayback Machine (one per month, newest six) and runs them through the
-  same extract, diff and rules. The séance opens with the page's history instead of a blank:
-  "Mar 4: Bonus $500. Jun 11: Bonus went down from $500 to $300 (-$200)." The stone wears the
-  biggest past change as a ribbon ("Bonus cut $200 in June"), carries a fickleness score ("changed
-  2 times in 9 months, 1 for the worse"), and Spirit mail starts with dimmed letters from the
-  archive, so the dashboard has a story to tell before the first night. Past changes are shown,
-  never sent as alerts. In `demo` mode the fixture site stands in for the archive, and the adapter's
-  tests replay real recorded Wayback responses.
-- **Bait and switch.** `rules.stealthEdit('finePrint', ['bonus'])` notices when the fine print changes
-  while the headline offer stays put. In the demo, Mossgate keeps its 60,000 points but slips a
-  48-month eligibility window into the terms; Spirit mail and the email lead with a "Bait and switch"
-  banner instead of a routine fine-print note.
-- **The ghost keeps receipts.** Every shriek and every bait and switch carries proof of what the page
-  said: the SHA-256 of the stored snapshot before the change and of the one after it, plus, with
-  `GHOST_RECEIPTS=archive`, a permanent copy of the page from the Internet Archive's Save Page Now.
-  The letter, Spirit mail and the séance all show it, so you can show the bank its own terms from
-  the day you applied. Demo mode archives to the fixture site's stand-in Wayback Machine.
-- **Plain-English alerts.** The outbox writes each alert as an `.eml` file, an HTML preview and an
-  index line. It works with no accounts. Amazon SES is an opt-in adapter.
-- **Two apps look like two apps.** The Bonus Crypt's ghosts haunt tombstones; Haunted Listings'
-  ghosts haunt gabled houses whose windows light up when a listing worth knowing about appears.
-  Each app sets its colors, crest word and motif in one `theme` line.
-- **A haunted dashboard.** Each watch is a ghost on a tombstone. It sleeps while nothing changes,
-  glows when something does, and fades when robots.txt says no or the page's layout has changed.
-  Click a ghost to open the séance: what is on the page now, what it said before, and a word-level
-  diff of the fine print. From there you can **Check now** or **Lay to rest**, or summon every ghost at once. The
-  dashboard works from the keyboard, respects reduced motion, is readable on a phone, and passes an
-  axe-core WCAG 2.1 AA scan in every state a demo night leaves behind. A changed value shows on its
-  stone, old value struck through, until you read the alert, colored by what it means for you: a
-  field declares which way is better (`better: 'higher'` for a bonus, `'lower'` for a fee), so a
-  raised fee turns red, a bigger bonus glows, and a value that vanished reads "gone". A shriek gets
-  its own scene: the moon flushes red, lightning flashes and the stone cracks. Press <kbd>N</kbd> in
-  demo mode to let a night pass.
-- **Safe to leave running.** The dashboard answers only to `localhost` and loopback Host headers
-  (plus any listed in `GHOST_ALLOWED_HOSTS`), which stops DNS-rebinding pages. Every POST must come
-  from the dashboard's own origin, so another web page cannot make the ghosts go out and fetch.
-- **Tests that drive the real thing.** Unit tests cover every module. CLI tests run the real
-  `check` command against a local fixture site. Playwright drives both dashboards in a browser,
-  including phone width, keyboard-only use and reduced motion.
-  Every test runs against `127.0.0.1`; none touch a live site.
+**Same skeleton, other hauntings.** Haunted Listings watches rentals and building permits on a dusk
+street where each house names the unit that lit its window, and any page that deserves a ghost is one
+`app.ts` away.
 
 ## Signal, not noise
 
-`npm run noise` runs the same three nights of both fixture sites, checked every 6 hours, through
-three watchers that see the exact same responses: a whole-page watcher (alerts when the page's
-visible text changes, as a watcher with no filter does), a selector text watcher (the same CSS
-selectors Ghost Watcher uses, compared as raw text), and Ghost Watcher. Each cell is alerts sent
-(false alarms, changes missed). Vitest pins these numbers, so they cannot drift from the code.
+It never cries wolf. `npm run noise` replays the same three nights of both fixture sites, checked
+every 6 hours, through three watchers that see the exact same responses. Each cell is alerts sent
+(false alarms, changes missed); Vitest pins the numbers.
 
 | App | Checked | Changes worth knowing | Whole-page watcher | Selector text watcher | Ghost Watcher |
 | --- | --- | --- | --- | --- | --- |
@@ -155,217 +94,56 @@ selectors Ghost Watcher uses, compared as raw text), and Ghost Watcher. Each cel
 | Haunted Listings | 4 pages, 44 visits | 6 | 44 (38 false, 0 missed) | 6 (0 false, 0 missed) | 6 (0 false, 0 missed) |
 | **Total** | 7 pages, 77 visits | 10 | **77 (67 false, 0 missed)** | **11 (1 false, 0 missed)** | **10 (0 false, 0 missed)** |
 
-The fixture pages are invented, but their noise is typical: a generated-at timestamp, a request id
-and a rotating promo on every page, plus one night where a bank only reformats its offer. The
-"changes worth knowing" are listed next to each fixture site (`bonusWorthKnowing`,
-`listingWorthKnowing`). The dashboard shows the same count live: each stone says how many page
-changes its ghost slept through, and every night's toast reads like
-"3 pages changed: 2 worth waking for, 1 ignored as noise."
+The fixture pages are invented, but their noise is typical: timestamps, request ids, rotating promos
+and one night where a bank only reformats its offer. `scripts/real-pages.ts` replays a real page's
+Wayback Machine history through the same three watchers ([procedure](docs/real-pages.md)).
 
-**On real pages.** `scripts/real-pages.ts` replays a real page's archived copies from the Wayback
-Machine through the same three watchers and prints the alerts each would have sent, with every
-sentence Ghost Watcher would have written. [`docs/real-pages.md`](docs/real-pages.md) has the
-procedure, including a seven-day live check.
+## Why not what you already use?
 
-## Why not changedetection.io, Visualping or Distill?
-
-They are mature, general-purpose page watchers, and if you want to watch many different pages with
-little setup, start with one of them. Ghost Watcher is narrower on purpose: a few pages you care a lot
-about, typed values, and rules you can read and test.
-
-| | What it does well (from its own docs) | Where Ghost Watcher differs |
+| | What it does well | Where Ghost Watcher differs |
 | --- | --- | --- |
-| [changedetection.io](https://github.com/dgtlmoon/changedetection.io) | Open source (Apache-2.0), self-hosted or $8.99/month hosted. CSS, XPath and JSONPath filters, ignore and trigger text, price and restock detection, price conditions, notifications to Discord, Slack, email and more through Apprise, optional LLM summaries | Its README leaves robots.txt compliance to the user. Ghost Watcher's fetcher enforces robots.txt, identifies itself honestly, and refuses to start against a real site without a contact URL |
-| [Visualping](https://visualping.io) | Hosted visual and text monitoring, AI "Important Alerts" on every plan, a free plan of 150 checks a month across 5 pages | Whether a change matters is decided by rules you can read and unit-test, not by a model, so the same page change always gets the same answer |
-| [Distill.io](https://distill.io) | Browser extension and cloud monitors, CSS and XPath selections, conditions such as "has number that increased more than", AI change summaries on its Enterprise and Flexi plans | Values are typed before they are compared: money in integer cents, dates in days, list items matched by identity, so alerts state the change ("Deadline moved from Sep 30, 2026 to Jan 15, 2027 (107 days later).") |
+| [Doctor of Credit](https://www.doctorofcredit.com/) and [r/churning](https://www.reddit.com/r/churning/) | The best place to find offers and readers' data points | They cover popular offers after the fact. Ghost Watcher watches the exact pages you applied to, catches fine-print edits nobody posts, and keeps a dated receipt you can send the bank |
+| [changedetection.io](https://github.com/dgtlmoon/changedetection.io) | Open source, self-hosted or $8.99/month hosted; CSS, XPath and JSONPath filters, many notification channels | Its README leaves robots.txt to the user; Ghost Watcher enforces it and identifies itself honestly. Values are typed (money in integer cents, dates in days), so alerts state the change |
+| [Visualping](https://visualping.io) and [Distill.io](https://distill.io) | Hosted visual and text monitoring with AI change summaries | Whether a change matters is decided by rules you can read and unit-test, not a model, and receipts and dispute letters are built in |
 
-Also only here: the **Ghost of Terms Past** (a page's history from the Wayback Machine on the first
-sighting), the **bait-and-switch** rule, the [measured noise table](#signal-not-noise), and the fact
-that it is a template: each app above is one `app.ts` file plus a fixture site and tests.
-
-Feature details checked against each product's own pages on 2026-11-18:
-[changedetection.io README](https://github.com/dgtlmoon/changedetection.io),
-[Visualping pricing](https://visualping.io/business/pricing/),
-[Visualping AI](https://visualping.io/blog/visualping-ai),
-[Distill conditions](https://distill.io/docs/web-monitor/using-conditions-to-get-alert-on-important-changes/),
-[Distill AI change summary](https://distill.io/docs/web-monitor/ai-change-summary/).
+Feature details were checked against each product's own pages on 2026-11-18; the sources are in
+[docs/details.md](docs/details.md#what-only-ghost-watcher-does).
 
 ## Built with Kiro
 
 Kiro wrote the spec this repo is built against, reviewed it against the code, and built the
-integer-cents money change with its tests. Everything it used and produced is in [`.kiro/`](.kiro/),
-and [`KIRO-LOG.md`](KIRO-LOG.md) says who wrote what.
-
-- [`.kiro/steering/`](.kiro/steering/): product, tech and structure steering files, always included.
-- [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): requirements in EARS notation,
-  the design, and the task list. Kiro generated all three and later tightened them against the code.
-  110 tasks: 99 are checked off with code and tests, and 11 open gaps found in Kiro's review are
-  listed with their requirement IDs.
-- [`.kiro/hooks/`](.kiro/hooks/): a hook that type-checks and runs the unit tests when a source or test
-  file under `template/`, `apps/` or `e2e/` is saved, one that runs the full suite when an agent turn
-  ends, and an agent hook (`money-guard`) that restates the integer-cents money rule when
-  `normalize.ts`, `diff.ts` or `rules.ts` is saved. They use Kiro's `v1` hook file format
-  (`PostFileSave` and `Stop` triggers), which Kiro IDE 1.0 and CLI V3 load from `.kiro/hooks/*.json`.
-
-- [`.kiro/settings/mcp.json`](.kiro/settings/mcp.json): MCP servers for Kiro sessions, pinned: the AWS
-  Documentation server (for the SES and S3 adapters) and Context7 (library docs), configured for
-  Kiro sessions.
-
-[`KIRO-LOG.md`](KIRO-LOG.md) records each Kiro call: the prompt, the files produced, what the Stop
-hook caught, and the one requirement that was revised by hand.
-
-A three-minute walkthrough for a demo video, beat by beat, is in [`docs/demo-script.md`](docs/demo-script.md).
-
-## How to run
-
-You need Node.js 20.11 or newer.
-
-```sh
-npm install
-npm run bonus      # The Bonus Crypt at http://127.0.0.1:3130 (fixture bank site on :3131)
-npm run listing    # Haunted Listings at http://127.0.0.1:3132 (fixture city site on :3133)
-```
-
-`demo` starts the app's local fixture site, takes the first sighting of every page (a baseline,
-so no alerts yet), and opens the dashboard against it. To try it:
-
-1. Open the dashboard. Every ghost is resting, and one is behind bars because robots.txt keeps it out.
-2. Click **Let a night pass**. The invented fixture site moves to its next version and every ghost
-   looks again. The ghosts whose pages really changed start to glow, and the alert letters appear
-   in the **Spirit mail** feed. Each app has two nights of changes.
-
-The button exists only in `demo` mode. Outside the browser, the same step is
-`curl -X POST http://127.0.0.1:3131/__fixture/advance` (`:3133` for listings) followed by
-**Summon every ghost**.
-
-Each app also has a command line:
-
-```sh
-cd apps/bonus-watch
-npx tsx src/main.ts list                    # the watches and their rules
-npx tsx src/main.ts check                   # check every watch once (respects intervals)
-npx tsx src/main.ts check --force --json    # check now, machine-readable
-npx tsx src/main.ts serve --port 3130       # dashboard plus a polite scheduler against BONUS_SITE_ORIGIN
-```
-
-Runtime data (snapshots, status, alerts and the outbox) goes to `.ghost-data/` in the app folder.
-It is git-ignored.
-
-## How to test
-
-```sh
-npm test               # type-check, then unit and CLI tests, then Playwright end to end
-npm run test:unit      # Vitest only
-npm run test:e2e       # Playwright only (run `npx playwright install chromium` once first)
-npm run noise          # print the noise-ratio table above
-npm run hero           # re-record docs/bonus-crypt-night.gif from the demo (needs ffmpeg)
-npm run stills         # re-take the README screenshots from both demos
-```
-
-[`.github/workflows/test.yml`](.github/workflows/test.yml) runs the same `npm test` on pushes to
-`main` and on pull requests. Notable changes are listed in [`CHANGELOG.md`](CHANGELOG.md).
-
-Playwright starts the fixture sites and dashboards itself on ports 3134 to 3139 (3138-3139 run one app in `demo` mode).
-
-## Architecture
-
-```mermaid
-flowchart LR
-  subgraph App["apps/* (one app.ts)"]
-    W[watches + rules + copy]
-  end
-  subgraph Template["@ghost-watcher/template"]
-    R[Runner] --> F[Fetcher port<br/>PoliteFetcher]
-    F --> RB[robots.txt cache<br/>per-host lock, Crawl-delay]
-    R --> X[extract<br/>cheerio]
-    X --> N[normalize]
-    N --> D[semantic diff]
-    D --> RU[rules + summaries]
-    RU --> S[AlertSink port]
-    R --> ST[BlobStore port<br/>via GhostStore]
-    SV[dashboard server] --> R
-    CLI[cli: check / serve / demo] --> R
-  end
-  W --> R
-  F -->|honest User-Agent| Site[(watched site)]
-  S --> O[outbox .eml + .html]
-  S -.opt-in.-> SES[Amazon SES]
-  ST --> FS[local files]
-  ST -.opt-in.-> S3[Amazon S3]
-```
-
-One check runs these steps: check the interval and back-off → fetch (robots.txt first) → extract
-the watched regions → normalize → diff against the last snapshot → evaluate the rules → write
-plain-English summaries → deliver one alert message → save the snapshot and status. A page with
-none of the watched regions counts as an error ("the layout may have changed"). It never produces
-a false alert.
-
-The dashboard is server-rendered by `node:http` with no framework and no build step. The same
-`render.js` runs on the server and in the browser for live refreshes, and a strict Content Security
-Policy is set on every page.
-
-## Adapters: local vs real
-
-Every external service sits behind a port. The free local adapter is the default. A real adapter
-is selected by environment variable and loaded only when selected.
-
-| Port | Local (default) | Real (opt-in) | Select with |
-| --- | --- | --- | --- |
-| Storage | `FileBlobStore` under `.ghost-data/` (`MemoryBlobStore` for tests) | `S3BlobStore` (AWS SDK v3) | `GHOST_STORE=file\|memory\|s3`, `GHOST_S3_BUCKET`, `GHOST_S3_PREFIX`, `AWS_REGION` |
-| Alerts | `OutboxAlertSink` (`.eml`, HTML preview, `outbox.jsonl`), `ConsoleAlertSink` | `SesEmailAlertSink` (SES v2), `WebhookAlertSink` (ntfy, Discord, Slack or plain JSON) | `GHOST_ALERTS=outbox,console,ses,webhook` (comma-separated), `GHOST_SES_FROM`, `GHOST_ALERT_TO`, `GHOST_WEBHOOK_URL`, `GHOST_WEBHOOK_FORMAT` |
-| Fetching | `PoliteFetcher` over `fetch` | the same fetcher, pointed at real sites | `GHOST_CONTACT_URL`, `GHOST_HOST_GAP_MS`, `GHOST_TIMEOUT_MS` |
-| History | off (`demo` uses the fixture site's stand-in archive) | `WaybackHistorySource` (Internet Archive CDX API, free, no key) | `GHOST_HISTORY=wayback`, `GHOST_HISTORY_BASE`, `GHOST_HISTORY_LIMIT` |
-| Receipts | SHA-256 of the before and after snapshots | `SavePageNowArchiver` (Internet Archive Save Page Now, free, no key) | `GHOST_RECEIPTS=hashes\|archive`, `GHOST_ARCHIVE_BASE` |
-| Dashboard access | loopback hosts only | a deployed hostname | `GHOST_ALLOWED_HOSTS` (comma-separated; Render's `RENDER_EXTERNAL_HOSTNAME` is added automatically) |
-| Clock | `systemClock` | `manualClock` in tests | none |
-
-**Checking a receipt.** A receipt's hashes are taken over the exact bytes of the snapshot files, so
-anyone holding the data folder can confirm them:
-`shasum -a 256 .ghost-data/store/snapshots/<watch-id>/history/*.json` lists the same values the letter
-quotes. The archived copy lives with the Internet Archive, outside your machine.
-
-The S3 and SES adapters are written and type-checked, and they are tested with fake clients. They
-have never been run against AWS. A misconfigured selection fails at startup with a message that
-names the missing variable.
-
-**Deploy target (free, not deployed):** a Render free web service running
-`npm run serve -w @ghost-watcher/bonus-watch` (or the listing app). Free instances sleep and do not
-keep files across restarts. For durable state, use the S3 adapter.
-
-**Contact URL.** The apps ship without a contact URL. While every watch is on this machine or on a
-documentation-only domain (the fixture and demo sites), the User-Agent says
-`local-only, no public contact`. The watcher refuses to start if any watch points at a real
-third-party site and `GHOST_CONTACT_URL` is unset or names a documentation-only domain such as
-`example.com`, so set it to a page you control before watching live sites. A placeholder is never
-sent as a contact.
+integer-cents money change and the contact-URL policy with their tests. Its hooks run the tests on
+save and the full suite when an agent turn ends (which caught a stale assertion Kiro then fixed), and
+it wrote the `money-guard` agent hook. Most feature code was written outside Kiro, against Kiro's
+spec, with another AI coding assistant; [KIRO-LOG.md](KIRO-LOG.md) records every Kiro call and who
+wrote what.
 
 ## Beyond Kiroween
 
-- **Free to self-host.** The template and both apps are MIT-licensed and run on one machine with
-  no accounts. The S3, SES and webhook adapters are there for running it unattended.
-- **Personal, about $4 a month.** 25 hosted ghosts, phone alerts and a weekly digest for one bonus
-  hunter. A ghost checks a page a few times a day, so this is priced well under general watchers:
-  changedetection.io's hosted plan is $8.99/month and Visualping's Personal plan is $14/month for
-  1,000 checks (both from their own pages, checked 2026-11-18).
-- **Pro, about $49 a month.** For teams that watch terms for a living: competitors' pricing and
-  terms pages, a compliance team's own published disclosures, consumer advocates tracking fees. The
-  demand is already there: Visualping reports that roughly 35,000 of its users track legal pages and
-  about 11,000 track regulatory compliance
-  ([its own figures, updated 2026-04-12](https://visualping.io/blog/visualping-enterprise-evolution)).
-- **Why now.** Since 2025-05-12 the FTC's fees rule has made live-event tickets and short-term
-  lodging show the total price up front
-  ([Federal Register, 2025-01-10](https://www.govinfo.gov/content/pkg/FR-2025-01-10/html/2024-30293.htm)).
-  It does not reach bank or card offers, where a new fee or a narrower eligibility window still
-  arrives as an edit to the fine print. Generic watchers alert on so much page noise that people
-  mute them; a watcher that understands money, dates and fine print can afford to be loud.
-- **More hauntings on the same skeleton.** Price drops on a short list of products, terms-of-service
-  pages (a clause added or removed), and course or class seats opening up. Each is one `app.ts`
-  plus a fixture site.
+- **Free to self-host.** MIT-licensed; runs on one machine with no accounts. S3, SES and webhook
+  (ntfy, Discord, Slack) adapters are there for running it unattended.
+- **Personal, about $4 a month.** 25 hosted ghosts, phone alerts and a weekly digest, priced under
+  general watchers (changedetection.io hosted is $8.99/month; Visualping Personal is $14/month).
+- **Pro, about $49 a month.** For people who watch offer terms for a living: bonus-comparison and
+  affiliate sites that must keep every offer they list accurate, and bank marketing-compliance
+  teams watching their own and competitors' disclosures. Rough market math: there are 4,379
+  FDIC-insured banks ([FDIC, Q3 2025](https://fdic.gov/news/press-releases/2025/fdic-insured-institutions-reported-return-assets-127-percent-and-net));
+  if 2% of them used Pro, that is about $52,000 a year before credit unions, card issuers and
+  comparison sites. Visualping reports roughly 35,000 users tracking legal pages and 11,000 tracking
+  regulatory compliance ([its own figures](https://visualping.io/blog/visualping-enterprise-evolution)).
+- **Why now.** The FTC's fees rule (in force since 2025-05-12,
+  [Federal Register](https://www.govinfo.gov/content/pkg/FR-2025-01-10/html/2024-30293.htm)) makes live-event tickets and
+  short-term lodging show the total price up front, but it does not reach bank or card offers, where
+  a new fee still arrives as an edit to the fine print.
+
+How to run, test, the architecture and every adapter are in [docs/details.md](docs/details.md).
+Notable changes are in [CHANGELOG.md](CHANGELOG.md).
 
 ## Disclaimer
 
 The banks, buildings, people and addresses in the fixtures are invented. The Bonus Crypt reports
-what a page says. It is not financial advice.
+what a page says. It is not financial or legal advice, and a dispute pack is a starting point you
+review and send yourself.
 
 ## License
 
