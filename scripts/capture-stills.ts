@@ -2,7 +2,7 @@
  * Re-takes the README stills from the real demos, so they never drift from the dashboard:
  *
  *   docs/bonus-crypt.png               the Bonus Crypt after one night
- *   docs/haunted-listings-seance.png   a séance in Haunted Listings after one night
+ *   docs/haunted-listings.png          the Haunted Listings street after one night
  *
  *   npx tsx scripts/capture-stills.ts      (or: npm run stills)
  *
@@ -92,13 +92,13 @@ try {
       // force: the button pulses until pressed, so it never holds still for Playwright's stability check.
       await page.getByRole('button', { name: 'Let a night pass' }).click({ force: true });
       await page.locator('#ghost-larkspur-rentals[data-state="restless"]').waitFor();
+      await page.locator('#ghost-larkspur-rentals .reading--match').waitFor();
       await page.locator('#toast[data-show="false"]').waitFor({ state: 'attached', timeout: 10_000 });
-      await page.locator('#ghost-larkspur-rentals .ghost__hit').click();
-      await page.locator('#seance[open]').waitFor();
+      await page.mouse.move(0, 0);
       await page.screenshot({ path: out });
       await page.close();
     },
-    join(root, 'docs', 'haunted-listings-seance.png'),
+    join(root, 'docs', 'haunted-listings.png'),
   );
 } finally {
   await browser.close();

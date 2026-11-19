@@ -2,6 +2,9 @@
 
 ## 2026-11-18
 
+- **Fresh media.** The hero GIF and the Bonus Crypt still are re-recorded with the new tagline,
+  muted archive ribbons and Raise the dead; the Haunted Listings still now shows the dusk street
+  (`docs/haunted-listings.png`) instead of a séance.
 - **Proof of terms leads.** One tagline everywhere ("Banks edit the fine print at night. Ghost
   Watcher keeps the receipts."), in the README, the Bonus Crypt's subtitle and the demo script. The
   README opens with what the receipts are for, the 77-versus-10 noise result and the yearly stake,

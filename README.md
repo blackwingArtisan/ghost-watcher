@@ -82,6 +82,8 @@ one $100 change every two years.
 street where each house names the unit that lit its window, and any page that deserves a ghost is one
 `app.ts` away.
 
+![Haunted Listings after one night: gabled houses on a dusk street, each window lit by a match, the Larkspur house naming "2 bd $2,050 Larkspur Heights", Tonight's tally under the street, and the Knocks at the door feed](docs/haunted-listings.png)
+
 ## Signal, not noise
 
 It never cries wolf. `npm run noise` replays the same three nights of both fixture sites, checked
