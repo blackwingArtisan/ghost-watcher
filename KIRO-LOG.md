@@ -294,10 +294,11 @@ running Playwright afterwards are shortened to `[...]`.
 
 ## Calls 4 to 7: Seal the pact, built by Kiro (kiro-cli 3.5, 2026-11-19)
 
-The judges' top-ranked feature was built by Kiro from a spec Kiro wrote. The developer ran each
-session, ran every check from a fresh clone, read the diffs, re-took the screenshots and committed
-between sessions. No line of Kiro's code needed a fix. Each transcript holds the exact prompt and
-Kiro's full output.
+Seal the pact was built by Kiro from a spec Kiro wrote. The developer ran each session, ran every
+check from a fresh clone, read the diffs, re-took the screenshots and committed between sessions.
+Each transcript holds the exact prompt and Kiro's full output. One date assumption in a Kiro-written
+test surfaced three days later (see call 8): the developer loosened one assertion by hand (5 lines
+added, 2 removed), and Kiro then fixed the cause.
 
 | Call | What Kiro did | Time | Credits | Lines Kiro added | Transcript |
 |---|---|---|---|---|---|
@@ -308,9 +309,11 @@ Kiro's full output.
 
 - **Command** (repo root, stdin closed): `GHOST_E2E_PORT=3840 kiro-cli chat --v3 --no-interactive
   --trust-workspace --trust-tools=fs_read,fs_write,run_command[,@context7] "<prompt>" </dev/null`.
-- **Credits:** 54.54 in total, read with `/usage` before and after each call.
-- **Who wrote what:** Kiro wrote all 4,640 added lines across the four calls; the developer changed
-  none of them. The developer's own additions were the session transcripts in `docs/kiro-sessions/`
+- **Credits:** 54.54 for calls 4 to 7 (52.95 for the three Seal the pact calls 5 to 7, plus 1.59 for
+  the ports call), read with `/usage` before and after each call.
+- **Who wrote what:** Kiro wrote all 4,640 added lines across the four calls (git, excluding the
+  transcripts). On build day the developer changed none of them; the one later hand change is in
+  call 8. The developer's own additions were the session transcripts in `docs/kiro-sessions/`
   and this log.
 - **Kiro's judgement calls**, all in the transcripts: a pact whose snapshot file is missing must not
   block a new seal (a test caught it, and Kiro changed the read); a restored pack keeps today's text
