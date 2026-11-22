@@ -18,6 +18,6 @@
     "allowJs": true,
     "checkJs": false
   },
-  "include": ["template", "apps", "e2e", "scripts", "*.ts"],
+  "include": ["template", "apps", "e2e", "scripts", "real-pages", "*.ts"],
   "exclude": ["**/node_modules", "**/.ghost-data", "**/test-results", "**/playwright-report"]
 }
