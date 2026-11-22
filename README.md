@@ -43,7 +43,7 @@ Crypt and Haunted Listings), each a single `app.ts` on the shared skeleton.
 | Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code. [`.kiro/specs/seal-the-pact/`](.kiro/specs/seal-the-pact/): the headline feature, specced and then built by Kiro. [`.kiro/specs/lease-pact/`](.kiro/specs/lease-pact/): the same pact for a lease in Haunted Listings, specced and built by Kiro |
 | Steering and hooks | [`.kiro/steering/`](.kiro/steering/) (always included) and [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and Kiro's `money-guard` agent hook |
 | Who wrote what | [KIRO-LOG.md](KIRO-LOG.md#who-wrote-what) |
-| Tests | `npm test`: type-check, 422 Vitest tests and 30 Playwright tests, all against `127.0.0.1` |
+| Tests | `npm test`: type-check, 435 Vitest tests and 38 Playwright tests, all against `127.0.0.1` |
 
 ### Try it in 60 seconds
 
@@ -176,12 +176,12 @@ features were written against Kiro's spec with another AI coding assistant.
 <!-- kiro-numbers:start -->
 | Kiro, by the numbers | |
 | --- | --- |
-| `kiro-cli` calls | 11 (calls 1 to 11), each with an explicit list of trusted tools, never `--trust-all-tools` |
-| Time in Kiro | 112 minutes (calls 3 to 11; calls 1 and 2 were timed only roughly, about 15 minutes together) |
-| Credits | 197.10 (calls 3 to 11, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
-| Lines Kiro added | 8,691 (calls 3 to 11; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
-| Tests Kiro added | 225 Vitest and 13 Playwright (suite counts before and after each call) |
-| MCP calls | 18 (context7; calls 8 to 11), each with its arguments in the transcript |
+| `kiro-cli` calls | 12 (calls 1 to 12), each with an explicit list of trusted tools, never `--trust-all-tools` |
+| Time in Kiro | 127 minutes (calls 3 to 12; calls 1 and 2 were timed only roughly, about 15 minutes together) |
+| Credits | 230.47 (calls 3 to 12, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
+| Lines Kiro added | 9,391 (calls 3 to 12; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
+| Tests Kiro added | 238 Vitest and 21 Playwright (suite counts before and after each call) |
+| MCP calls | 22 (context7; calls 8 to 12), each with its arguments in the transcript |
 | Hand changes to Kiro's code | 2: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; and Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into |
 <!-- kiro-numbers:end -->
 
