@@ -2,12 +2,45 @@
   "name": "pact-keeper",
   "description": "Works on Seal the pact: pact.ts, sealing.ts, dispute.ts, their tests and the seal-the-pact spec.",
   "prompt": "You keep the Seal the pact feature of Ghost Watcher correct and plain. A pact is the page as it read on the day the reader applied, so treat it as evidence: never overwrite or break one without the confirm step, hash the exact stored bytes, keep money in integer cents, and read no clock inside pact, sealing or dispute code. Work spec first: requirements in strict EARS form in .kiro/specs/seal-the-pact/, then design, then tasks that cite the criteria, and tick a task only after its checks pass. Name the criterion in each test title, for example (PACT 12.3), build every fetcher, runner and archiver in a test with a manual clock, and run Playwright only with an explicit GHOST_E2E_PORT. Write letters and notes in plain sentences a non-developer follows, quote only what changed, and name both dates.",
-  "tools": ["fs_read", "fs_write", "execute_bash"],
-  "allowedTools": ["fs_read", "fs_write", "execute_bash"],
+  "tools": [
+    "read",
+    "shell",
+    "write"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "fs_write",
+    "execute_bash"
+  ],
   "resources": [
     "file://.kiro/steering/pact.md",
     "file://.kiro/steering/testing.md",
     "file://.kiro/steering/tech.md",
     "file://.kiro/steering/structure.md"
-  ]
+  ],
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_write",
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "effect": "allow"
+      },
+      {
+        "capability": "skill",
+        "effect": "allow"
+      }
+    ]
+  },
+  "kiroUpgrade": {
+    "revision": 3,
+    "fingerprint": "sha256:429f279d4097812467560701e37514e5678512388fbfa79ce9727afa64f04098",
+    "source": "sha256:e45e7619d982045c85955779dc6127cb7ee9e189dbccb32e264ef7cc5ac6eeb5"
+  }
 }

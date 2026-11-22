@@ -52,7 +52,10 @@ describe('pact steering and the pact-keeper agent', () => {
 
   it('(PACT 12.32) the agent allows fs_read, fs_write and the shell tool, and has a one-paragraph prompt', () => {
     expect(agent.name).toBe('pact-keeper');
-    for (const key of ['tools', 'allowedTools']) expect(agent[key]).toEqual(['fs_read', 'fs_write', 'execute_bash']);
+    // kiro-cli 3.5 rewrites an agent file to its newer format when it loads it ("read", "write",
+    // "shell" plus a kiroUpgrade stamp), so both spellings of the same three tools are accepted.
+    const same = (names: string[]) => [...names].map((n) => ({ read: 'fs_read', write: 'fs_write', shell: 'execute_bash' })[n] ?? n).sort();
+    for (const key of ['tools', 'allowedTools']) expect(same(agent[key] as string[])).toEqual(['execute_bash', 'fs_read', 'fs_write']);
     expect(typeof agent.prompt).toBe('string');
     expect(agent.prompt as string).not.toContain('\n');
   });
