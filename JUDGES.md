@@ -21,7 +21,7 @@ The fastest look: `npm install && npm run bonus`, open http://127.0.0.1:3130/?ni
 
 | Claim | Evidence |
 | --- | --- |
-| Tested end to end | `npm test`: type-check, 348 Vitest tests, 27 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
+| Tested end to end | `npm test`: type-check, 353 Vitest tests, 27 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
 | Fewer false alarms, measured | `npm run noise`: 10 alerts, none false, none missed, against 77 (67 false) from a whole-page watcher on the same responses; pinned by `template/test/noise.test.ts` |
 | Money is exact | Integer cents and BigInt-safe arithmetic in `template/src/normalize.ts`, tests in `template/test/money.test.ts` (built by Kiro) |
 | Polite by construction | RFC 9309 robots.txt parsing, per-host locks, Crawl-delay, back-off and an honest User-Agent in `template/src/robots.ts` and `template/src/fetcher.ts`; the watcher refuses real sites without a contact URL (`template/src/config.ts`) |

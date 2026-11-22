@@ -120,6 +120,7 @@ npm run test:e2e       # Playwright only (run `npx playwright install chromium` 
 npm run noise          # print the noise-ratio table above
 npm run hero           # re-record docs/bonus-crypt-night.gif from the demo (needs ffmpeg)
 npm run stills         # re-take the README screenshots from both demos
+npm run build:static   # record the Bonus Crypt demo into dist/ as a static site (no server needed)
 ```
 
 [`.github/workflows/test.yml`](../.github/workflows/test.yml) runs the same `npm test` on pushes to

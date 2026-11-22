@@ -23,7 +23,8 @@
     "listing": "npm run demo -w @ghost-watcher/listing-watch",
     "noise": "tsx scripts/noise-ratio.ts",
     "hero": "tsx scripts/record-hero.ts",
-    "stills": "tsx scripts/capture-stills.ts"
+    "stills": "tsx scripts/capture-stills.ts",
+    "build:static": "tsx scripts/static-demo/build.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

@@ -33,7 +33,7 @@ Crypt and Haunted Listings), each a single `app.ts` on the shared skeleton.
 | Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code. [`.kiro/specs/seal-the-pact/`](.kiro/specs/seal-the-pact/): the headline feature, specced and then built by Kiro |
 | Steering and hooks | [`.kiro/steering/`](.kiro/steering/) (always included) and [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and Kiro's `money-guard` agent hook |
 | Who wrote what | [KIRO-LOG.md](KIRO-LOG.md#who-wrote-what) |
-| Tests | `npm test`: type-check, 348 Vitest tests and 27 Playwright tests, all against `127.0.0.1` |
+| Tests | `npm test`: type-check, 353 Vitest tests and 27 Playwright tests, all against `127.0.0.1` |
 
 ### Try it in 60 seconds
 
@@ -45,6 +45,9 @@ npm run bonus      # open http://127.0.0.1:3130/?night=1
 Everything runs on your machine against an invented bank site. No accounts, keys or live sites.
 Without `?night=1`, click **Let a night pass** (or press <kbd>N</kbd>); **Rewind to calm** starts
 over. `npm run listing` opens Haunted Listings on port 3132.
+
+The live site is a static recording of this demo (`npm run build:static`), so it watches no real
+pages; watching real pages needs the Node server (`npm run bonus`).
 
 ## What one night looks like (demo data, invented banks)
 

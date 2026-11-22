@@ -132,6 +132,10 @@ async function sealPact(id, confirmReplace) {
     toast('Nothing to seal yet. Summon the ghost for a first look.');
   } else if (status === 409 && data.code === 'pact-exists') {
     toast('A pact already exists. Open the séance to replace it.');
+  } else if (data.code === 'read-only') {
+    // The static demo replays a recording and cannot seal anything; it says so instead.
+    toast(data.error);
+    return;
   } else {
     throw new Error(`${status} ${data.error || 'The pact could not be sealed'}`);
   }
@@ -226,6 +230,7 @@ document.addEventListener('click', (event) => {
     pendingConfirm = null;
     void withBusy(async () => {
       const { status, data } = await pactRequest(id, 'DELETE');
+      if (data.code === 'read-only') return toast(data.error);
       if (status !== 200) throw new Error(`${status} ${data.error || 'The pact could not be broken'}`);
       toast(`Pact broken for ${ghostName(id)}.`);
       await refresh();

@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-11-22
+
+- **A live demo with no server.** `npm run build:static` drives the real Bonus Crypt demo through
+  every night and every ghost laid to rest, records each API answer, and writes `dist/`: the
+  dashboard, the outbox letters, the archived copies and a small replay that answers the
+  dashboard's API calls in the browser. Sealing or breaking a pact says it needs the local server.
+- **A date-proof pact test.** The bonus-match letter's "now" date follows the receipt instead of a
+  fixed day, so the test passes on any day it runs.
+
 ## 2026-11-18
 
 - **Fresh media.** The hero GIF and the Bonus Crypt still are re-recorded with the new tagline,
