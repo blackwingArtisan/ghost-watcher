@@ -11,9 +11,9 @@ describe('listing-watch noise ratio (the numbers in the README)', () => {
       worthKnowing: listingWorthKnowing,
       checksPerNight: 4,
     });
-    expect(report).toMatchObject({ nights: 3, pages: 4, visits: 44, worthKnowing: 6 });
-    expect(report.ghostWatcher).toEqual({ alerts: 6, caught: 6, falseAlarms: 0, missed: 0 });
-    expect(report.selectorText).toEqual({ alerts: 6, caught: 6, falseAlarms: 0, missed: 0 });
-    expect(report.wholePage).toEqual({ alerts: 44, caught: 6, falseAlarms: 38, missed: 0 });
+    expect(report).toMatchObject({ nights: 3, pages: 5, visits: 55, worthKnowing: 7 });
+    expect(report.ghostWatcher).toEqual({ alerts: 7, caught: 7, falseAlarms: 0, missed: 0 });
+    expect(report.selectorText).toEqual({ alerts: 7, caught: 7, falseAlarms: 0, missed: 0 });
+    expect(report.wholePage).toEqual({ alerts: 55, caught: 7, falseAlarms: 48, missed: 0 });
   });
 });

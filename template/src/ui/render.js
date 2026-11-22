@@ -91,7 +91,7 @@ export function renderPactNote(alert) {
  * @param {any} alert
  */
 export function renderRaiseButton(alert) {
-  if (!alert || !alert.receipt) return '';
+  if (!alert || !alert.receipt || alert.disputable === false) return '';
   const match = isMatch(alert);
   const label = match ? 'Ask for the match' : 'Raise the dead';
   const aria = match ? `Ask for the match: bonus match letter for ${alert.watchName}` : `Raise the dead: dispute pack for ${alert.watchName}`;
@@ -120,28 +120,37 @@ export function readingAge(takenAt, sealedAt) {
   return `${age === 'just now' ? 'seconds old' : age} when sealed`;
 }
 
-/** The pact line (or the "I applied today" button) on a stone. Apps without pacts have no `pact` key. @param {any} ghost */
-export function renderStonePact(ghost) {
+/** The pact words of an app that sets none: the bank-offer wording. */
+export const DEFAULT_PACT_COPY = {
+  sealLabel: 'I applied today',
+  sealedChip: 'Pact sealed',
+  sectionTitle: 'The pact',
+  emptyLine: 'No pact yet. Seal one on the day you apply.',
+  valueColumn: 'The day you applied',
+};
+
+/** The pact line (or the "I applied today" button) on a stone. Apps without pacts have no `pact` key. @param {any} ghost @param {any} [words] */
+export function renderStonePact(ghost, words = DEFAULT_PACT_COPY) {
   const p = ghost.pact;
   if (p === undefined) return '';
   if (p && p.state === 'sealed') {
-    return `<p class="ghost__pact" data-pact="sealed" title="Sealed ${esc(p.sealedDate)} · SHA-256 ${esc(p.sha256)}"><span class="ghost__pact-tag">Pact sealed</span> <time datetime="${esc(p.sealedAt)}">${esc(compactDay(p.sealedAt))}</time> · <code>${esc(p.shortHash)}</code>${p.seeded ? ' <span class="pact-demo">demo</span>' : ''}</p>`;
+    return `<p class="ghost__pact" data-pact="sealed" title="Sealed ${esc(p.sealedDate)} · SHA-256 ${esc(p.sha256)}"><span class="ghost__pact-tag">${esc(words.sealedChip)}</span> <time datetime="${esc(p.sealedAt)}">${esc(compactDay(p.sealedAt))}</time> · <code>${esc(p.shortHash)}</code>${p.seeded ? ' <span class="pact-demo">demo</span>' : ''}</p>`;
   }
   if (p && p.state === 'corrupt') {
     return '<p class="ghost__pact" data-pact="corrupt"><span class="ghost__pact-tag ghost__pact-tag--warn">Pact unreadable</span> Open the séance to fix it.</p>';
   }
   if (ghost.state === 'blocked') return `<p class="ghost__pact" data-pact="turned-away">${esc(TURNED_AWAY_PACT_LINE)}</p>`;
   const why = ghost.canSeal ? '' : `<span class="ghost__pact-why" id="pact-why-${esc(ghost.id)}">Not seen yet. Summon the ghost first.</span>`;
-  return `<div class="ghost__pact" data-pact="none"><button type="button" class="btn btn--small btn--seal" data-action="pact-seal" data-id="${esc(ghost.id)}" aria-label="I applied today: seal the pact for ${esc(ghost.name)}"${
+  return `<div class="ghost__pact" data-pact="none"><button type="button" class="btn btn--small btn--seal" data-action="pact-seal" data-id="${esc(ghost.id)}" aria-label="${esc(words.sealLabel)}: seal the pact for ${esc(ghost.name)}"${
     ghost.canSeal ? '' : ` disabled aria-describedby="pact-why-${esc(ghost.id)}"`
-  }>I applied today</button>${why}</div>`;
+  }>${esc(words.sealLabel)}</button>${why}</div>`;
 }
 
 /**
  * The pact section of the séance, with its confirmation step.
- * @param {any} detail @param {'replace' | 'break' | null} [confirm]
+ * @param {any} detail @param {'replace' | 'break' | null} [confirm] @param {any} [words]
  */
-export function renderPactSection(detail, confirm = null) {
+export function renderPactSection(detail, confirm = null, words = DEFAULT_PACT_COPY) {
   const p = detail.pact;
   if (p === undefined) return '';
   const name = esc(detail.name);
@@ -149,21 +158,21 @@ export function renderPactSection(detail, confirm = null) {
   const seal = (/** @type {string} */ label) =>
     `<button type="button" class="btn btn--small btn--seal" data-action="pact-seal" data-id="${id}" aria-label="${esc(label)}: seal the pact for ${name}"${detail.canSeal ? '' : ' disabled'}>${esc(label)}</button>`;
   if (!p && detail.state === 'blocked') {
-    return `<section class="pact" data-pact="turned-away" aria-labelledby="pact-title"><h3 id="pact-title">The pact</h3><p class="small">${esc(TURNED_AWAY_PACT_LINE)}</p></section>`;
+    return `<section class="pact" data-pact="turned-away" aria-labelledby="pact-title"><h3 id="pact-title">${esc(words.sectionTitle)}</h3><p class="small">${esc(TURNED_AWAY_PACT_LINE)}</p></section>`;
   }
   if (!p) {
-    return `<section class="pact" data-pact="none" aria-labelledby="pact-title"><h3 id="pact-title">The pact</h3><p class="muted small">No pact yet. Seal one on the day you apply.</p><div class="pact__actions">${seal('I applied today')}</div>${
+    return `<section class="pact" data-pact="none" aria-labelledby="pact-title"><h3 id="pact-title">${esc(words.sectionTitle)}</h3><p class="muted small">${esc(words.emptyLine)}</p><div class="pact__actions">${seal(words.sealLabel)}</div>${
       detail.canSeal ? '' : '<p class="muted small">Not seen yet. Summon the ghost first.</p>'
     }</section>`;
   }
   if (p.state === 'corrupt') {
-    return `<section class="pact" data-pact="corrupt" aria-labelledby="pact-title"><h3 id="pact-title">The pact <span class="pact__warn">unreadable</span></h3><p class="small">The pact cannot be read: ${esc(p.reason)}. Checks go on without it.</p><div class="pact__actions">${seal('Seal again')}<button type="button" class="btn btn--small" data-action="pact-ask-break" data-id="${id}" aria-label="Break the pact for ${name}">Break the pact</button></div>${renderPactConfirm(detail, confirm)}</section>`;
+    return `<section class="pact" data-pact="corrupt" aria-labelledby="pact-title"><h3 id="pact-title">${esc(words.sectionTitle)} <span class="pact__warn">unreadable</span></h3><p class="small">The pact cannot be read: ${esc(p.reason)}. Checks go on without it.</p><div class="pact__actions">${seal('Seal again')}<button type="button" class="btn btn--small" data-action="pact-ask-break" data-id="${id}" aria-label="Break the pact for ${name}">Break the pact</button></div>${renderPactConfirm(detail, confirm)}</section>`;
   }
   const archive = p.archive || {};
   const copy = archive.archiveUrl && /^https?:\/\//i.test(archive.archiveUrl)
     ? `<a href="${esc(archive.archiveUrl)}" target="_blank" rel="noopener noreferrer">archived copy</a>${archive.archivedBy ? ` held by ${esc(archive.archivedBy)}` : ''}`
     : `hashes only${archive.note ? ` <span class="muted">(${esc(archive.note)})</span>` : ''}`;
-  return `<section class="pact" data-pact="sealed" aria-labelledby="pact-title"><h3 id="pact-title">The pact${p.seeded ? ' <span class="pact-demo">demo pact</span>' : ''}</h3>
+  return `<section class="pact" data-pact="sealed" aria-labelledby="pact-title"><h3 id="pact-title">${esc(words.sectionTitle)}${p.seeded ? ' <span class="pact-demo">demo pact</span>' : ''}</h3>
 <dl class="pact__facts">
 <div><dt>Sealed</dt><dd><time datetime="${esc(p.sealedAt)}">${esc(p.sealedDate)}</time> · ${esc(clockTime(p.sealedAt))}</dd></div>
 <div><dt>Reading sealed</dt><dd>the page as the ghost saw it on <time datetime="${esc(p.snapshotTakenAt)}">${esc(clockTime(p.snapshotTakenAt))}</time> (${esc(readingAge(p.snapshotTakenAt, p.sealedAt))})</dd></div>
@@ -202,12 +211,15 @@ export function renderDispute(pack) {
   const pact = pack.pact;
   const match = Boolean(pact && pact.variant === 'match');
   const promised = Boolean(pact && pact.relation === 'differs');
-  const title = match ? 'Bonus match' : 'Dispute pack';
-  const intro = match
+  const ui = pack.ui;
+  const title = ui ? ui.title : match ? 'Bonus match' : 'Dispute pack';
+  const intro = ui ? esc(ui.intro) : match
     ? `The bank improved its terms after you applied. Ask it for the better terms. Fill in the bracketed blanks (${esc(pack.blanks.join(', '))}), then send it yourself. Nothing here is sent for you.`
     : `Show the bank its own terms from the day you applied. Fill in the bracketed blanks (${esc(pack.blanks.join(', '))}), then send it yourself. Nothing here is sent for you.`;
   const stealth = /bait/i.test(pack.kind || '');
-  const stamp = match
+  const stamp = ui
+    ? `<p class="letter__stamp${match ? ' letter__stamp--match' : ''}" aria-hidden="true">${esc(ui.stamp)}</p>`
+    : match
     ? '<p class="letter__stamp letter__stamp--match" aria-hidden="true">Bonus match</p>'
     : `<p class="letter__stamp" aria-hidden="true">${stealth ? 'Bait and switch' : 'Terms changed'}</p>`;
   const checks = pack.evidence.filter(isCheck);
@@ -216,9 +228,16 @@ export function renderDispute(pack) {
         .map((/** @type {any} */ row) => `<p class="small">${esc(row.label)}</p><pre><code>${esc(row.value)}</code></pre>`)
         .join('')}</details>`
     : '';
-  const beforeHead = promised ? `${esc(pack.beforeDate)}, the day you applied: what the page promised` : `${esc(pack.beforeDate)}: what the page said`;
-  const complaint = match
-    ? ''
+  const beforeHead = ui && ui.promisedHead ? esc(ui.promisedHead) : promised ? `${esc(pack.beforeDate)}, the day you applied: what the page promised` : `${esc(pack.beforeDate)}: what the page said`;
+  const authority = pack.authority
+    ? `
+<section class="dispute__block">
+  <h3>${esc(pack.authority.heading)}</h3>
+  <p class="small">${esc(pack.authority.text)}</p>
+</section>`
+    : '';
+  const complaint = match || (ui && !ui.federalComplaint)
+    ? authority
     : `
 <section class="dispute__block">
   <h3>3. If the bank says no: a CFPB complaint</h3>
@@ -245,17 +264,17 @@ export function renderDispute(pack) {
   <button type="button" class="btn" data-action="open" data-id="${esc(pack.watchId)}">Back to the séance</button>
 </div>
 <section class="dispute__terms">
-  <div class="dispute__side exhibit" data-side="before"><p class="exhibit__tag">Exhibit A</p><h3>${beforeHead}</h3><ul>${exhibitLines(pack.before, pack.after)}</ul></div>
-  <div class="dispute__side exhibit" data-side="after"><p class="exhibit__tag">Exhibit B</p><h3>${esc(pack.afterDate)}: what it says now</h3><ul>${exhibitLines(pack.after, pack.before)}</ul></div>
+  <div class="dispute__side exhibit" data-side="before"><p class="exhibit__tag">${esc(ui ? ui.tags[0] : 'Exhibit A')}</p><h3>${beforeHead}</h3><ul>${exhibitLines(pack.before, pack.after)}</ul></div>
+  <div class="dispute__side exhibit" data-side="after"><p class="exhibit__tag">${esc(ui ? ui.tags[1] : 'Exhibit B')}</p><h3>${esc(pack.afterDate)}: what it says now</h3><ul>${exhibitLines(pack.after, pack.before)}</ul></div>
 </section>
 <section class="dispute__block">
-  <h3>1. Letter to the bank</h3>
+  <h3>${esc(ui ? ui.letterHeading : '1. Letter to the bank')}</h3>
   <p class="muted small">Subject: <span class="dispute__subject">${esc(pack.letter.subject)}</span></p>
   <article class="letter" aria-label="Letter preview">${stamp}<div class="letter__body">${esc(pack.letter.body)}</div></article>
   <div class="dispute__tools">
     <button type="button" class="btn btn--small" data-action="copy" data-target="dispute-letter">Copy the letter</button>
     <details class="dispute__edit"><summary>Edit the text</summary>
-      <label for="dispute-letter">Letter to the bank</label>
+      <label for="dispute-letter">${esc(ui ? ui.letterLabel : 'Letter to the bank')}</label>
       <textarea class="dispute__text" id="dispute-letter" readonly rows="14">${esc(pack.letter.body)}</textarea>
     </details>
   </div>
@@ -348,7 +367,7 @@ export function noiseSummary(results) {
 }
 
 /** @param {any} ghost @param {string} [nowIso] */
-export function renderGhostCard(ghost, nowIso) {
+export function renderGhostCard(ghost, nowIso, pactWords = DEFAULT_PACT_COPY) {
   const readings = (ghost.readings || [])
     .map((/** @type {any} */ r) =>
       r.match
@@ -387,7 +406,7 @@ export function renderGhostCard(ghost, nowIso) {
     <dl class="readings">${readings}</dl>
     <p class="ghost__msg">${esc(ghost.lastMessage)}</p>
     ${ignoredChip(ghost.ignored)}
-    ${renderStonePact(ghost)}
+    ${renderStonePact(ghost, pactWords)}
     <p class="ghost__when visually-hidden">${when}</p>
   </div>
 </article>`;
@@ -395,7 +414,7 @@ export function renderGhostCard(ghost, nowIso) {
 
 /** @param {any} state */
 export function renderGraveyard(state) {
-  const cards = state.ghosts.map((/** @type {any} */ g) => renderGhostCard(g, state.generatedAt)).join('\n');
+  const cards = state.ghosts.map((/** @type {any} */ g) => renderGhostCard(g, state.generatedAt, state.app.pactCopy || DEFAULT_PACT_COPY)).join('\n');
   // Haunted Listings is a street, and a street has a lamp at the end of it.
   return state.app && state.app.motif === 'house' ? `${cards}\n<div class="street-lamp" aria-hidden="true"><i class="street-lamp__head"></i></div>` : cards;
 }
@@ -526,7 +545,7 @@ export function renderDetail(detail, nowIso, options = {}) {
     )
     .join('');
   const table = shortFields.length
-    ? `<table class="values"><thead><tr><th scope="col">Watched value</th><th scope="col">Now</th><th scope="col">Before the last change</th>${sealed ? '<th scope="col">The day you applied</th>' : ''}</tr></thead><tbody>${fieldRows}</tbody></table>`
+    ? `<table class="values"><thead><tr><th scope="col">Watched value</th><th scope="col">Now</th><th scope="col">Before the last change</th>${sealed ? `<th scope="col">${esc((options.pactCopy || DEFAULT_PACT_COPY).valueColumn)}</th>` : ''}</tr></thead><tbody>${fieldRows}</tbody></table>`
     : '';
   const blocks = longFields
     .map((/** @type {any} */ f) => {
@@ -576,7 +595,7 @@ export function renderDetail(detail, nowIso, options = {}) {
   <button type="button" class="btn" data-action="ack" data-id="${esc(detail.id)}" ${detail.unread ? '' : 'disabled'}>Lay to rest${detail.unread ? ` (${detail.unread})` : ''}</button>
 </div>
 ${fields}
-${renderPactSection(detail, options.confirm || null)}
+${renderPactSection(detail, options.confirm || null, options.pactCopy || DEFAULT_PACT_COPY)}
 ${renderPast(detail.past)}
 ${lists}
 <section><h3>What makes it stir</h3><ul class="rules">${rules}</ul></section>

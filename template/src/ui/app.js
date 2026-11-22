@@ -133,7 +133,7 @@ async function openSeance(id, show = true) {
   openId = id;
   const detail = await api(`/api/ghosts/${encodeURIComponent(id)}`);
   const confirm = pendingConfirm && pendingConfirm.id === id ? pendingConfirm.kind : null;
-  $('#seance-body').innerHTML = renderDetail(detail, state.generatedAt, { disputes: state.app.disputes, confirm });
+  $('#seance-body').innerHTML = renderDetail(detail, state.generatedAt, { disputes: state.app.disputes, confirm, pactCopy: state.app.pactCopy });
   if (show && !dialog.open) dialog.showModal();
 }
 

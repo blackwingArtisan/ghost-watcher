@@ -31,6 +31,8 @@ export interface Alert {
   receipt?: Receipt;
   /** The pact this change was judged against: when it was sealed, what it promised, and how this differs. */
   pact?: AlertPact;
+  /** Dashboard copies only: false when the app writes no dispute letter for this watch. */
+  disputable?: false;
 }
 
 /** Everything one check run found on one watch, rendered for delivery. */

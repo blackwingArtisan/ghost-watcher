@@ -3,7 +3,18 @@
  * entries that match your filters (price, beds, neighborhood, permit type). Built only from the
  * template's public API.
  */
-import { HOUR_MS, defineApp, defineWatch, rules, where, type Env, type GhostApp } from '@ghost-watcher/template';
+import {
+  HOUR_MS,
+  defineApp,
+  defineWatch,
+  rules,
+  where,
+  type Env,
+  type GhostApp,
+  type LetterContext,
+  type LetterText,
+  type PactCopy,
+} from '@ghost-watcher/template';
 
 export const DEFAULT_SITE = 'http://127.0.0.1:3133';
 
@@ -15,6 +26,125 @@ export const FILTERS = {
   studioMaxRent: 1800,
   permitTypes: ['New Construction', 'Demolition'],
   bigProjectValuation: 1_000_000,
+};
+
+/** The tag that turns the pact on for a watch: only a listing's own page records what a renter signed. */
+export const LEASE_TAG = 'lease';
+
+const quotedLines = (lines: string[]): string[] => lines.map((line) => `  ${line}`);
+
+function leaseHeader(c: LetterContext): string[] {
+  return [
+    '[Your name]',
+    '[Your address], unit [Unit]',
+    '',
+    `To: The landlord or property manager, ${c.offer}`,
+    `Re: Lease for ${c.offer}, unit [Unit]`,
+    '',
+    `I signed the lease for ${c.offer} on ${c.sealedDate}, relying on the terms advertised at ${c.url}.`,
+  ];
+}
+
+function leaseRecords(c: LetterContext): string[] {
+  return [
+    'Records of both versions:',
+    ...c.exhibitLines.map((line) => `  - ${line}`),
+    `  - ${c.archiveLine}`,
+    `  - SHA-256 of my record of the page on ${c.nowDate}: ${c.afterSha256}`,
+  ];
+}
+
+function tidy(lines: string[]): string {
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n');
+}
+
+/** Letter to the landlord when the page now charges more, or adds a fee, than it advertised. */
+export function leaseDisputeLetter(c: LetterContext): LetterText {
+  return {
+    subject: `Request to honor the advertised terms of ${c.offer}`,
+    body: tidy([
+      ...leaseHeader(c),
+      'The page now charges different terms. I recorded the page on the day I signed and again after the change.',
+      '',
+      `What was advertised on ${c.sealedDate}, the day I signed the lease:`,
+      ...quotedLines(c.before),
+      '',
+      `What the page charges on ${c.nowDate}:`,
+      ...quotedLines(c.after),
+      c.stealthLine,
+      ...leaseRecords(c),
+      '',
+      'Please charge only the terms that were advertised on the day I signed the lease, and confirm in writing within 30 days.',
+      '',
+      'Sincerely,',
+      '[Your name]',
+    ]),
+  };
+}
+
+/** Letter to the landlord when the page now advertises a lower rent than the one the renter signed at. */
+export function leaseMatchLetter(c: LetterContext): LetterText {
+  return {
+    subject: `Request to match the lower rent advertised for ${c.offer}`,
+    body: tidy([
+      ...leaseHeader(c),
+      'The page now advertises better terms. I recorded the page on the day I signed and again after the change.',
+      '',
+      `What was advertised on ${c.sealedDate}, the day I signed the lease:`,
+      ...quotedLines(c.before),
+      '',
+      `What the page advertises on ${c.nowDate}:`,
+      ...quotedLines(c.after),
+      '',
+      ...leaseRecords(c),
+      '',
+      'Please let me know in writing within 30 days whether you will apply the lower terms to my lease.',
+      '',
+      'Thank you,',
+      '[Your name]',
+    ]),
+  };
+}
+
+/** The renter's words for the pact. Leases are signed a few weeks before move-in, so the demo signs 30 days back. */
+export const LEASE_PACT_COPY: PactCopy = {
+  sealLabel: 'I signed the lease',
+  sealedChip: 'Lease sealed',
+  sectionTitle: 'The lease pact',
+  emptyLine: 'No lease pact yet. Seal the listing on the day you sign the lease.',
+  valueColumn: 'The day you signed',
+  day: 'the day you signed the lease',
+  since: 'you signed the lease',
+  dateBlank: '[Date you signed the lease]',
+  blanks: ['[Your name]', '[Your address]', '[Unit]', '[Date you signed the lease]'],
+  evidence: {
+    page: (date) => `Advertised on ${date}`,
+    copy: 'Advertised copy',
+    sha256: 'Advertised SHA-256',
+    check: 'Check the advertised page',
+    tags: ['Advertised', 'Charged now'],
+  },
+  pack: {
+    disputeTitle: 'Lease letter',
+    matchTitle: 'Rent match',
+    disputeIntro: (blanks) =>
+      `Show your landlord the terms advertised on the day you signed the lease. Fill in the bracketed blanks (${blanks}), then send it yourself. Nothing here is sent for you.`,
+    matchIntro: (blanks) =>
+      `The listing now advertises better terms than the day you signed. Ask the landlord to apply them. Fill in the bracketed blanks (${blanks}), then send it yourself. Nothing here is sent for you.`,
+    promisedHead: (date) => `${date}, the day you signed the lease: what was advertised`,
+    letterHeading: '1. Letter to the landlord',
+    letterLabel: 'Letter to the landlord',
+    stampDispute: 'Charged more',
+    stampMatch: 'Rent match',
+  },
+  letters: { dispute: leaseDisputeLetter, match: leaseMatchLetter },
+  cfpb: false,
+  authority: {
+    heading: '3. If the landlord does not answer',
+    text: "You can ask your local housing authority or your state attorney general's consumer office for help. Bring this letter and the evidence above.",
+  },
+  watchTags: [LEASE_TAG],
+  demoAgeDays: 30,
 };
 
 export function buildApp(env: Env = process.env): GhostApp {
@@ -31,6 +161,9 @@ export function buildApp(env: Env = process.env): GhostApp {
       quiet: 'No new listing or permit has matched your filters yet.',
       disclaimer: 'Reports what each page lists. Places and companies in the demo are invented.',
       feedName: 'Knocks at the door',
+      pacts: true,
+      disputes: true,
+      pactCopy: LEASE_PACT_COPY,
     },
     watches: [
       defineWatch({
@@ -71,6 +204,36 @@ export function buildApp(env: Env = process.env): GhostApp {
             where: [where.atLeast('beds', FILTERS.minBeds), where.atMost('price', FILTERS.maxRent), where.oneOf('neighborhood', FILTERS.neighborhoods)],
             label: 'a listing you would take drops its rent',
           }),
+        ],
+      }),
+      defineWatch({
+        id: 'larkspur-flats-5b',
+        name: 'Larkspur Flats, Unit 5B',
+        subtitle: 'Your listing · rent, fees and move-in terms',
+        url: `${site}/rentals/listing/LR-2033`,
+        displayUrl: 'https://larkspur-rentals.example/rentals/listing/LR-2033',
+        tags: ['rentals', LEASE_TAG],
+        intervalMs: 6 * HOUR_MS,
+        fields: [
+          { name: 'rent', label: 'Rent', selector: '#rent', kind: 'money', better: 'lower' },
+          { name: 'applicationFee', label: 'Application fee', selector: '#app-fee', kind: 'money', better: 'lower' },
+          { name: 'deposit', label: 'Deposit', selector: '#deposit', kind: 'money', better: 'lower' },
+          { name: 'moveIn', label: 'Move-in special', selector: '#move-in', kind: 'text' },
+          { name: 'monthlyFees', label: 'Monthly fees', selector: '#fees p', kind: 'text' },
+        ],
+        rules: [
+          rules.wentUp('rent', { severity: 'shriek' }),
+          rules.wentDown('rent', { severity: 'shriek' }),
+          rules.wentUp('applicationFee'),
+          rules.wentUp('deposit'),
+          rules.appeared('monthlyFees', {
+            matching: '(monthly|community|amenity|service|trash|parking)[a-z ]* fee',
+            severity: 'shriek',
+            tone: 'bad',
+            label: 'fine print adds a monthly fee',
+          }),
+          rules.changed('moveIn', { severity: 'whisper' }),
+          rules.changed('monthlyFees', { severity: 'whisper' }),
         ],
       }),
       defineWatch({

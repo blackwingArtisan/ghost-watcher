@@ -96,13 +96,14 @@ export function pactNote(
   now: MaybeValue,
   sealedAt: string,
   relation: 'differs' | 'restored',
+  dayPhrase = 'the day you applied',
 ): string {
   const day = letterDate(sealedAt);
   if (relation === 'restored') {
     const detail = promised !== null && promised.kind !== 'text' ? `${label}: ${displayValue(promised)}` : label;
-    return `The page is back to what it said on ${day}, the day you applied (${detail}).`;
+    return `The page is back to what it said on ${day}, ${dayPhrase} (${detail}).`;
   }
-  const lead = `On ${day}, the day you applied,`;
+  const lead = `On ${day}, ${dayPhrase},`;
   const what = subject(label);
   if (promised === null) return `${lead} the page did not show ${what}; it now says ${quoteValue(now)}.`;
   if (now === null) return `${lead} ${what} was ${quoteValue(promised)}; the page no longer shows it.`;
@@ -172,11 +173,18 @@ function loudest(findings: Finding[]): Finding | undefined {
  *
  * Fields that did not change tonight raise nothing, and list findings pass through untouched.
  */
-export function comparePact(watch: Watch, pact: Pact, current: Extraction, nightly: Diff, findings: Finding[]): Finding[] {
+export function comparePact(
+  watch: Watch,
+  pact: Pact,
+  current: Extraction,
+  nightly: Diff,
+  findings: Finding[],
+  words: { day: string; since: string } = { day: 'the day you applied', since: 'you applied' },
+): Finding[] {
   if (nightly.firstRun || nightly.fields.length === 0) return findings;
   const since = diff(pact.snapshot, current);
   const sinceFindings = evaluateRules(watch, since).filter((f) => f.field && !f.list);
-  const prefix = `Since you applied on ${letterDate(pact.sealedAt)}:`;
+  const prefix = `Since ${words.since} on ${letterDate(pact.sealedAt)}:`;
 
   const base = { sealedAt: pact.sealedAt, sha256: pact.sha256, archive: pact.archive, ...(pact.seeded ? { seeded: pact.seeded } : {}) };
   const groups = new Map<string, Finding[]>();
@@ -187,14 +195,14 @@ export function comparePact(watch: Watch, pact: Pact, current: Extraction, night
     const promised = pact.snapshot.fields[name] ?? null;
 
     if (!sinceChange) {
-      const note = pactNote(label, promised, current.fields[name] ?? null, pact.sealedAt, 'restored');
+      const note = pactNote(label, promised, current.fields[name] ?? null, pact.sealedAt, 'restored', words.day);
       groups.set(name, own.map((f) => ({ ...f, pact: { ...base, relation: 'restored', promised, note } })));
       continue;
     }
 
     const top = loudest(sinceFindings.filter((f) => f.field === name));
     const tone = top?.tone ?? toneAgainst(watch, sinceChange);
-    const note = pactNote(label, sinceChange.before, sinceChange.after, pact.sealedAt, 'differs');
+    const note = pactNote(label, sinceChange.before, sinceChange.after, pact.sealedAt, 'differs', words.day);
     const reference = (f: Pick<Finding, 'stealth'>): AlertPact => {
       const t = f.stealth ? 'bad' : tone;
       return { ...base, relation: 'differs', promised: sinceChange.before, ...(t ? { tone: t } : {}), note };

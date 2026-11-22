@@ -10,6 +10,7 @@ import type { Fetcher } from './fetcher';
 import { buildPastTimeline, pastChangeCount, type HistorySource, type PastTimeline } from './history';
 import { pageFingerprint } from './noise';
 import { comparePact } from './pact';
+import { resolvePactVocabulary } from './pact-vocabulary';
 import { evaluateRules, type Finding } from './rules';
 import { needsReceipt, takeReceipt, type PageArchiver } from './receipts';
 import { renderAlertMessage } from './alerts/render';
@@ -235,7 +236,7 @@ export class Runner {
     if (isEmptyDiff(changes)) return findings;
     try {
       const reading = await this.deps.store.pact(watch.id);
-      return reading.status === 'sealed' ? comparePact(watch, reading.pact, extraction, changes, findings) : findings;
+      return reading.status === 'sealed' ? comparePact(watch, reading.pact, extraction, changes, findings, resolvePactVocabulary(this.deps.app)) : findings;
     } catch {
       return findings;
     }

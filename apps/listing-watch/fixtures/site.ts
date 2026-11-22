@@ -7,6 +7,8 @@
  *            Fenwick & Vale rents one unit and lists a new studio; the city files three permits
  *            (two match); Old Mill Lofts opens leasing. Listing order is shuffled as noise.
  * Version 3: another matching listing, and one more permit.
+ * Larkspur Flats, Unit 5B (a listing detail page, for the lease pact): version 2 raises the rent from
+ *            $2,050 to $2,125 and adds a $45 monthly amenity fee to the fine print; version 3 is the same.
  */
 import type { FixtureSite, PageContext, WorthKnowing } from '@ghost-watcher/template/testing';
 
@@ -43,6 +45,29 @@ function larkspurListings(version: number): Listing[] {
   if (version >= 3) all.unshift(...LARKSPUR_V3_NEW);
   // Order shuffles between versions (sorted by "featured" on this site); order is never a change.
   return version === 2 ? [all[2], all[0], all[4], all[1], all[3], all[5]].filter((l): l is Listing => Boolean(l)) : all;
+}
+
+function larkspurFlats(ctx: PageContext): string {
+  const raised = ctx.version >= 2;
+  const rent = raised ? '$2,125' : '$2,050';
+  const fees = raised
+    ? 'Pets welcome. Water and trash are included in your rent. A $45 monthly amenity fee applies to every unit.'
+    : 'Pets welcome. Water and trash are included in your rent.';
+  return page(
+    'Larkspur Flats, Unit 5B',
+    'Larkspur Rentals',
+    '#2f6f73',
+    `<h1>Larkspur Flats, Unit 5B</h1><p class="lede">2 bd / 1 ba in Larkspur Heights. Ref ${ctx.requestNumber}.</p>
+<dl>
+<dt>Rent</dt><dd><span id="rent">${rent}</span>/mo</dd>
+<dt>Application fee</dt><dd id="app-fee">$50</dd>
+<dt>Security deposit</dt><dd id="deposit">$1,000</dd>
+<dt>Move-in special</dt><dd id="move-in">First month's parking free on a 12-month lease.</dd>
+</dl>
+<section id="fees"><h2>Fees and fine print</h2><p>${fees}</p></section>
+<p><a href="/rentals/search?utm_source=detail&amp;sid=${ctx.requestNumber}">Back to results</a></p>`,
+    ctx,
+  );
 }
 
 function page(title: string, brand: string, accent: string, body: string, ctx: PageContext): string {
@@ -191,6 +216,7 @@ Crawl-delay: 0.2
 `,
   pages: [
     { path: '/rentals/search', title: 'Larkspur Rentals: Hollowmere search results', render: larkspur },
+    { path: '/rentals/listing/LR-2033', title: 'Larkspur Flats, Unit 5B: rent and fees', render: larkspurFlats },
     { path: '/vale/availability', title: 'Fenwick & Vale: The Vale availability', render: fenwick },
     { path: '/city/permits', title: 'City of Hollowmere: recent building permits', render: cityPermits },
     { path: '/old-mill-lofts', title: 'Old Mill Lofts: leasing status', render: oldMillLofts },
@@ -203,6 +229,7 @@ Crawl-delay: 0.2
  */
 export const listingWorthKnowing: WorthKnowing[] = [
   { version: 2, watchId: 'larkspur-rentals', why: 'a 2 bd in Old Mill at $1,950, and a price cut into budget' },
+  { version: 2, watchId: 'larkspur-flats-5b', why: 'a rent rise and a new $45 monthly amenity fee' },
   { version: 2, watchId: 'vale-availability', why: 'a studio under $1,800' },
   { version: 2, watchId: 'hollowmere-permits', why: 'a demolition and a 36-unit new build' },
   { version: 2, watchId: 'old-mill-lofts', why: 'leasing opens' },

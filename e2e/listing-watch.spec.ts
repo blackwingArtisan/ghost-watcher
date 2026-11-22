@@ -33,7 +33,7 @@ test('listing-watch: only listings and permits that match the filters raise an a
   await expect(page.locator('#toast')).toContainText('First sighting recorded');
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Summon every ghost' }).click();
-  await expect(page.locator('#toast')).toContainText('4 ghosts visited');
+  await expect(page.locator('#toast')).toContainText('5 ghosts visited');
   await expect(rentals).toHaveAttribute('data-state', 'dormant');
   await expect(rentals.locator('.readings')).toContainText('3 on page');
 
@@ -48,7 +48,7 @@ test('listing-watch: only listings and permits that match the filters raise an a
   // The house shows which unit lit its window, and the feed has its own name and no bank letters.
   await expect(rentals.locator('.reading--match')).toContainText(/Window lit\s*2 bd \$[\d,]+ (Old Mill|Larkspur Heights)/);
   await expect(page.getByRole('heading', { level: 2, name: 'Knocks at the door' })).toBeVisible();
-  await expect(page.locator('#feed [data-action="dispute"]')).toHaveCount(0);
+  await expect(page.locator('#feed [data-action="dispute"][data-id="larkspur-rentals"]')).toHaveCount(0);
 
   const summaries = await outboxSummaries();
   // Matches: 2 bd in Old Mill under $2,100, and a price cut that brings a listing into budget.

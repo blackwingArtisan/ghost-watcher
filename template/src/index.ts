@@ -83,3 +83,18 @@ export { runCli, parseFlags, describeResult, type CliOptions } from './cli';
 export type { S3BlobStore } from './store/s3';
 export type { SesEmailAlertSink } from './alerts/ses';
 export { WebhookAlertSink, buildWebhookRequest, compactText, detectWebhookFormat, type WebhookFormat, type WebhookRequest } from './alerts/webhook';
+export {
+  BONUS_PACT_VOCABULARY,
+  disputesEnabledFor,
+  pactEnabledFor,
+  pactUiCopy,
+  resolvePactVocabulary,
+  type EvidenceWords,
+  type LetterContext,
+  type LetterTemplate,
+  type LetterText,
+  type PackWords,
+  type PactCopy,
+  type PactUiCopy,
+  type PactVocabulary,
+} from './pact-vocabulary';

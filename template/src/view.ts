@@ -3,6 +3,7 @@ import type { Alert } from './alerts/types';
 import type { GhostDeps } from './config';
 import type { Fickleness, PastHeadline, PastTimeline } from './history';
 import { displayValue, type MaybeValue } from './normalize';
+import { disputesEnabledFor, pactEnabledFor, pactUiCopy, type PactUiCopy } from './pact-vocabulary';
 import { pactNoteToShow, type PactArchive, type PactReading, type PactRecord } from './pact';
 import { shortHash } from './receipts';
 import { describeRule } from './rules';
@@ -149,6 +150,8 @@ export interface DashboardState {
     feedName: string;
     disputes: boolean;
     pacts: boolean;
+    /** Only when the app sets `pactCopy`: the words of its pact. */
+    pactCopy?: PactUiCopy;
     userAgent: string;
     store: string;
     alerts: string;
@@ -206,7 +209,7 @@ function stoneValue(value: MaybeValue): string {
 }
 
 export async function ghostView(deps: GhostDeps, watch: Watch): Promise<GhostView> {
-  const pacts = deps.app.copy.pacts === true;
+  const pacts = pactEnabledFor(deps.app, watch);
   const [status, unread, snapshot, past, pactReading] = await Promise.all([
     deps.store.status(watch.id),
     deps.store.unacknowledged(watch.id),
@@ -355,7 +358,7 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
     const [alerts, unread] = await Promise.all([deps.store.alerts(watch.id), deps.store.unacknowledged(watch.id)]);
     const unreadIds = new Set(unread.map((a) => a.id));
     for (const alert of alerts.slice(0, 25)) {
-      feed.push({ alert: forDashboard(alert), acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null });
+      feed.push({ alert: { ...forDashboard(alert), ...(disputesEnabledFor(deps.app, watch) ? {} : { disputable: false as const }) }, acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null });
     }
   }
   const { app } = deps;
@@ -371,6 +374,7 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
       feedName: app.copy.feedName ?? 'Spirit mail',
       disputes: app.copy.disputes ?? false,
       pacts: app.copy.pacts ?? false,
+      ...(pactUiCopy(app) ? { pactCopy: pactUiCopy(app) as PactUiCopy } : {}),
       userAgent: deps.describe.userAgent,
       store: deps.describe.store,
       alerts: deps.describe.alerts,
@@ -386,7 +390,7 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
 }
 
 export async function ghostDetail(deps: GhostDeps, watch: Watch): Promise<GhostDetail> {
-  const pacts = deps.app.copy.pacts === true;
+  const pacts = pactEnabledFor(deps.app, watch);
   const [view, history, alerts, unread, letters, past, pactReading] = await Promise.all([
     ghostView(deps, watch),
     deps.store.history(watch.id, 2),
@@ -434,7 +438,7 @@ export async function ghostDetail(deps: GhostDeps, watch: Watch): Promise<GhostD
     ...(pactReading ? { pact: pactViewOfFull(pactReading) } : {}),
     fields,
     lists,
-    alerts: alerts.slice(0, 40).map((alert) => ({ ...forDashboard(alert), acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null })),
+    alerts: alerts.slice(0, 40).map((alert) => ({ ...forDashboard(alert), ...(disputesEnabledFor(deps.app, watch) ? {} : { disputable: false as const }), acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null })),
     snapshots: history.map((s) => s.takenAt),
     past,
   };

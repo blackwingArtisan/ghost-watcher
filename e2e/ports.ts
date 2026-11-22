@@ -1,11 +1,11 @@
 /**
- * Port plan for the Playwright run. GHOST_E2E_PORT is the base port (default 3134); the six
- * servers take base+0 to base+5. playwright.config.ts and every spec import this module, so no
+ * Port plan for the Playwright run. GHOST_E2E_PORT is the base port (default 3134); the eight
+ * servers take base+0 to base+7. playwright.config.ts and every spec import this module, so no
  * port number is written anywhere else.
  */
 export const DEFAULT_E2E_PORT = 3134;
 export const MIN_E2E_PORT = 1024;
-export const MAX_E2E_PORT = 65530;
+export const MAX_E2E_PORT = 65528;
 
 export interface E2ePorts {
   bonusDashboard: number;
@@ -14,6 +14,9 @@ export interface E2ePorts {
   listingFixtures: number;
   demoDashboard: number;
   demoFixtures: number;
+  /** Haunted Listings in demo mode (lease pact). */
+  listingDemoDashboard: number;
+  listingDemoFixtures: number;
 }
 
 export function resolveE2ePorts(raw: string | undefined): E2ePorts {
@@ -24,7 +27,7 @@ export function resolveE2ePorts(raw: string | undefined): E2ePorts {
     if (!/^\d+$/.test(text) || !Number.isInteger(base) || base < MIN_E2E_PORT || base > MAX_E2E_PORT) {
       throw new Error(
         `GHOST_E2E_PORT must be an integer between ${MIN_E2E_PORT} and ${MAX_E2E_PORT} (got "${raw}"). ` +
-          'The six e2e servers use that port and the five after it.',
+          'The eight e2e servers use that port and the seven after it.',
       );
     }
   }
@@ -35,6 +38,8 @@ export function resolveE2ePorts(raw: string | undefined): E2ePorts {
     listingFixtures: base + 3,
     demoDashboard: base + 4,
     demoFixtures: base + 5,
+    listingDemoDashboard: base + 6,
+    listingDemoFixtures: base + 7,
   };
 }
 

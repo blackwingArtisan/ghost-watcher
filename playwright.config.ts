@@ -3,8 +3,8 @@ import { origin, ports } from './e2e/ports';
 
 /**
  * End-to-end tests drive each app's real dashboard in a browser against its local fixture site.
- * Ports come from e2e/ports.ts: GHOST_E2E_PORT is the base port (default 3134) and the six servers
- * take base+0 to base+5, which keeps e2e runs clear of the dev ports (3130-3133). Set it to run
+ * Ports come from e2e/ports.ts: GHOST_E2E_PORT is the base port (default 3134) and the eight servers
+ * take base+0 to base+7, which keeps e2e runs clear of the dev ports (3130-3133). Set it to run
  * parallel CI jobs or a second checkout side by side. The last two ports run bonus-watch in `demo`
  * mode, where the app starts its own fixture site and takes the first sighting itself.
  */
@@ -56,6 +56,12 @@ export default defineConfig({
       command: `npx tsx apps/bonus-watch/src/main.ts demo --port ${ports.demoDashboard} --fixture-port ${ports.demoFixtures}`,
       url: `${origin(ports.demoDashboard)}/healthz`,
       env: { GHOST_HOST_GAP_MS: '0', GHOST_DATA_DIR: '.ghost-e2e/bonus-demo', GHOST_FRESH: '1' },
+      reuseExistingServer: false,
+    },
+    {
+      command: `npx tsx apps/listing-watch/src/main.ts demo --port ${ports.listingDemoDashboard} --fixture-port ${ports.listingDemoFixtures}`,
+      url: `${origin(ports.listingDemoDashboard)}/healthz`,
+      env: { GHOST_HOST_GAP_MS: '0', GHOST_DATA_DIR: '.ghost-e2e/listing-demo', GHOST_FRESH: '1' },
       reuseExistingServer: false,
     },
   ],

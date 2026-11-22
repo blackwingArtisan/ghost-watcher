@@ -10,24 +10,26 @@ describe('e2e port plan', () => {
       listingFixtures: 3137,
       demoDashboard: 3138,
       demoFixtures: 3139,
+      listingDemoDashboard: 3140,
+      listingDemoFixtures: 3141,
     });
     expect(resolveE2ePorts('')).toEqual(resolveE2ePorts(undefined));
   });
 
-  it('uses base+0 to base+5 in server order when GHOST_E2E_PORT is set', () => {
+  it('uses base+0 to base+7 in server order when GHOST_E2E_PORT is set', () => {
     const p = resolveE2ePorts('3840');
-    expect(Object.values(p)).toEqual([3840, 3841, 3842, 3843, 3844, 3845]);
+    expect(Object.values(p)).toEqual([3840, 3841, 3842, 3843, 3844, 3845, 3846, 3847]);
     expect(origin(p.demoFixtures)).toBe('http://127.0.0.1:3845');
   });
 
   it('accepts the lowest and highest allowed base ports', () => {
     expect(resolveE2ePorts('1024').bonusDashboard).toBe(1024);
-    expect(resolveE2ePorts('65530').demoFixtures).toBe(65535);
+    expect(resolveE2ePorts('65528').listingDemoFixtures).toBe(65535);
   });
 
-  it('rejects a value that is not an integer between 1024 and 65530 with a clear error', () => {
-    for (const bad of ['abc', '3134.5', '1023', '65531', '-3134', '0x1000', '80']) {
-      expect(() => resolveE2ePorts(bad), bad).toThrow(/GHOST_E2E_PORT must be an integer between 1024 and 65530/);
+  it('rejects a value that is not an integer between 1024 and 65528 with a clear error', () => {
+    for (const bad of ['abc', '3134.5', '1023', '65529', '-3134', '0x1000', '80']) {
+      expect(() => resolveE2ePorts(bad), bad).toThrow(/GHOST_E2E_PORT must be an integer between 1024 and 65528/);
     }
   });
 });

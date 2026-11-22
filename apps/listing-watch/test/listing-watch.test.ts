@@ -25,7 +25,7 @@ function findings(watchId: string, from: number, to: number) {
 
 describe('listing-watch watches against its fixture pages', () => {
   it('defines list watches for rentals and permits', () => {
-    expect(app.watches.map((w) => w.id)).toEqual(['larkspur-rentals', 'vale-availability', 'hollowmere-permits', 'old-mill-lofts']);
+    expect(app.watches.map((w) => w.id)).toEqual(['larkspur-rentals', 'larkspur-flats-5b', 'vale-availability', 'hollowmere-permits', 'old-mill-lofts']);
     expect(app.watches[0]?.subtitle).toBe('2+ bd under $2,100 in Old Mill or Larkspur Heights');
   });
 
@@ -135,16 +135,16 @@ describe('listing-watch CLI end to end (fixture site on 127.0.0.1)', () => {
 
   it('list, check, change, check --json', async () => {
     const listed = await cli('list');
-    expect(listed.out.split('\n').filter(Boolean)).toHaveLength(4);
+    expect(listed.out.split('\n').filter(Boolean)).toHaveLength(5);
 
     expect((await cli('check')).code).toBe(0);
     fixtures.advance();
     const result = await cli('check', '--force', '--json');
     const parsed = JSON.parse(result.out) as Array<{ watchId: string; status: string }>;
-    expect(parsed.map((r) => r.status)).toEqual(['changed', 'changed', 'changed', 'changed']);
+    expect(parsed.map((r) => r.status)).toEqual(['changed', 'changed', 'changed', 'changed', 'changed']);
 
     const outbox = await readFile(join(dataDir, 'outbox', 'outbox.jsonl'), 'utf8');
-    expect(outbox.trim().split('\n')).toHaveLength(4);
+    expect(outbox.trim().split('\n')).toHaveLength(5);
     expect(outbox).toContain('418 Bramble Row');
     expect(outbox).not.toContain('33 Ember Ct');
   });
@@ -152,7 +152,7 @@ describe('listing-watch CLI end to end (fixture site on 127.0.0.1)', () => {
 
 describe('listing-watch display URLs', () => {
   it('(PACT 12.19) every Haunted Listings watch carries a reserved .example display URL', () => {
-    expect(app.watches).toHaveLength(4);
+    expect(app.watches).toHaveLength(5);
     for (const watch of app.watches) expect(new URL(watch.displayUrl as string).hostname).toMatch(/\.example$/);
   });
 });

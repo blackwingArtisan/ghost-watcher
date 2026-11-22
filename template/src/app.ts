@@ -1,4 +1,5 @@
 /** An app built on the skeleton: a name, a look, and a set of watches. */
+import type { PactCopy } from './pact-vocabulary';
 import { assertUniqueIds, type Watch } from './watch';
 
 export interface Theme {
@@ -35,6 +36,8 @@ export interface AppCopy {
    * change against what the page promised that day. For apps that watch financial offers.
    */
   pacts?: boolean;
+  /** The words of the pact (button, chip, notes, letters, authority). Omit it for the bank-offer wording. */
+  pactCopy?: PactCopy;
 }
 
 export interface GhostApp {

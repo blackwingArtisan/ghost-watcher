@@ -14,6 +14,7 @@
 import type { Alert } from './alerts/types';
 import { displayValue, type MaybeValue } from './normalize';
 import { pactVariant } from './pact';
+import { BONUS_PACT_VOCABULARY, resolvePactVocabulary, type PactVocabulary } from './pact-vocabulary';
 import { finish, letterDate, pairEdits, textChange } from './summary';
 import type { Watch } from './watch';
 
@@ -60,10 +61,27 @@ export interface DisputePack {
   letter: { subject: string; body: string };
   evidence: EvidenceRow[];
   complaint: ComplaintCategory & { url: string; whatHappened: string; desiredResolution: string };
+  /** Present only for apps that set `pactCopy`: the neutral line that replaces the CFPB section. */
+  authority?: { heading: string; text: string };
+  /** Present only for apps that set `pactCopy`: the words around the letter. */
+  ui?: PackUi;
   /** Blanks the reader fills in before sending, in the order they appear. */
   blanks: string[];
   /** Present only when the alert was judged against a sealed pact. */
   pact?: PackPact;
+}
+
+/** The words the pack page uses, resolved from the app's pact vocabulary. */
+export interface PackUi {
+  title: string;
+  intro: string;
+  promisedHead: string | null;
+  letterHeading: string;
+  letterLabel: string;
+  stamp: string;
+  tags: [string, string];
+  /** True when the pack shows the CFPB complaint section. */
+  federalComplaint: boolean;
 }
 
 /** The pact facts a pack quotes as Exhibit A. */
@@ -115,8 +133,6 @@ function quoteLines(label: string, before: MaybeValue | undefined, after: MaybeV
   };
 }
 
-const DATE_BLANK = '[Date you applied]';
-const BLANKS = ['[Your name]', '[Your address]', DATE_BLANK, '[Last 4 digits of the account]'];
 
 function archivedCopy(archiveUrl: string | null, archivedBy: string | null, archivedAt: string | null, note: string | null): string {
   return archiveUrl
@@ -128,12 +144,15 @@ function archivedCopy(archiveUrl: string | null, archivedBy: string | null, arch
  * Builds the dispute pack for one alert, or null when the alert kept no receipt (only shrieks and
  * bait and switches do).
  */
-export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
+export function disputePack(alert: Alert, watch?: Watch, vocabulary: PactVocabulary = BONUS_PACT_VOCABULARY): DisputePack | null {
+  const custom = vocabulary !== BONUS_PACT_VOCABULARY;
   const receipt = alert.receipt;
   if (!receipt) return null;
   const field = watch?.fields.find((f) => f.name === alert.field);
   const label = field?.label ?? alert.field ?? alert.list ?? 'Offer';
   const sealed = alert.pact;
+  const DATE_BLANK = vocabulary.dateBlank;
+  const BLANKS = vocabulary.blanks ?? ['[Your name]', '[Your address]', DATE_BLANK, '[Last 4 digits of the account]'];
   const applied = sealed ? letterDate(sealed.sealedAt) : DATE_BLANK;
   const differs = sealed?.relation === 'differs';
   const variant = pactVariant(alert);
@@ -152,8 +171,8 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
     : undefined;
   const exhibitLines = packPact
     ? [
-        `Exhibit A, the page on ${applied}: ${archivedCopy(packPact.archiveUrl, packPact.archivedBy, sealed?.archive.archivedAt ?? null, packPact.note)}`,
-        `Exhibit A SHA-256: ${packPact.sha256}`,
+        `${vocabulary.evidence.tags[0]}, the page on ${applied}: ${archivedCopy(packPact.archiveUrl, packPact.archivedBy, sealed?.archive.archivedAt ?? null, packPact.note)}`,
+        `${vocabulary.evidence.sha256}: ${packPact.sha256}`,
       ]
     : [];
 
@@ -244,7 +263,20 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
       .join('\n')
       .replace(/\n{3,}/g, '\n\n');
 
-  const body = differs ? pactBody() : plainBody;
+  const context = {
+    offer,
+    url: alert.url,
+    sealedDate: applied,
+    nowDate: afterDate,
+    before: quoted.before,
+    after: quoted.after,
+    exhibitLines,
+    archiveLine,
+    afterSha256: receipt.after.sha256,
+    stealthLine: alert.stealth ? `The headline offer did not change, but the terms did. ${alert.stealth}` : '',
+  };
+  const custom_letter = differs && vocabulary.letters ? vocabulary.letters[variant === 'match' ? 'match' : 'dispute'](context) : null;
+  const body = custom_letter ? custom_letter.body : differs ? pactBody() : plainBody;
 
   const plainWhatHappened = [
     `I applied for ${offer} on ${applied} under the terms on the bank's page (${alert.url}).`,
@@ -275,10 +307,10 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
 
   const exhibitRows: EvidenceRow[] = packPact
     ? [
-        { label: `Exhibit A: the page on ${applied}`, value: differs ? quoted.before.join(' / ') : packPact.appliedDate },
-        { label: 'Exhibit A archived copy', value: packPact.archiveUrl ?? `none: ${packPact.note ?? 'archiving was off'}` },
-        { label: 'Exhibit A SHA-256', value: packPact.sha256 },
-        { label: 'Check Exhibit A', value: packPact.checkCommand },
+        { label: vocabulary.evidence.page(applied), value: differs ? quoted.before.join(' / ') : packPact.appliedDate },
+        { label: vocabulary.evidence.copy, value: packPact.archiveUrl ?? `none: ${packPact.note ?? 'archiving was off'}` },
+        { label: vocabulary.evidence.sha256, value: packPact.sha256 },
+        { label: vocabulary.evidence.check, value: packPact.checkCommand },
       ]
     : [];
   const fetched: EvidenceRow[] = alert.fetchUrl ? [{ label: 'Fetched from', value: alert.fetchUrl }] : [];
@@ -304,6 +336,22 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
         ...exhibitRows,
       ];
 
+  const blanksList = (sealed ? BLANKS.filter((blank) => blank !== DATE_BLANK) : BLANKS).join(', ');
+  const isMatch = variant === 'match' && differs;
+  const words = vocabulary.pack;
+  const customParts: Pick<DisputePack, 'ui' | 'authority'> = {
+    ui: {
+      title: isMatch ? words.matchTitle : words.disputeTitle,
+      intro: isMatch ? words.matchIntro(blanksList) : words.disputeIntro(blanksList),
+      promisedHead: differs ? words.promisedHead(applied) : null,
+      letterHeading: words.letterHeading,
+      letterLabel: words.letterLabel,
+      stamp: isMatch ? words.stampMatch : alert.stealth ? 'Bait and switch' : words.stampDispute,
+      tags: vocabulary.evidence.tags,
+      federalComplaint: vocabulary.cfpb && !vocabulary.authority,
+    },
+    ...(vocabulary.authority ? { authority: vocabulary.authority } : {}),
+  };
   return {
     alertId: alert.id,
     watchId: alert.watchId,
@@ -315,20 +363,35 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
     beforeDate,
     afterDate,
     letter: {
-      subject: variant === 'match' && differs ? `Request to match the improved terms of ${offer}` : `Request to honor the advertised terms of ${offer}`,
+      subject:
+        custom_letter?.subject ??
+        (variant === 'match' && differs ? `Request to match the improved terms of ${offer}` : `Request to honor the advertised terms of ${offer}`),
       body,
     },
     evidence,
-    complaint: {
-      ...category,
-      url: CFPB_COMPLAINT_URL,
-      whatHappened,
-      desiredResolution:
-        variant === 'match' && differs
-          ? `Apply the improved terms of ${offer} now on offer to my application.`
-          : `Honor the terms of ${offer} that were published on the day I applied, including any promised sign-up bonus.`,
-    },
+    complaint: custom && (vocabulary.authority || !vocabulary.cfpb)
+      ? {
+          product: '',
+          issue: '',
+          subIssue: '',
+          url: '',
+          whatHappened: [
+            finish(`On ${beforeDate} the page said ${quoted.before.join('; ')}`),
+            finish(`On ${afterDate} it said ${quoted.after.join('; ')}`),
+          ].join(' '),
+          desiredResolution: `Charge the terms of ${offer} that were advertised on ${applied}.`,
+        }
+      : {
+          ...category,
+          url: CFPB_COMPLAINT_URL,
+          whatHappened,
+          desiredResolution:
+            variant === 'match' && differs
+              ? `Apply the improved terms of ${offer} now on offer to my application.`
+              : `Honor the terms of ${offer} that were published on the day I applied, including any promised sign-up bonus.`,
+        },
     blanks: sealed ? BLANKS.filter((blank) => blank !== DATE_BLANK) : BLANKS,
     ...(packPact ? { pact: packPact } : {}),
+    ...(custom ? customParts : {}),
   };
 }

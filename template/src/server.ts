@@ -27,6 +27,7 @@ import { fileURLToPath } from 'node:url';
 import type { GhostDeps } from './config';
 import { allowedHostSet, checkRequest } from './guard';
 import { disputePack } from './dispute';
+import { disputesEnabledFor, pactEnabledFor, resolvePactVocabulary } from './pact-vocabulary';
 import { breakPact, sealPact } from './sealing';
 import { dashboardState, forDashboard, ghostDetail, pactViewOf, pactViewOfReading } from './view';
 // The renderer is a plain ES module shared with the browser (no build step).
@@ -208,7 +209,7 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       const watch = deps.runner.watch(disputeRoute[1] ?? '');
       if (!watch) return json(res, 404, { error: 'No such ghost' });
       const alert = (await deps.store.alerts(watch.id)).find((a) => a.id === disputeRoute[2]);
-      const pack = alert && deps.app.copy.disputes ? disputePack(alert, watch) : null;
+      const pack = alert && disputesEnabledFor(deps.app, watch) ? disputePack(alert, watch, resolvePactVocabulary(deps.app)) : null;
       if (!pack) return json(res, 404, { error: 'No receipt was kept for that change' });
       return json(res, 200, pack);
     }
@@ -219,7 +220,7 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       if (!watch) return json(res, 404, { error: 'No such ghost' });
       const action = ghostRoute[2];
       if (action === 'pact') {
-        if (!deps.app.copy.pacts) return json(res, 404, { error: 'Not found' });
+        if (!pactEnabledFor(deps.app, watch)) return json(res, 404, { error: 'Not found' });
         const sealDeps = { store: deps.store, clock: deps.clock, ...(deps.archive ? { archive: deps.archive } : {}) };
         if (method === 'GET') {
           const reading = await deps.store.pact(watch.id);
