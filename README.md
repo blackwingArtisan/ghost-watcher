@@ -8,7 +8,7 @@
 
 - **Seal the pact on the day you apply.** One click keeps the offer page as it read that day: a
   snapshot, its SHA-256 and an archived copy.
-- **Wakes only for changes that matter.** 10 alerts where a whole-page watcher sent 77 on the same
+- **Wakes only for changes that matter.** 11 alerts where a whole-page watcher sent 88 on the same
   pages, none false, none missed, and a slow drift since the day you applied still raises a flag.
 - **Raise the dead writes the letter.** When a bonus is cut or withheld, it drafts the dispute letter
   and CFPB complaint text with what the page promised against what it says now. When the offer goes
@@ -38,10 +38,10 @@ Crypt and Haunted Listings), each a single `app.ts` on the shared skeleton.
 | --- | --- |
 | 60 seconds | `npm install && npm run bonus`, open http://127.0.0.1:3130/?night=1 (the night passes as it loads), then **Raise the dead** on the Bait and switch letter |
 | Criteria to evidence | [JUDGES.md](JUDGES.md): each judging criterion mapped to files, commands and numbers |
-| Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code. [`.kiro/specs/seal-the-pact/`](.kiro/specs/seal-the-pact/): the headline feature, specced and then built by Kiro |
+| Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code. [`.kiro/specs/seal-the-pact/`](.kiro/specs/seal-the-pact/): the headline feature, specced and then built by Kiro. [`.kiro/specs/lease-pact/`](.kiro/specs/lease-pact/): the same pact for a lease in Haunted Listings, specced and built by Kiro |
 | Steering and hooks | [`.kiro/steering/`](.kiro/steering/) (always included) and [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and Kiro's `money-guard` agent hook |
 | Who wrote what | [KIRO-LOG.md](KIRO-LOG.md#who-wrote-what) |
-| Tests | `npm test`: type-check, 407 Vitest tests and 27 Playwright tests, all against `127.0.0.1` |
+| Tests | `npm test`: type-check, 422 Vitest tests and 30 Playwright tests, all against `127.0.0.1` |
 
 ### Try it in 60 seconds
 
@@ -110,8 +110,9 @@ of Credit's rule of thumb is that it is
 At $200 to $500 a bonus, a typical hunter earns $2,000 to $5,000 a year in bonuses.
 
 **Same skeleton, other hauntings.** Haunted Listings watches rentals and building permits on a dusk
-street where each house names the unit that lit its window, and any page that deserves a ghost is one
-`app.ts` away.
+street where each house names the unit that lit its window. The same pact works for a lease: press "I
+signed the lease" on a listing, and when the rent rises or a new monthly fee appears, Raise the dead
+writes the letter to the landlord. Any page that deserves a ghost is one `app.ts` away.
 
 ![Haunted Listings after one night: gabled houses on a dusk street, each window lit by a match, the Larkspur house naming "2 bd $2,050 Larkspur Heights", Tonight's tally under the street, and the Knocks at the door feed](docs/haunted-listings.png)
 
@@ -124,8 +125,8 @@ every 6 hours, through three watchers that see the exact same responses. Each ce
 | App | Checked | Changes worth knowing | Whole-page watcher | Selector text watcher | Ghost Watcher |
 | --- | --- | --- | --- | --- | --- |
 | The Bonus Crypt | 3 pages, 33 visits | 4 | 33 (29 false, 0 missed) | 5 (1 false, 0 missed) | 4 (0 false, 0 missed) |
-| Haunted Listings | 4 pages, 44 visits | 6 | 44 (38 false, 0 missed) | 6 (0 false, 0 missed) | 6 (0 false, 0 missed) |
-| **Total** | 7 pages, 77 visits | 10 | **77 (67 false, 0 missed)** | **11 (1 false, 0 missed)** | **10 (0 false, 0 missed)** |
+| Haunted Listings | 5 pages, 55 visits | 7 | 55 (48 false, 0 missed) | 7 (0 false, 0 missed) | 7 (0 false, 0 missed) |
+| **Total** | 8 pages, 88 visits | 11 | **88 (77 false, 0 missed)** | **12 (1 false, 0 missed)** | **11 (0 false, 0 missed)** |
 
 The fixture pages are invented, but their noise is typical: timestamps, request ids, rotating promos
 and one night where a bank only reformats its offer.
@@ -167,12 +168,12 @@ features were written against Kiro's spec with another AI coding assistant.
 <!-- kiro-numbers:start -->
 | Kiro, by the numbers | |
 | --- | --- |
-| `kiro-cli` calls | 10 (calls 1 to 10), each with an explicit list of trusted tools, never `--trust-all-tools` |
-| Time in Kiro | 98 minutes (calls 3 to 10; calls 1 and 2 were timed only roughly, about 15 minutes together) |
-| Credits | 160.70 (calls 3 to 10, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
-| Lines Kiro added | 7,500 (calls 3 to 10; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
-| Tests Kiro added | 210 Vitest and 10 Playwright (suite counts before and after each call) |
-| MCP calls | 16 (context7; calls 8 to 10), each with its arguments in the transcript |
+| `kiro-cli` calls | 11 (calls 1 to 11), each with an explicit list of trusted tools, never `--trust-all-tools` |
+| Time in Kiro | 112 minutes (calls 3 to 11; calls 1 and 2 were timed only roughly, about 15 minutes together) |
+| Credits | 197.10 (calls 3 to 11, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
+| Lines Kiro added | 8,691 (calls 3 to 11; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
+| Tests Kiro added | 225 Vitest and 13 Playwright (suite counts before and after each call) |
+| MCP calls | 18 (context7; calls 8 to 11), each with its arguments in the transcript |
 | Hand changes to Kiro's code | 2: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; and Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into |
 <!-- kiro-numbers:end -->
 

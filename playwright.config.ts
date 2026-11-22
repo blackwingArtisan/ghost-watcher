@@ -5,7 +5,7 @@ import { origin, ports } from './e2e/ports';
  * End-to-end tests drive each app's real dashboard in a browser against its local fixture site.
  * Ports come from e2e/ports.ts: GHOST_E2E_PORT is the base port (default 3134) and the eight servers
  * take base+0 to base+7, which keeps e2e runs clear of the dev ports (3130-3133). Set it to run
- * parallel CI jobs or a second checkout side by side. The last two ports run bonus-watch in `demo`
+ * parallel CI jobs or a second checkout side by side. The last four ports run each app in `demo`
  * mode, where the app starts its own fixture site and takes the first sighting itself.
  */
 const common = {

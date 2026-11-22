@@ -126,8 +126,8 @@ npm run build:static   # record the Bonus Crypt demo into dist/ as a static site
 [`.github/workflows/test.yml`](../.github/workflows/test.yml) runs the same `npm test` on pushes to
 `main` and on pull requests. Notable changes are listed in [`CHANGELOG.md`](../CHANGELOG.md).
 
-Playwright starts the fixture sites and dashboards itself on ports 3134 to 3139 (3138-3139 run one app in `demo` mode).
-Set `GHOST_E2E_PORT` to move the whole block: it is the base port (default 3134, allowed 1024 to 65530) and the six servers use base+0 to base+5, so parallel CI runs do not collide.
+Playwright starts the fixture sites and dashboards itself on ports 3134 to 3141 (3138-3141 run each app in `demo` mode).
+Set `GHOST_E2E_PORT` to move the whole block: it is the base port (default 3134, allowed 1024 to 65528) and the eight servers use base+0 to base+7, so parallel CI runs do not collide.
 
 ## Architecture
 
