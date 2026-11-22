@@ -199,6 +199,10 @@ try {
     const response = await fetch(`${origin}/ui/fonts/${font[1]}`);
     await write(`ui/fonts/${font[1]}`, Buffer.from(await response.arrayBuffer()));
   }
+  // Static hosts serve 404.html for unknown addresses: the same lost-ghost page the server sends.
+  const lost = await fetch(`${origin}/a-lost-ghost`, { headers: { accept: 'text/html' } });
+  if (lost.status !== 404 || !(lost.headers.get('content-type') ?? '').includes('text/html')) throw new Error('the demo server did not send its lost-ghost page');
+  await write('404.html', await lost.text());
   await cp(join(root, 'scripts', 'static-demo', 'shim.js'), join(out, 'ui', 'shim.js'));
   await cp(join(root, 'scripts', 'static-demo', 'replay.js'), join(out, 'ui', 'replay.js'));
   for (const [rel, content] of files) await write(rel, content);
