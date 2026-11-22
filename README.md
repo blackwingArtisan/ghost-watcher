@@ -1,5 +1,7 @@
 # Ghost Watcher
 
+[![Tests](https://github.com/blackwingArtisan/ghost-watcher/actions/workflows/test.yml/badge.svg)](https://github.com/blackwingArtisan/ghost-watcher/actions/workflows/test.yml)
+
 **Banks edit the fine print at night. Ghost Watcher keeps the receipts.**
 
 ![The Bonus Crypt in 14 seconds: each stone already wears a ribbon from the archive, such as Lanternfield's "Bonus cut $200 in June"; then one night passes, the moon flushes red, two ghosts wake, the stones show $300 struck through beside $400, and Spirit mail fills with a Bait and switch letter](docs/bonus-crypt-night.gif)
