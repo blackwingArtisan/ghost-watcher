@@ -13,9 +13,10 @@ The fastest look: `npm install && npm run bonus`, open http://127.0.0.1:3130/?ni
 | --- | --- |
 | Banks really do withhold promised bonuses | CFPB order against Bank of America, July 2023: promised card bonuses withheld from tens of thousands of consumers, $90 million in CFPB penalties ([docs/sources.md](docs/sources.md#the-bank-of-america-withheld-bonus-order)) |
 | Many people report not getting advertised terms | 22,055 CFPB complaints under the two "didn't receive advertised terms" sub-issues, with the exact API queries ([docs/sources.md](docs/sources.md#cfpb-complaints-about-advertised-terms)) |
-| A defined user with money at stake | About 678,000 r/churning members; up to 10 accounts a year at $200-$500 each is $2,000-$5,000 a year ([README, Who it's for](README.md#who-its-for)) |
+| A defined user with money at stake | About 678,000 r/churning members; a typical hunter earns $2,000 to $5,000 a year in bonuses ([README, Who it's for](README.md#who-its-for)) |
+| Proof of the offer gets bonuses paid | Linked, dated public data points: issuers match a higher offer when asked (Chase 100k to 120k, July 2024; Citi "will usually match ... within 90 days"), and an issuer that honored a disputed offer only with a screenshot ([docs/sources.md](docs/sources.md#public-data-points-proof-of-the-offer-gets-bonuses-paid)) |
 | It turns detection into action | `template/src/dispute.ts`: a letter to the bank and prefilled CFPB complaint text from a receipt; tested in `apps/bonus-watch/test/dispute.test.ts` |
-| A path past the hackathon | Free self-hosting (MIT), about $4 a month personal, about $49 a month Pro with a sourced market estimate ([README, Beyond Kiroween](README.md#beyond-kiroween)) |
+| A path past the hackathon | Free self-hosting (MIT); about $4 a month personal (678,000 × 2% × $48 ≈ $650,000 a year); a Pro plan for comparison and affiliate sites ([README, Beyond Kiroween](README.md#beyond-kiroween), [docs/sources.md](docs/sources.md#consumer-market-estimate)) |
 
 ## Technological implementation
 

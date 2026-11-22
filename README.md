@@ -1,14 +1,18 @@
 # Ghost Watcher
 
-**Live demo: [ghost-watcher.pages.dev](https://ghost-watcher.pages.dev/)** (a static recording of the Bonus Crypt; press **Let a night pass**)
-
 **Banks edit the fine print at night. Ghost Watcher keeps the receipts.**
 
-**Bonus never paid? Show the bank its own terms from the day you applied.** Ghost Watcher watches the
-few bank and card offer pages you applied to, wakes only for changes that matter (10 alerts where a
-whole-page watcher sent 77, none false, none missed), and keeps dated, hashed, archived proof of
-every bonus cut and fine-print edit, with a dispute letter ready to send. For a bonus hunter that is
-$2,000 to $5,000 a year riding on pages that change without notice.
+![The Bonus Crypt in 14 seconds: each stone already wears a ribbon from the archive, such as Lanternfield's "Bonus cut $200 in June"; then one night passes, the moon flushes red, two ghosts wake, the stones show $300 struck through beside $400, and Spirit mail fills with a Bait and switch letter](docs/bonus-crypt-night.gif)
+
+**Live demo: [ghost-watcher.pages.dev](https://ghost-watcher.pages.dev/)** (a static recording of the Bonus Crypt; press **Let a night pass**)
+
+- **Seal the pact on the day you apply.** One click keeps the offer page as it read that day: a
+  snapshot, its SHA-256 and an archived copy.
+- **Wakes only for changes that matter.** 10 alerts where a whole-page watcher sent 77 on the same
+  pages, none false, none missed, and a slow drift since the day you applied still raises a flag.
+- **Raise the dead writes the letter.** When a bonus is cut or withheld, it drafts the dispute letter
+  and CFPB complaint text with what the page promised against what it says now. When the offer goes
+  up after you applied, it writes the bonus-match request instead.
 
 It happens to real customers. In July 2023 the CFPB found that Bank of America had
 ["illegally withheld promised credit card account bonuses"](https://www.consumerfinance.gov/about-us/newsroom/bank-of-america-for-illegally-charging-junk-fees-withholding-credit-card-rewards-opening-fake-accounts/)
@@ -17,11 +21,13 @@ The CFPB's public complaint database holds **22,055 complaints** filed as "didn'
 or promotional terms" (credit cards) or "didn't receive terms that were advertised" (opening a
 checking or savings account) ([queries](docs/sources.md), checked 2026-11-18).
 
+A typical bonus hunter earns $2,000 to $5,000 a year in bonuses; one withheld $300 bonus pays for
+years of the $4-a-month hosted plan. A screenshot proves one moment; a pact also catches every later
+change and writes the letter.
+
 [Try it in 60 seconds](#try-it-in-60-seconds) · [Signal, not noise](#signal-not-noise) ·
 [Why not what you already use?](#why-not-what-you-already-use) · [Judges' map](JUDGES.md) ·
 [Kiro log](KIRO-LOG.md) · [Full details](docs/details.md)
-
-![The Bonus Crypt in 14 seconds: each stone already wears a ribbon from the archive, such as Lanternfield's "Bonus cut $200 in June"; then one night passes, the moon flushes red, two ghosts wake, the stones show $300 struck through beside $400, and Spirit mail fills with a Bait and switch letter](docs/bonus-crypt-night.gif)
 
 ### For judges
 
@@ -82,17 +88,26 @@ could honestly be dated that far back.
 
 ## Who it's for
 
-**Bonus hunters.** r/churning has roughly 678,000 members
-([The Hive Index](https://thehiveindex.com/communities/r-churning/), checked 2026-11-18), and Doctor
+**Bonus hunters, and the money is in the match.** When an offer goes up after you apply, some
+issuers will match it if you ask, but you have to know it changed and show what you signed up for.
+In July 2024, when Chase raised a business card offer from 100,000 to 120,000 points, readers who had
+applied under the lower offer asked by secure message and were matched
+([Doctor of Credit](https://www.doctorofcredit.com/chase-is-matching-the-signup-bonus-for-120000-ink-preferred-offer/)).
+Doctor of Credit's issuer roundup says "Citi will usually match a signup bonus within 90 days", and
+Chase can switch a new checking account to a better promo code "for the first 21 days after opening"
+([roundup](https://www.doctorofcredit.com/which-credit-card-issuers-will-match-a-higher-signup-bonus/),
+[checking](https://www.doctorofcredit.com/does-chase-match-a-checking-or-savings-bonus-yes-for-21-days/)).
+When a bonus never posts, the same site's advice is to "always take a screenshot of any offers you
+sign up for", and in one 2016 case an issuer honored a disputed offer
+["only if they were able to provide a screenshot"](https://www.doctorofcredit.com/citi-honoring-no-minimum-spend-deals-but-require-screenshot-2/).
+Ghost Watcher does both jobs: it notices the better offer and keeps the proof. (Pages read on
+2026-11-22; [sources](docs/sources.md#public-data-points-proof-of-the-offer-gets-bonuses-paid).)
+
+r/churning has roughly 678,000 members
+([The Hive Index](https://thehiveindex.com/communities/r-churning/), checked 2026-11-22), and Doctor
 of Credit's rule of thumb is that it is
 ["generally OK to open 10 or less bank accounts each year"](https://www.doctorofcredit.com/how-many-bank-accounts-can-i-safely-open-within-a-year-for-bank-bonus-purposes/).
-At $200 to $500 a bonus, that is $2,000 to $5,000 a year.
-
-*An illustrative scenario, not a real customer:* Maya opens a $300 checking bonus. Nine days later
-the page says $400, and a $12 monthly fee has appeared in the fine print. Ghost Watcher wakes her the
-next morning with both changes in two sentences, and when the bonus does not post, she sends the
-bank its own terms from the day she applied. At about $4 a month, it pays for itself if it catches
-one $100 change every two years.
+At $200 to $500 a bonus, a typical hunter earns $2,000 to $5,000 a year in bonuses.
 
 **Same skeleton, other hauntings.** Haunted Listings watches rentals and building permits on a dusk
 street where each house names the unit that lit its window, and any page that deserves a ghost is one
@@ -123,9 +138,14 @@ Wayback Machine history through the same three watchers ([procedure](docs/real-p
 | [Doctor of Credit](https://www.doctorofcredit.com/) and [r/churning](https://www.reddit.com/r/churning/) | The best place to find offers and readers' data points | They cover popular offers after the fact. Ghost Watcher watches the exact pages you applied to, catches fine-print edits nobody posts, and keeps a dated receipt you can send the bank |
 | [changedetection.io](https://github.com/dgtlmoon/changedetection.io) | Open source, self-hosted or $8.99/month hosted; CSS, XPath and JSONPath filters, many notification channels | Its README leaves robots.txt to the user; Ghost Watcher enforces it and identifies itself honestly. Values are typed (money in integer cents, dates in days), so alerts state the change |
 | [Visualping](https://visualping.io) and [Distill.io](https://distill.io) | Hosted visual and text monitoring with AI change summaries | Whether a change matters is decided by rules you can read and unit-test, not a model, and receipts and dispute letters are built in |
+| [Open Terms Archive](https://opentermsarchive.org/en/) | Open source; publicly records every version of the terms of digital services | It tracks platforms' terms for public oversight, not the offer page you applied to; Ghost Watcher seals your page on your day and turns a change into a letter |
+| [Page Vault](https://www.page-vault.com/) and [WebPreserver](https://www.pagefreezer.com/webpreserver/) | Court-ready web captures with hashes, for legal teams and investigators | Paid professional tools for one capture at a time; Ghost Watcher seals the day you apply, keeps watching, and is free to self-host |
+| A screenshot | Free and instant | A screenshot proves one moment; a pact also catches every later change and writes the letter |
+| Paribus (now part of Capital One Shopping) | Claimed refunds automatically when a price dropped after you bought | Paribus-style claims for bank bonuses, with evidence that holds up: a hashed, archived copy of the terms from the day you applied |
 
-Feature details were checked against each product's own pages on 2026-11-18; the sources are in
-[docs/details.md](docs/details.md#what-only-ghost-watcher-does).
+Feature details were checked against each product's own pages on 2026-11-18 and 2026-11-22; the
+sources are in [docs/details.md](docs/details.md#what-only-ghost-watcher-does) and
+[docs/sources.md](docs/sources.md#products-in-the-comparison-table).
 
 ## Built with Kiro
 
@@ -145,13 +165,16 @@ features were written against Kiro's spec with another AI coding assistant.
   (ntfy, Discord, Slack) adapters are there for running it unattended.
 - **Personal, about $4 a month.** 25 hosted ghosts, phone alerts and a weekly digest, priced under
   general watchers (changedetection.io hosted is $8.99/month; Visualping Personal is $14/month).
-- **Pro, about $49 a month.** For people who watch offer terms for a living: bonus-comparison and
-  affiliate sites that must keep every offer they list accurate, and bank marketing-compliance
-  teams watching their own and competitors' disclosures. Rough market math: there are 4,379
-  FDIC-insured banks ([FDIC, Q3 2025](https://fdic.gov/news/press-releases/2025/fdic-insured-institutions-reported-return-assets-127-percent-and-net));
-  if 2% of them used Pro, that is about $52,000 a year before credit unions, card issuers and
-  comparison sites. Visualping reports roughly 35,000 users tracking legal pages and 11,000 tracking
-  regulatory compliance ([its own figures](https://visualping.io/blog/visualping-enterprise-evolution)).
+  Market math: 678,000 r/churning members × 2% × $48 a year ≈ $650,000 a year, from one community
+  ([sources](docs/sources.md#consumer-market-estimate)).
+- **Comparison and affiliate sites.** Sites that list bank and card offers must keep every offer
+  they show accurate, and regulators have looked hard at them: the CFPB's 2024 circular on
+  comparison-shopping tools warned against steering consumers (withdrawn in May 2025;
+  [sources](docs/sources.md#comparison-site-wedge)). A Pro plan, about $49 a month, watches every
+  offer they list and keeps dated proof of what each page said.
+- **Other "the terms changed under me" niches.** Rental listings and their fees (Haunted Listings
+  already watches rents), subscription prices, warranty and return terms: any page you rely on is one
+  `app.ts` away.
 - **Why now.** The FTC's fees rule (in force since 2025-05-12,
   [Federal Register](https://www.govinfo.gov/content/pkg/FR-2025-01-10/html/2024-30293.htm)) makes live-event tickets and
   short-term lodging show the total price up front, but it does not reach bank or card offers, where
