@@ -92,10 +92,35 @@ async function goTo(path: Path): Promise<unknown> {
   return arrival;
 }
 
-async function record(path: Path): Promise<{ node: ReplayNode; state: any }> {
-  const arrival = await goTo(path);
+/**
+ * What a stop shows: the night, each ghost's state, pact, readings and message, and each letter in the
+ * feed with whether it was laid to rest. Ids, hashes, archive stamps and letter names carry the wall
+ * clock, so they are left out. Two stops reached by different paths that show the same thing answer
+ * every later step the same way, so the walk records one of them; without this, every order of laying
+ * ghosts to rest across the nights would be recorded.
+ */
+function fingerprint(state: any): string {
+  const look = {
+    night: state.app.night,
+    ghosts: state.ghosts.map((g: any) => [g.id, g.state, g.pact?.state ?? null, g.unread, g.loudest, g.lastMessage, g.checks, g.headline, g.readings]),
+    feed: state.feed.map((e: any) => [
+      e.acknowledged,
+      e.alert.watchId,
+      e.alert.field,
+      e.alert.ruleKind,
+      e.alert.summary,
+      e.alert.tone,
+      e.alert.severity,
+      e.alert.stealth,
+      e.alert.before,
+      e.alert.after,
+    ]),
+  };
+  return createHash('sha256').update(JSON.stringify(look)).digest('hex');
+}
+
+async function record(path: Path, arrival: unknown, state: any): Promise<ReplayNode> {
   const routes: Record<string, string> = {};
-  const state = (await call('GET', '/api/state')).body as any;
   routes['GET /api/state'] = blob(state);
   if (arrival !== undefined) routes.arrival = blob(arrival);
 
@@ -116,7 +141,7 @@ async function record(path: Path): Promise<{ node: ReplayNode; state: any }> {
   routes['POST /api/check-all'] = blob((await call('POST', '/api/check-all')).body);
   const seals = await recordSeals(state);
   await keepArchivedCopies();
-  return { node: { routes, ...(seals ? { seals } : {}) }, state };
+  return { routes, ...(seals ? { seals } : {}) };
 }
 
 /**
@@ -152,12 +177,24 @@ async function keepArchivedCopies(): Promise<void> {
 /** Walks every stop reachable from the first sighting, breadth first. */
 async function walk(): Promise<Record<string, ReplayNode>> {
   const nodes: Record<string, ReplayNode> = {};
+  /** Stops that look the same as one already recorded: their key -> the recorded stop's key. */
+  const sameAs = new Map<string, string>();
+  const byLook = new Map<string, string>();
   const queue: Path[] = [[[]]];
   while (queue.length > 0) {
     const path = queue.shift() as Path;
     const key = keyOf(path);
-    if (nodes[key]) continue;
-    const { node, state } = await record(path);
+    if (nodes[key] || sameAs.has(key)) continue;
+    const arrival = await goTo(path);
+    const state = (await call('GET', '/api/state')).body as any;
+    const look = fingerprint(state);
+    const seen = byLook.get(look);
+    if (seen) {
+      sameAs.set(key, seen);
+      continue;
+    }
+    byLook.set(look, key);
+    const node = await record(path, arrival, state);
     nodes[key] = node;
     const tonight = path[path.length - 1] as string[];
     for (const ghost of state.ghosts) {
@@ -174,6 +211,11 @@ async function walk(): Promise<Record<string, ReplayNode>> {
       queue.push(next);
     }
     process.stdout.write(`Recorded night ${night}${tonight.length ? `, laid to rest: ${tonight.join(', ')}` : ''}\n`);
+  }
+  const follow = (key: string): string => sameAs.get(key) ?? key;
+  for (const node of Object.values(nodes)) {
+    if (node.next) node.next = follow(node.next);
+    if (node.acks) for (const id of Object.keys(node.acks)) node.acks[id] = follow(node.acks[id] as string);
   }
   return nodes;
 }
