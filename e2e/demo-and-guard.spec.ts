@@ -20,7 +20,8 @@ test('demo mode: the first sighting is already taken, and one key press lets a n
   // Before anything happens, the stone already carries the worst past change and a fickleness score.
   await expect(lanternfield.locator('.ghost__ribbon')).toContainText(/From the archive\s*Bonus cut \$200 in June/);
   await expect(lanternfield.locator('.ghost__ribbon')).toHaveAttribute('data-tone', 'bad');
-  await expect(lanternfield.locator('.ghost__fickle')).toHaveText(/^Fickle: changed 2 times in \d+ months, 1 for the worse\.$/);
+  // The stone stays uncluttered: how fickle the page is lives in the status line's tooltip.
+  await expect(lanternfield.locator('.ghost__state')).toHaveAttribute('title', /· Fickle: changed 2 times in \d+ months, 1 for the worse\.$/);
   // Spirit mail is not empty either: the archive's letters wait below the prompt, dimmed.
   const fromArchive = page.locator('#feed .feed__item--archive');
   await expect(fromArchive.filter({ hasText: 'Lanternfield' })).toContainText('Bonus went down from $500 to $300 (-$200).');

@@ -189,6 +189,11 @@ describe('dashboard server against a fixture site', () => {
 
     expect((await fetch(`${base}/api/ghosts/nobody`)).status).toBe(404);
     expect((await fetch(`${base}/outbox/../../etc/passwd`)).status).toBe(404);
+    const lost = await fetch(`${base}/no-such-page`, { headers: { accept: 'text/html' } });
+    expect(lost.status).toBe(404);
+    expect(lost.headers.get('content-type')).toContain('text/html');
+    expect(await lost.text()).toContain('This ghost is lost');
+    expect((await fetch(`${base}/api/no-such-route`, { headers: { accept: 'text/html' } })).headers.get('content-type')).toContain('application/json');
     expect((await fetch(`${base}/ui/style.css`)).headers.get('content-type')).toContain('text/css');
     expect((await fetch(`${base}/ui/fonts/pirata-one-latin-400-normal.woff2`)).status).toBe(200);
     expect(fixtures.log.every((entry) => entry.userAgent.startsWith('GhostWatcher/0.1.0'))).toBe(true);

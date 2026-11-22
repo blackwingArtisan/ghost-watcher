@@ -259,6 +259,13 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       }
       return json(res, 405, { error: 'Method not allowed' });
     }
+    if (method === 'GET' && !path.startsWith('/api/') && (req.headers.accept ?? '').includes('text/html')) {
+      send(res, 404, lostGhostPage(deps.app.name), 'text/html; charset=utf-8', {
+        'Cache-Control': 'no-store',
+        'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src data:; frame-ancestors 'none'",
+      });
+      return;
+    }
     json(res, 404, { error: 'Not found' });
   }
 
@@ -300,4 +307,36 @@ export function listen(server: Server, port: number, host = '127.0.0.1'): Promis
       resolve(`http://${host}:${actual}`);
     });
   });
+}
+
+/** The page a browser gets for an address the dashboard does not know: a lost ghost and a way home. */
+export function lostGhostPage(appName: string): string {
+  const name = appName.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lost ghost · ${name}</title>
+<style>
+body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 0%,#2a2145,#0c0a16 70%);color:#ece6ff;font:16px/1.5 system-ui,sans-serif;text-align:center;padding:24px;box-sizing:border-box}
+main{max-width:30rem}
+svg{width:96px;height:auto;opacity:.85;animation:drift 4s ease-in-out infinite alternate}
+h1{font:600 1.6rem/1.2 Georgia,serif;margin:.6em 0 .3em}
+p{color:#b9b0d8;margin:.4em 0}
+a{display:inline-block;margin-top:1em;padding:10px 18px;border-radius:999px;background:#7cf2b0;color:#0c0a16;font-weight:600;text-decoration:none}
+a:focus-visible{outline:3px solid #fff;outline-offset:3px}
+@keyframes drift{from{transform:translateY(4px)}to{transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){svg{animation:none}}
+</style>
+</head>
+<body>
+<main>
+<svg viewBox="0 0 120 142" aria-hidden="true"><path fill="#f4f0ff" d="M60 8C30 8 16 33 16 62V116q7-10 14 0t15 0 15 0 15 0 15 0 14 0V62C104 33 90 8 60 8Z"/><ellipse cx="44" cy="58" rx="7" ry="10" fill="#120f22"/><ellipse cx="76" cy="58" rx="7" ry="10" fill="#120f22"/><ellipse cx="60" cy="84" rx="8" ry="6" fill="#120f22"/></svg>
+<h1>This ghost is lost</h1>
+<p>Nothing haunts this address. The page may have moved, or the link was mistyped.</p>
+<a href="/">Back to ${name}</a>
+</main>
+</body>
+</html>`;
 }

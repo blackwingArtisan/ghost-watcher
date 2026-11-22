@@ -3,9 +3,12 @@
  *
  *   check [--force] [--watch <id>] [--json]   check watches once (respects intervals unless --force)
  *   serve [--port <n>] [--fresh]              run the dashboard and a polite scheduler
- *   demo  [--port <n>] [--fixture-port <n>]   start the app's local fixture site, then serve against it
+ *   demo  [--port <n>] [--fixture-port <n>] [--open]
+ *                                             start the app's local fixture site, then serve against it;
+ *                                             --open opens the night view in the default browser
  *   list                                      print the watches
  */
+import { spawn } from 'node:child_process';
 import { rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { GhostApp } from './app';
@@ -34,6 +37,7 @@ interface Flags {
   force: boolean;
   json: boolean;
   fresh: boolean;
+  open?: boolean;
   watch?: string;
   port?: number;
   fixturePort?: number;
@@ -52,6 +56,7 @@ export function parseFlags(argv: string[]): Flags {
     if (arg === '--force') flags.force = true;
     else if (arg === '--json') flags.json = true;
     else if (arg === '--fresh') flags.fresh = true;
+    else if (arg === '--open') flags.open = true;
     else if (arg === '--watch') flags.watch = next();
     else if (arg === '--port') flags.port = Number(next());
     else if (arg === '--fixture-port') flags.fixturePort = Number(next());
@@ -168,6 +173,10 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
     });
     const url = await listen(server, flags.port ?? Number(env.PORT ?? options.defaultPort), env.HOST ?? '127.0.0.1');
     out(`${deps.app.name} is haunting ${deps.app.watches.length} pages at ${url}`);
+    if (site) {
+      out(`Open ${url}/?night=1 to watch one night pass as the page loads (or ${url} to start calm).`);
+      if (flags.open) openInBrowser(`${url}/?night=1`);
+    }
     out(`User-Agent: ${deps.describe.userAgent}`);
     out(`Snapshots: ${deps.describe.store} | Alerts: ${deps.describe.alerts} | History: ${deps.describe.history} | Receipts: ${deps.describe.receipts}`);
 
@@ -193,4 +202,17 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
 
   out('Usage: check [--force] [--watch <id>] [--json] | serve [--port <n>] [--fresh] | demo | list');
   return flags.command === 'help' ? 0 : 2;
+}
+
+/** Opens a local dashboard address in the default browser; a missing opener is not an error. */
+function openInBrowser(url: string): void {
+  const [command, args] =
+    process.platform === 'darwin' ? ['open', [url]] : process.platform === 'win32' ? ['cmd', ['/c', 'start', '', url]] : ['xdg-open', [url]];
+  try {
+    const child = spawn(command, args as string[], { stdio: 'ignore', detached: true });
+    child.on('error', () => undefined);
+    child.unref();
+  } catch {
+    // No browser opener on this machine: the printed address is enough.
+  }
 }

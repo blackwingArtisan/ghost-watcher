@@ -205,6 +205,14 @@ export function renderDispute(pack) {
   const intro = match
     ? `The bank improved its terms after you applied. Ask it for the better terms. Fill in the bracketed blanks (${esc(pack.blanks.join(', '))}), then send it yourself. Nothing here is sent for you.`
     : `Show the bank its own terms from the day you applied. Fill in the bracketed blanks (${esc(pack.blanks.join(', '))}), then send it yourself. Nothing here is sent for you.`;
+  const stealth = /bait/i.test(pack.kind || '');
+  const stamp = match
+    ? '<p class="letter__stamp letter__stamp--match" aria-hidden="true">Bonus match</p>'
+    : `<p class="letter__stamp" aria-hidden="true">${stealth ? 'Bait and switch' : 'Terms changed'}</p>`;
+  const command = pact && pact.checkCommand ? pact.checkCommand : '';
+  const checkYourself = command
+    ? `<details class="dispute__check"><summary>Check it yourself</summary><p class="muted small">Recompute the pact's SHA-256 from the stored file; it must match Exhibit A's hash above.</p><pre><code>${esc(command)}</code></pre></details>`
+    : '';
   const beforeHead = promised ? `${esc(pack.beforeDate)}, the day you applied: what the page promised` : `${esc(pack.beforeDate)}: what the page said`;
   const complaint = match
     ? ''
@@ -212,9 +220,14 @@ export function renderDispute(pack) {
 <section class="dispute__block">
   <h3>3. If the bank says no: a CFPB complaint</h3>
   <p class="muted small">At <a href="${esc(c.url)}" target="_blank" rel="noopener noreferrer">consumerfinance.gov/complaint</a> choose <b>${esc(c.product)}</b>, then <b>${esc(c.issue)}</b>, then <b>${esc(c.subIssue)}</b>.</p>
-  <label for="dispute-cfpb">What happened</label>
-  <textarea class="dispute__text" id="dispute-cfpb" readonly rows="7">${esc(c.whatHappened)}</textarea>
-  <button type="button" class="btn btn--small" data-action="copy" data-target="dispute-cfpb">Copy the complaint text</button>
+  <p class="dispute__quote">${esc(c.whatHappened)}</p>
+  <div class="dispute__tools">
+    <button type="button" class="btn btn--small" data-action="copy" data-target="dispute-cfpb">Copy the complaint text</button>
+    <details class="dispute__edit"><summary>Edit the text</summary>
+      <label for="dispute-cfpb">What happened</label>
+      <textarea class="dispute__text" id="dispute-cfpb" readonly rows="7">${esc(c.whatHappened)}</textarea>
+    </details>
+  </div>
   <p class="muted small">Fair resolution: <span class="dispute__resolution">${esc(c.desiredResolution)}</span></p>
 </section>`;
   return `<header class="dispute__head"${pact ? ` data-variant="${match ? 'match' : 'dispute'}"` : ''}>
@@ -229,20 +242,34 @@ export function renderDispute(pack) {
   <button type="button" class="btn" data-action="open" data-id="${esc(pack.watchId)}">Back to the séance</button>
 </div>
 <section class="dispute__terms">
-  <div class="dispute__side" data-side="before"><h3>${beforeHead}</h3><ul>${lines(pack.before)}</ul></div>
-  <div class="dispute__side" data-side="after"><h3>${esc(pack.afterDate)}: what it says now</h3><ul>${lines(pack.after)}</ul></div>
+  <div class="dispute__side exhibit" data-side="before"><p class="exhibit__tag">Exhibit A</p><h3>${beforeHead}</h3><ul>${exhibitLines(pack.before, pack.after)}</ul></div>
+  <div class="dispute__side exhibit" data-side="after"><p class="exhibit__tag">Exhibit B</p><h3>${esc(pack.afterDate)}: what it says now</h3><ul>${exhibitLines(pack.after, pack.before)}</ul></div>
 </section>
 <section class="dispute__block">
   <h3>1. Letter to the bank</h3>
   <p class="muted small">Subject: <span class="dispute__subject">${esc(pack.letter.subject)}</span></p>
-  <label for="dispute-letter">Letter to the bank</label>
-  <textarea class="dispute__text" id="dispute-letter" readonly rows="14">${esc(pack.letter.body)}</textarea>
-  <button type="button" class="btn btn--small" data-action="copy" data-target="dispute-letter">Copy the letter</button>
+  <article class="letter" aria-label="Letter preview">${stamp}<div class="letter__body">${esc(pack.letter.body)}</div></article>
+  <div class="dispute__tools">
+    <button type="button" class="btn btn--small" data-action="copy" data-target="dispute-letter">Copy the letter</button>
+    <details class="dispute__edit"><summary>Edit the text</summary>
+      <label for="dispute-letter">Letter to the bank</label>
+      <textarea class="dispute__text" id="dispute-letter" readonly rows="14">${esc(pack.letter.body)}</textarea>
+    </details>
+  </div>
 </section>
 <section class="dispute__block">
   <h3>2. Evidence</h3>
-  <table class="values dispute__evidence"><tbody>${evidence}</tbody></table>
+  <table class="values dispute__evidence"><tbody>${evidence}</tbody></table>${checkYourself}
 </section>${complaint}`;
+}
+
+/**
+ * One exhibit's lines. A line that the other side does not have is marked, so the inserted or
+ * removed clause stands out. @param {string[]} mine @param {string[]} theirs
+ */
+export function exhibitLines(mine, theirs) {
+  const other = new Set(theirs);
+  return mine.map((line) => (other.has(line) ? `<li>${esc(line)}</li>` : `<li><mark class="exhibit__mark">${esc(line)}</mark></li>`)).join('');
 }
 
 /** @param {string} iso */
@@ -331,10 +358,6 @@ export function renderGhostCard(ghost, nowIso) {
   const ribbon = ghost.headline
     ? `<p class="ghost__ribbon" data-tone="${esc(ghost.headline.tone)}" title="Found by the Ghost of Terms Past in archived copies"><span class="ghost__ribbon-tag">From the archive</span> ${esc(ghost.headline.text)}</p>`
     : '';
-  const fickle =
-    ghost.fickleness && ghost.fickleness.changes > 0
-      ? `<p class="ghost__fickle" data-label="${esc(ghost.fickleness.label)}">${esc(ghost.fickleness.text)}</p>`
-      : '';
   const crack =
     ghost.state === 'restless' && ghost.loudest === 'shriek'
       ? '<svg class="ghost__crack" viewBox="0 0 60 90" aria-hidden="true" focusable="false"><path d="M34 0 L26 18 L36 30 L22 48 L31 60 L20 90"/><path d="M26 18 L14 24 M22 48 L10 52 M31 60 L42 70"/></svg>'
@@ -354,14 +377,14 @@ export function renderGhostCard(ghost, nowIso) {
   </div>
   <div class="ghost__stone">
     ${crack}${ribbon}
-    <p class="ghost__state"><span class="dot"></span>${esc(STATE_WORDS[/** @type {keyof typeof STATE_WORDS} */ (ghost.state)] || ghost.state)}</p>
+    <p class="ghost__state" title="${when}${ghost.fickleness && ghost.fickleness.changes > 0 ? ` · ${esc(ghost.fickleness.text)}` : ''}"><span class="dot"></span>${esc(STATE_WORDS[/** @type {keyof typeof STATE_WORDS} */ (ghost.state)] || ghost.state)}</p>
     <h2 class="ghost__name">${esc(ghost.name)}</h2>
     <p class="ghost__sub">${esc(ghost.subtitle)}</p>
     <dl class="readings">${readings}</dl>
     <p class="ghost__msg">${esc(ghost.lastMessage)}</p>
-    ${fickle}${ignoredChip(ghost.ignored)}
+    ${ignoredChip(ghost.ignored)}
     ${renderStonePact(ghost)}
-    <p class="ghost__when">${when}</p>
+    <p class="ghost__when visually-hidden">${when}</p>
   </div>
 </article>`;
 }
@@ -394,10 +417,46 @@ export function renderStats(state) {
  */
 export function renderTally(state) {
   const letters = state.feed.length;
+  const drift = moneySinceApplied(state.feed);
   const ignored = state.ghosts.reduce((sum, /** @type {any} */ g) => sum + (g.ignored || 0), 0);
   const doors = state.ghosts.filter((/** @type {any} */ g) => g.state === 'blocked').length;
   const plural = (/** @type {number} */ n, /** @type {string} */ one, /** @type {string} */ many) => `<b>${n}</b> ${n === 1 ? one : many}`;
-  return `<span class="tally__title">Tonight's tally</span><span>${plural(letters, 'letter sent', 'letters sent')}</span><span>${plural(ignored, 'page change slept through', 'page changes slept through')}</span><span>${plural(doors, 'door respected', 'doors respected')} (robots.txt)</span>`;
+  return `<span class="tally__title">Tonight's tally</span><span>${plural(letters, 'letter sent', 'letters sent')}</span><span>${plural(ignored, 'page change slept through', 'page changes slept through')}</span><span>${plural(doors, 'door respected', 'doors respected')} (robots.txt)</span>${
+    drift > 0 ? `<span class="tally__drift"><b>${esc(dollarsFromCents(drift))}</b> of terms turned against you since you applied</span>` : ''
+  }`;
+}
+
+/**
+ * Money that turned against the reader since the pacts were sealed: for each watched field, the newest
+ * change judged against a pact, counted only when it went the bad way, as the difference between what
+ * the page promised and what it says now, in cents.
+ * @param {any[]} feed
+ * @returns {number}
+ */
+export function moneySinceApplied(feed) {
+  /** @type {Map<string, { at: string; cents: number }>} */
+  const latest = new Map();
+  for (const entry of feed || []) {
+    const a = entry && entry.alert;
+    const promised = a && a.pact && a.pact.relation === 'differs' && a.pact.tone === 'bad' ? a.pact.promised : null;
+    const now = a ? a.after : null;
+    if (!promised || !now || promised.kind !== 'money' || now.kind !== 'money') continue;
+    if (!Number.isInteger(promised.amountMinor) || !Number.isInteger(now.amountMinor)) continue;
+    const key = `${a.watchId}|${a.field || ''}`;
+    const seen = latest.get(key);
+    if (seen && seen.at >= a.createdAt) continue;
+    latest.set(key, { at: a.createdAt, cents: Math.abs(now.amountMinor - promised.amountMinor) });
+  }
+  let total = 0;
+  for (const { cents } of latest.values()) total += cents;
+  return total;
+}
+
+/** "$1,234" or "$12.50" from integer cents, with no floating-point arithmetic. @param {number} cents */
+export function dollarsFromCents(cents) {
+  const whole = Math.trunc(cents / 100);
+  const part = cents % 100;
+  return `$${whole.toLocaleString('en-US')}${part ? `.${String(part).padStart(2, '0')}` : ''}`;
 }
 
 /**
@@ -518,6 +577,13 @@ ${lists}
 <section><h3>Haunting log</h3><ul class="log">${alerts}</ul></section>`;
 }
 
+/** One line above the stones that says what the reader is looking at. @param {any} state */
+export function renderIntro(state) {
+  const thing = state.app.motif === 'house' ? 'house' : 'stone';
+  const pact = state.app.pacts ? '; its pact keeps what the page said on the day you signed up' : '';
+  return `Each ${thing} watches one page. Its ghost wakes only for changes that matter${pact}.`;
+}
+
 /** Full first paint, rendered on the server. @param {any} state @param {{ css: string; theme: Record<string, string>; demo?: boolean }} assets */
 export function renderPage(state, assets) {
   const themeVars = Object.entries(assets.theme)
@@ -558,9 +624,11 @@ export function renderPage(state, assets) {
     }
   </div>
 </header>
+<a class="night-banner" href="#feed-title" id="night-banner" hidden></a>
 <a class="feed-pill" href="#feed-title" id="feed-pill">${esc(state.app.feedName || 'Spirit mail')} <span id="feed-pill-count">${state.feed.filter((/** @type {any} */ e) => !e.acknowledged).length}</span></a>
 <main class="layout">
   <div class="crypt">
+    <p class="crypt__intro" id="crypt-intro">${renderIntro(state)}</p>
     <section class="graveyard" id="graveyard" aria-label="Watched pages">${renderGraveyard(state)}</section>
     <p class="tally" id="tally">${renderTally(state)}</p>
   </div>

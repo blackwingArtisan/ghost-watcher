@@ -29,9 +29,44 @@ function paint() {
 function toast(text) {
   const el = $('#toast');
   el.textContent = text;
+  delete el.dataset.error;
   el.dataset.show = 'true';
   clearTimeout(Number(el.dataset.timer || 0));
   el.dataset.timer = String(setTimeout(() => (el.dataset.show = 'false'), 4200));
+}
+
+/**
+ * A themed error with a Retry button that runs the failed action again. It stays until answered.
+ * @param {string} text @param {() => Promise<void>} retry
+ */
+function errorToast(text, retry) {
+  const el = $('#toast');
+  clearTimeout(Number(el.dataset.timer || 0));
+  el.dataset.error = 'true';
+  el.innerHTML = '';
+  const message = document.createElement('span');
+  message.textContent = text;
+  const again = document.createElement('button');
+  again.type = 'button';
+  again.className = 'btn btn--small toast__retry';
+  again.textContent = 'Retry';
+  again.addEventListener('click', () => {
+    el.dataset.show = 'false';
+    void withBusy(retry);
+  });
+  const dismiss = document.createElement('button');
+  dismiss.type = 'button';
+  dismiss.className = 'toast__dismiss';
+  dismiss.setAttribute('aria-label', 'Dismiss');
+  dismiss.textContent = '×';
+  dismiss.addEventListener('click', () => (el.dataset.show = 'false'));
+  el.append(message, again, dismiss);
+  el.dataset.show = 'true';
+}
+
+/** Clears every "visiting..." flag, so a failed or finished round never leaves a ghost stuck. */
+function settleGhosts() {
+  document.querySelectorAll('.ghost[data-checking="true"]').forEach((card) => ((/** @type {HTMLElement} */ (card)).dataset.checking = 'false'));
 }
 
 /** @param {string} url @param {RequestInit} [init] */
@@ -52,6 +87,7 @@ function riseAfterNight(results) {
     const card = document.getElementById(`ghost-${result.watchId}`);
     if (card) card.dataset.rising = 'true';
   }
+  showNightBanner(results);
   // A shriek gets its own scene: the moon flushes red, lightning flashes, and the ghost shakes.
   const shrieked = results.some((r) => r.status === 'changed' && (r.alerts || []).some((/** @type {any} */ a) => a.severity === 'shriek'));
   if (shrieked) {
@@ -64,6 +100,25 @@ function riseAfterNight(results) {
     delete feed.dataset.arriving;
     document.querySelectorAll('.ghost[data-rising]').forEach((card) => delete (/** @type {HTMLElement} */ (card)).dataset.rising);
   }, 2600);
+}
+
+/**
+ * Small screens stack Spirit mail under the stones, so after a night the loudest catch gets a banner
+ * that jumps to the letters. Wide screens show the letters beside the stones and hide it (style.css).
+ * @param {any[]} results
+ */
+function showNightBanner(results) {
+  const banner = document.getElementById('night-banner');
+  if (!banner) return;
+  const alerts = results.flatMap((r) => (r.status === 'changed' ? r.alerts || [] : []));
+  const stealth = alerts.find((/** @type {any} */ a) => a.stealth);
+  const shriek = alerts.find((/** @type {any} */ a) => a.severity === 'shriek');
+  if (!stealth && !shriek) {
+    banner.hidden = true;
+    return;
+  }
+  banner.textContent = stealth ? `Bait and switch caught at ${stealth.watchName}: read the letter` : `${shriek.watchName} changed overnight: read the letter`;
+  banner.hidden = false;
 }
 
 async function refresh() {
@@ -183,10 +238,14 @@ async function withBusy(task) {
   try {
     await task();
   } catch (error) {
-    toast(`Something went wrong: ${error instanceof Error ? error.message : String(error)}`);
+    const reason = error instanceof Error ? error.message : String(error);
+    errorToast(`The ghosts could not reach the dashboard (${reason.slice(0, 80)}).`, task);
   } finally {
     busy -= 1;
-    if (busy === 0) document.body.dataset.busy = 'false';
+    if (busy === 0) {
+      document.body.dataset.busy = 'false';
+      settleGhosts();
+    }
   }
 }
 
@@ -280,6 +339,8 @@ document.addEventListener('click', (event) => {
     void withBusy(async () => {
       try {
         await api('/api/demo/rewind', { method: 'POST' });
+        const banner = document.getElementById('night-banner');
+        if (banner) banner.hidden = true;
         await refresh();
         toast('Rewound to the first sighting. Press N to let the night pass again.');
         const night = /** @type {HTMLElement | null} */ (document.querySelector('[data-action="next-night"]'));
@@ -337,13 +398,19 @@ setInterval(() => {
 // Phones: the Spirit mail pill stays out of the way while the first stone's name is on screen.
 const pill = document.getElementById('feed-pill');
 if (pill && 'IntersectionObserver' in window) {
+  /** @type {Map<Element, boolean>} */
+  const inView = new Map();
   const watchFirstTitle = () => {
     const title = document.querySelector('.ghost .ghost__name');
+    const letters = document.getElementById('feed');
     if (!title) return;
+    inView.clear();
     const observer = new IntersectionObserver((entries) => {
-      pill.dataset.hidden = String(entries.some((e) => e.isIntersecting));
+      for (const e of entries) inView.set(e.target, e.isIntersecting);
+      pill.dataset.hidden = String([...inView.values()].some(Boolean));
     });
     observer.observe(title);
+    if (letters) observer.observe(letters);
     return observer;
   };
   let observer = watchFirstTitle();
