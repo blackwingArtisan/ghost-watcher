@@ -379,6 +379,7 @@ export function renderGhostCard(ghost, nowIso) {
     ${badge}
   </div>
   <div class="ghost__stone">
+    <span class="house" aria-hidden="true"><i class="house__chimney"></i><i class="house__win"></i><i class="house__win"></i><i class="house__win"></i><i class="house__porch"></i></span>
     ${crack}${ribbon}
     <p class="ghost__state" title="${when}${ghost.fickleness && ghost.fickleness.changes > 0 ? ` · ${esc(ghost.fickleness.text)}` : ''}"><span class="dot"></span>${esc(STATE_WORDS[/** @type {keyof typeof STATE_WORDS} */ (ghost.state)] || ghost.state)}</p>
     <h2 class="ghost__name">${esc(ghost.name)}</h2>
@@ -394,7 +395,9 @@ export function renderGhostCard(ghost, nowIso) {
 
 /** @param {any} state */
 export function renderGraveyard(state) {
-  return state.ghosts.map((/** @type {any} */ g) => renderGhostCard(g, state.generatedAt)).join('\n');
+  const cards = state.ghosts.map((/** @type {any} */ g) => renderGhostCard(g, state.generatedAt)).join('\n');
+  // Haunted Listings is a street, and a street has a lamp at the end of it.
+  return state.app && state.app.motif === 'house' ? `${cards}\n<div class="street-lamp" aria-hidden="true"><i class="street-lamp__head"></i></div>` : cards;
 }
 
 /** @param {any} state */
