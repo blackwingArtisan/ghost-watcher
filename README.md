@@ -4,7 +4,7 @@
 
 **Banks edit the fine print at night. Ghost Watcher keeps the receipts.**
 
-![The Bonus Crypt in 14 seconds: each stone already wears a ribbon from the archive, such as Lanternfield's "Bonus cut $200 in June"; then one night passes, the moon flushes red, two ghosts wake, the stones show $300 struck through beside $400, and Spirit mail fills with a Bait and switch letter](docs/bonus-crypt-night.gif)
+![The Bonus Crypt in 43 seconds: each stone already wears a ribbon from the archive; the Ghost of Terms Past shows Lanternfield's $500 bonus cut to $300 in June; "I applied today" on Bramblewick stamps a red wax seal with its SHA-256; one night passes, the moon flushes red and two ghosts wake; then Raise the dead opens the Mossgate dispute pack under a Bait and switch stamp](docs/bonus-crypt-night.gif)
 
 **Live demo: [ghost-watcher.pages.dev](https://ghost-watcher.pages.dev/)** (a static recording of the Bonus Crypt; press **Let a night pass**)
 
@@ -75,6 +75,8 @@ the receipt into a dispute pack: a letter to the bank with the old and new terms
 archived link and both hashes, and prefilled CFPB complaint text. Bramblewick only reformatted its
 page, and its ghost slept straight through it.
 
+![The Mossgate dispute pack: Exhibit A, the fine print on the day you applied, against Exhibit B, the new 48-month rule, above the letter to the bank on parchment under a Bait and switch stamp](docs/dispute-pack.png)
+
 **Seal the pact.** On the day you apply, press **I applied today** on the bank's stone in the Bonus
 Crypt. The ghost seals that page as your pact: the snapshot, its SHA-256, a permanent copy from the
 Internet Archive when archiving is on, and the date. From then on every change is judged against the
@@ -84,7 +86,11 @@ improves its terms after you applied, the pack becomes a **bonus match** letter 
 better terms. Replacing or breaking a pact always asks first. In the demo the pact is back-dated 40
 days, so the first night already reads "Oct 10, the day you applied" against "Nov 19, what it says
 now" (the date depends on the day you run it), and the demo pact links a copy kept by the local stand-in
-Wayback Machine, dated on the pact date (the real Internet Archive cannot back-date a copy).
+Wayback Machine, dated on the pact date (the real Internet Archive cannot back-date a copy). One
+stone, Bramblewick, starts with no pact, so you can seal one yourself: the ghost stamps a red wax
+seal and shows the full hash, on the live site too.
+
+![Bramblewick just after "I applied today": a red wax seal with the ghost crest under the Pact sealed badge, the date and the full SHA-256 of the page as it read that day](docs/seal-ceremony.png)
 
 ![The Bonus Crypt after one night: four ghosts on tombstones, two glowing with the old values struck through beside the new ones, one asleep after a reformat-only change, one turned away by robots.txt, and Spirit mail with a Bait and switch letter](docs/bonus-crypt.png)
 

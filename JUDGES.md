@@ -60,6 +60,7 @@ features at a glance and the who-wrote-what table.
 | A haunted identity with meaning | Ghosts whose faces follow their state, a red-moon shriek scene, struck-through old values coloured by good or bad news (`template/src/ui/render.js`, `style.css`) |
 | Two apps that look different | Tombstones under a moon for the Bonus Crypt; a dusk street of houses whose windows name the matching unit for Haunted Listings (`docs/bonus-crypt.png`, `docs/haunted-listings.png`) |
 | Past and live kept apart | Archive history wears muted outlined ribbons; only live changes use full colour; Spirit mail leads each night with its loudest letter |
+| A ceremony for the key moment | "I applied today" stamps a red wax seal with the ghost crest and shows the full hash; reduced motion shows the final state at once (`e2e/seal-ceremony.spec.ts`, `docs/seal-ceremony.png`) |
 | Accessible | axe-core finds no WCAG 2.1 A or AA violations on the graveyard, the séance or the dispute pack (`e2e/dashboard-a11y.spec.ts`, `e2e/demo-and-guard.spec.ts`) |
 
 ## Innovation and idea

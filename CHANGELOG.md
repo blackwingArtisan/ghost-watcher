@@ -2,6 +2,10 @@
 
 ## 2026-11-22
 
+- **The seal ceremony, by Kiro (call 12).** "I applied today" stamps a red wax seal with the ghost
+  crest and shows the full SHA-256; the Bramblewick demo stone starts unsealed so anyone can try it,
+  on the live site too. Fresh hero GIF and stills, plus `docs/seal-ceremony.png` and
+  `docs/dispute-pack.png`.
 - **A lease pact in Haunted Listings, by Kiro (call 11).** The pact became a template feature with
   per-app wording: "I signed the lease" on the Larkspur Flats listing seals the advertised rent, fees
   and move-in special, and Raise the dead turns a later rent rise or new monthly fee into a letter to
