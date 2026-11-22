@@ -3,13 +3,13 @@
 <!-- kiro-numbers:start -->
 | Kiro, by the numbers | |
 | --- | --- |
-| `kiro-cli` calls | 9 (calls 1 to 9), each with an explicit list of trusted tools, never `--trust-all-tools` |
-| Time in Kiro | 73 minutes (calls 3 to 9; calls 1 and 2 were timed only roughly, about 15 minutes together) |
-| Credits | 133.18 (calls 3 to 9, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
-| Lines Kiro added | 7,231 (calls 3 to 9; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
-| Tests Kiro added | 201 Vitest and 10 Playwright (suite counts before and after each call) |
-| MCP calls | 14 (context7; calls 8 and 9), each with its arguments in the transcript |
-| Hand fixes to Kiro's code | 1: a date assumption in a Kiro-written test (5 lines added, 2 removed after call 7); Kiro fixed the cause in call 8 |
+| `kiro-cli` calls | 10 (calls 1 to 10), each with an explicit list of trusted tools, never `--trust-all-tools` |
+| Time in Kiro | 98 minutes (calls 3 to 10; calls 1 and 2 were timed only roughly, about 15 minutes together) |
+| Credits | 160.70 (calls 3 to 10, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
+| Lines Kiro added | 7,500 (calls 3 to 10; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
+| Tests Kiro added | 210 Vitest and 10 Playwright (suite counts before and after each call) |
+| MCP calls | 16 (context7; calls 8 to 10), each with its arguments in the transcript |
+| Hand changes to Kiro's code | 2: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; and Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into |
 <!-- kiro-numbers:end -->
 
 ## Kiro features at a glance
@@ -21,6 +21,7 @@
 | Hooks | `.kiro/hooks/test-on-save.json`, `full-suite-on-stop.json` | The Stop hook ran the full suite after call 3 and caught a stale assertion that Kiro fixed ([call 3 follow-up](#follow-up-after-the-stop-hooks-full-suite-run)) |
 | Agent hook | `.kiro/hooks/money-guard.json` restates the integer-cents rule when money code is saved | Written by Kiro in [call 3](#call-3-spec-review-money-and-contact-url-kiro-cli-v3) |
 | Custom agent | `.kiro/agents/pact-keeper.json`, scoped to the pact code with its steering as resources | Written by Kiro and checked with `kiro-cli agent validate` in [session 6](docs/kiro-sessions/session-6-pact-copy.md) |
+| Vibe coding | `real-pages/app.ts` and the real-pages result | Kiro chose three real bonus pages and wrote their watches from a goal and network rules alone, with no spec ([session 7](docs/kiro-sessions/session-7-real-pages.md)) |
 | MCP | `.kiro/settings/mcp.json` (context7) | Every call from session 5 on makes real context7 calls; each transcript shows the arguments |
 
 ## What Kiro built
@@ -364,4 +365,5 @@ the full suite before every commit and from a fresh clone before every push.
 |---|---|---|---|---|---|---|
 | 8: test clock | Gave every Kiro-written test reading the manual clock, added a clock-hygiene test and the scoped `testing.md` steering | 6.5 min | 11.33 | 196 | 6 | [session 5](docs/kiro-sessions/session-5-test-clock.md) |
 | 9: pact copy | Requirement 12 of seal-the-pact: plainer pact notes and letters, a display address in letters, the turned-away stone, a dated demo archive copy, `pact.md` steering and the `pact-keeper` agent | 19.7 min | 37.56 | 1,068 | 8 | [session 6](docs/kiro-sessions/session-6-pact-copy.md) |
+| 10: real pages | Vibe-coded (no spec): picked three robots-allowed, server-rendered bonus pages, wrote `real-pages/app.ts` and replayed their Wayback copies. Stopped by the 25-minute cap during its last Playwright run; the developer wrote the result section from the saved output | 25.1 min | 27.52 | 269 | 2 | [session 7](docs/kiro-sessions/session-7-real-pages.md) |
 <!-- kiro-calls:end -->
