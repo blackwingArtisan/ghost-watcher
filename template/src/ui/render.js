@@ -193,8 +193,9 @@ function renderPactConfirm(detail, confirm) {
  * @param {any} pack
  */
 export function renderDispute(pack) {
-  const lines = (/** @type {string[]} */ list) => list.map((line) => `<li>${esc(line)}</li>`).join('');
+  const isCheck = (/** @type {any} */ row) => /^check\b/i.test(row.label);
   const evidence = pack.evidence
+    .filter((/** @type {any} */ row) => !isCheck(row))
     .map((/** @type {any} */ row) => `<tr><th scope="row">${esc(row.label)}</th><td><code>${esc(row.value)}</code></td></tr>`)
     .join('');
   const c = pack.complaint;
@@ -209,9 +210,11 @@ export function renderDispute(pack) {
   const stamp = match
     ? '<p class="letter__stamp letter__stamp--match" aria-hidden="true">Bonus match</p>'
     : `<p class="letter__stamp" aria-hidden="true">${stealth ? 'Bait and switch' : 'Terms changed'}</p>`;
-  const command = pact && pact.checkCommand ? pact.checkCommand : '';
-  const checkYourself = command
-    ? `<details class="dispute__check"><summary>Check it yourself</summary><p class="muted small">Recompute the pact's SHA-256 from the stored file; it must match Exhibit A's hash above.</p><pre><code>${esc(command)}</code></pre></details>`
+  const checks = pack.evidence.filter(isCheck);
+  const checkYourself = checks.length
+    ? `<details class="dispute__check"><summary>Check it yourself</summary><p class="muted small">Run these in the app folder. Each hash must match the one in the evidence above.</p>${checks
+        .map((/** @type {any} */ row) => `<p class="small">${esc(row.label)}</p><pre><code>${esc(row.value)}</code></pre>`)
+        .join('')}</details>`
     : '';
   const beforeHead = promised ? `${esc(pack.beforeDate)}, the day you applied: what the page promised` : `${esc(pack.beforeDate)}: what the page said`;
   const complaint = match
