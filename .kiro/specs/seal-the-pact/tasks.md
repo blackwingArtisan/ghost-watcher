@@ -108,6 +108,22 @@ injected `Clock` or stored ISO strings, money in integer cents, apps import only
 - [x] 27. Check task for Session B. Run `npm run typecheck`, `npm run test:unit` and
       `GHOST_E2E_PORT=3840 npx playwright test`; all three must pass, including the existing specs
       and the a11y spec. Confirm no `package.json` changed. (PACT 11.1, 11.2)
+- [x] 28. Date every test reading with the test clock. Three bonus-watch tests gave the `Runner` a
+      manual clock but left `PoliteFetcher` on the real one, so a letter's "what it says now" date
+      came from the day the test ran. (PACT 8.6 for dates from the injected clock, 11.2 for tests
+      that stay deterministic and on `127.0.0.1`)
+  - [x] 28.1 Inject the manual clock into every `PoliteFetcher`, `Runner` and `SavePageNowArchiver`
+        in `apps/bonus-watch/test/pact.test.ts`, `receipts.test.ts` and `dispute.test.ts`, with a
+        fixed instant. Restore the fixed `'Nov 19, 2026'` assertions in `pact.test.ts`. Then search
+        every other test file and fix the same pattern.
+  - [x] 28.2 Add `template/test/clock-hygiene.test.ts`: it fails, naming file and line, when a
+        `new PoliteFetcher({...})` or `new Runner({...})` in a test has no `clock` or uses
+        `systemClock`. Show that it fails once with a clock removed.
+  - [x] 28.3 Add `.kiro/steering/testing.md` (included only for test files) and list it in
+        `.kiro/steering/structure.md`.
+  - [x] 28.4 Run `npm run typecheck`, `npx vitest run` and `GHOST_E2E_PORT=4230 npx playwright test`,
+        then run the three files once with a later manual-clock year and confirm only the
+        date-bearing assertions change. All must pass before this task is ticked.
 
 ## Traceability: requirement to task
 
@@ -135,12 +151,12 @@ Per criterion:
 | 3.1–3.7 | 2, 3 | | 7.1–7.4 | 6, 10, 11, 22, 24 |
 | 4.1–4.3 | 2, 3 | | 7.5, 7.6 | 6, 10, 11 |
 | 4.4 | 8, 9 | | 8.1–8.5 | 21, 22, 24 |
-| 4.5, 4.6 | 4, 5 | | 8.6 | 12 |
+| 4.5, 4.6 | 4, 5 | | 8.6 | 12, 28 |
 | 5.1–5.10 | 6, 7 | | 8.7 | 21, 22 |
 | 5.3, 5.4 | 8, 9 | | 8.8 | 21 |
 | 5.11, 5.12 | 8, 9 | | 9.1–9.8 | 15, 17 |
 | 10.1–10.4 | 16, 18, 23 | | 9.9 | 16, 17 |
 | 10.5–10.8 | 19, 23, 25 | | 10.9, 10.10 | 16, 18, 23 |
 | 10.11, 10.13 | 18, 24 | | 10.12 | 20, 25 |
-| 11.1, 11.2 | 13, 27 | | 11.3 | 18 |
+| 11.1, 11.2 | 13, 27, 28 | | 11.3 | 18 |
 | 11.4 | 12, 26 | | 11.5 | 14, 17 |

@@ -10,7 +10,7 @@ import {
   createDashboardServer,
   disputePack,
   loadDeps,
-  systemClock,
+  manualClock,
   type Alert,
   type AlertMessage,
   type AlertSink,
@@ -19,6 +19,9 @@ import { MemoryBlobStore, startFixtureServer } from '@ghost-watcher/template/tes
 import { renderDispute, renderFeed } from '../../../template/src/ui/render.js';
 import { bonusSite } from '../fixtures/site';
 import { buildApp } from '../src/app';
+
+/** The test's own now. The fetcher, runner and archiver all read it, so no date depends on the day the test runs. */
+const NOW = '2026-11-19T10:00:00.000Z';
 
 class Inbox implements AlertSink {
   readonly channel = 'inbox';
@@ -36,14 +39,15 @@ async function firstNight() {
     const built = buildApp({ BONUS_SITE_ORIGIN: fixture.origin });
     const app = { ...built, watches: built.watches.map((w) => ({ ...w, intervalMs: 0 })) };
     const userAgent = buildUserAgent({ version: app.version, localOnly: true });
+    const clock = manualClock(NOW);
     const sink = new Inbox();
     const runner = new Runner({
       app,
-      fetcher: new PoliteFetcher({ userAgent, minHostGapMs: 0, maxCrawlDelayMs: 0 }),
+      fetcher: new PoliteFetcher({ userAgent, clock, minHostGapMs: 0, maxCrawlDelayMs: 0 }),
       store: new GhostStore(new MemoryBlobStore()),
       sink,
-      clock: systemClock,
-      archive: new SavePageNowArchiver({ userAgent, base: `${fixture.origin}/__wayback`, label: 'the stand-in Wayback Machine' }),
+      clock,
+      archive: new SavePageNowArchiver({ userAgent, clock, base: `${fixture.origin}/__wayback`, label: 'the stand-in Wayback Machine' }),
     });
     await runner.checkAll({ force: true });
     fixture.advance();
@@ -123,11 +127,11 @@ describe('bonus-watch: Raise the dead turns a receipt into a dispute pack', () =
       app: { demo: true, quiet: '', disputes: true },
       feed: alerts.map((alert) => ({ alert, acknowledged: false, letter: null })),
       archive: [],
-      generatedAt: new Date().toISOString(),
+      generatedAt: NOW,
     });
     expect(html.match(/data-action="dispute"/g) ?? []).toHaveLength(withReceipt.length);
     // Apps that do not watch financial offers (Haunted Listings) never offer a bank letter.
-    const listings = renderFeed({ app: { demo: true, quiet: '' }, feed: alerts.map((alert) => ({ alert, acknowledged: false, letter: null })), archive: [], generatedAt: new Date().toISOString() });
+    const listings = renderFeed({ app: { demo: true, quiet: '' }, feed: alerts.map((alert) => ({ alert, acknowledged: false, letter: null })), archive: [], generatedAt: NOW });
     expect(listings).not.toContain('data-action="dispute"');
 
     const pack = disputePack(withReceipt[0] as Alert, watch((withReceipt[0] as Alert).watchId));
@@ -141,7 +145,7 @@ describe('bonus-watch: Raise the dead turns a receipt into a dispute pack', () =
     const fixture = await startFixtureServer(bonusSite, { port: 0 });
     const built = buildApp({ BONUS_SITE_ORIGIN: fixture.origin });
     const app = { ...built, watches: built.watches.map((w) => ({ ...w, intervalMs: 0 })) };
-    const deps = await loadDeps(app, { env: { GHOST_STORE: 'memory', GHOST_ALERTS: 'console', GHOST_HOST_GAP_MS: '0' } });
+    const deps = await loadDeps(app, { env: { GHOST_STORE: 'memory', GHOST_ALERTS: 'console', GHOST_HOST_GAP_MS: '0' }, clock: manualClock(NOW) });
     (deps.sink as unknown as { write: (line: string) => void }).write = () => undefined;
     const server = createDashboardServer(deps);
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));

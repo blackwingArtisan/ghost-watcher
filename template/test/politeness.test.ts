@@ -153,7 +153,7 @@ describe('PoliteFetcher', () => {
   it('times out slow pages', async () => {
     // Generous margins: robots.txt must answer within the timeout even when the suite runs in parallel.
     const { origin } = await site({ '/robots.txt': { status: 404, body: '' }, '/slow': { body: 'late', delayMs: 2000 } });
-    const fetcher = new PoliteFetcher({ userAgent: UA, minHostGapMs: 0, timeoutMs: 400 });
+    const fetcher = new PoliteFetcher({ userAgent: UA, clock: manualClock(), minHostGapMs: 0, timeoutMs: 400 });
     expect(await fetcher.fetchPage(`${origin}/slow`)).toMatchObject({ status: 'error', message: expect.stringContaining('No answer') });
   });
 
@@ -167,7 +167,7 @@ describe('PoliteFetcher', () => {
       inFlight -= 1;
       return { status: url.endsWith('/robots.txt') ? 404 : 200, url, text: async () => 'ok', headers: { get: () => null } };
     };
-    const fetcher = new PoliteFetcher({ userAgent: UA, transport, minHostGapMs: 0 });
+    const fetcher = new PoliteFetcher({ userAgent: UA, clock: manualClock(), transport, minHostGapMs: 0 });
     await Promise.all(['a', 'b', 'c', 'd'].map((p) => fetcher.fetchPage(`https://shop.example.com/${p}`)));
     expect(maxInFlight).toBe(1);
   });

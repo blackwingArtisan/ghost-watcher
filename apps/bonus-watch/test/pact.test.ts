@@ -12,7 +12,6 @@ import {
   SavePageNowArchiver,
   buildUserAgent,
   disputePack,
-  letterDate,
   manualClock,
   seedDemoPacts,
   type Alert,
@@ -51,7 +50,7 @@ async function demo(options: { dir?: string } = {}) {
   const clock = manualClock(NOW);
   const sink = new Inbox();
   const store = new GhostStore(options.dir ? new FileBlobStore(options.dir) : new MemoryBlobStore());
-  const stand = new SavePageNowArchiver({ userAgent, base: `${fixture.origin}/__wayback`, label: 'the stand-in Wayback Machine' });
+  const stand = new SavePageNowArchiver({ userAgent, clock, base: `${fixture.origin}/__wayback`, label: 'the stand-in Wayback Machine' });
   const archiver = { calls: 0 };
   const archive: PageArchiver = {
     label: stand.label,
@@ -62,7 +61,7 @@ async function demo(options: { dir?: string } = {}) {
   };
   const runner = new Runner({
     app,
-    fetcher: new PoliteFetcher({ userAgent, minHostGapMs: 0, maxCrawlDelayMs: 0 }),
+    fetcher: new PoliteFetcher({ userAgent, clock, minHostGapMs: 0, maxCrawlDelayMs: 0 }),
     store,
     sink,
     clock,
@@ -74,6 +73,8 @@ async function demo(options: { dir?: string } = {}) {
   const night = async () => {
     fixture.advance();
     await runner.checkAll({ force: true });
+    // The next night is a day later, as in life. Alert ids carry the check's time, so they stay distinct.
+    clock.advance(24 * 60 * 60 * 1000);
   };
   const watch = (id: string) => app.watches.find((w) => w.id === id);
   const alerts = async (id: string): Promise<Alert[]> => store.alerts(id);
@@ -125,15 +126,13 @@ describe('bonus-watch: seeded pacts on the fixture site', () => {
     if (!pack?.pact) throw new Error('expected a pack with a pact');
     expect(pack.pact).toMatchObject({ variant: 'match', relation: 'differs', appliedDate: 'Oct 10, 2026', seeded: true });
     expect(pack.beforeDate).toBe('Oct 10, 2026');
-    // The fetcher keeps the real clock, so "now" in the letter is the day the night's reading was taken.
-    const readOn = letterDate((shriek.receipt as NonNullable<Alert['receipt']>).after.takenAt);
-    expect(pack.afterDate).toBe(readOn);
+    expect(pack.afterDate).toBe('Nov 19, 2026');
     expect(pack.before).toEqual(['Bonus: $300']);
     expect(pack.after).toEqual(['Bonus: $400']);
     expect(pack.letter.subject).toBe('Request to match the improved terms of Lanternfield Everyday Checking');
     expect(pack.letter.body).toContain('I applied for Lanternfield Everyday Checking on Oct 10, 2026');
     expect(pack.letter.body).toContain('What the page promised on Oct 10, 2026, the day I applied:\n  Bonus: $300');
-    expect(pack.letter.body).toContain(`What the page says on ${readOn}:\n  Bonus: $400`);
+    expect(pack.letter.body).toContain('What the page says on Nov 19, 2026:\n  Bonus: $400');
     expect(pack.letter.body).toContain('Exhibit A SHA-256: ' + shriek.pact?.sha256);
     expect(pack.letter.body).toContain('no public archived copy was made (Demo pact: back-dated for the demo, so no archived copy was made.)');
     expect(pack.letter.body).not.toContain('[Date you applied]');

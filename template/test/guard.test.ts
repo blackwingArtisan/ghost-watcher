@@ -3,6 +3,7 @@ import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 import { afterEach, describe, expect, it } from 'vitest';
 import { defineApp, type GhostApp } from '../src/app';
+import { manualClock } from '../src/clock';
 import { ConfigError, isPlaceholderContact, loadDeps, visitsThirdParty } from '../src/config';
 import { allowedHostSet, checkRequest, hostnameOf, parseHostList } from '../src/guard';
 import { createDashboardServer } from '../src/server';
@@ -192,12 +193,14 @@ describe('dashboard server refuses cross-origin writes', () => {
       ],
     });
     let fetches = 0;
+    const clock = manualClock();
     const deps = await loadDeps(app, {
       env: { GHOST_STORE: 'memory', GHOST_ALERTS: 'console' },
+      clock,
       fetcher: {
         async fetchPage() {
           fetches += 1;
-          return { status: 'ok', html: '<p class="bonus">$300</p>', finalUrl: 'https://example.com/offer', httpStatus: 200, fetchedAt: new Date().toISOString() };
+          return { status: 'ok', html: '<p class="bonus">$300</p>', finalUrl: 'https://example.com/offer', httpStatus: 200, fetchedAt: clock.now().toISOString() };
         },
       },
     });

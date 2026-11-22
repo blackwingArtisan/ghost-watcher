@@ -43,6 +43,7 @@ inclusion: always
 /apps/listing-watch       app 2: listings and permits watcher (same layout)
 /e2e                      Playwright end-to-end specs that drive both dashboards
 /.kiro                    steering, specs and hooks used to build this repo
+  steering/               product.md, structure.md, tech.md (always) and testing.md (test files only)
   hooks/                  test-on-save, full-suite-on-stop and money-guard (JSON, schema v1)
 ```
 
