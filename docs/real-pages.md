@@ -69,3 +69,31 @@ After seven days, the week's numbers are the stone counts (noise ignored) next t
 Add one row per run to the README's [Signal, not noise](../README.md#signal-not-noise) section with
 the date, the number of pages, the span of copies or days, and the three alert counts. Name real sites
 only in the aggregate; the fixture sites stay the place for named examples.
+
+## Result, November 2026
+
+Run on 2026-11-22 with `--limit 12` against three public, server-rendered sign-up bonus pages whose
+robots.txt allows them (TD Bank's checking and savings bonus, TD Bank's student checking offer and
+Chase Freedom Unlimited; selectors in [`real-pages/`](../real-pages/README.md)). Full output:
+[`real-pages-run-2026-11.txt`](real-pages-run-2026-11.txt).
+
+| Pages | Archived copies | Span | Changes Ghost Watcher reported | Whole-page watcher | Selector text watcher | Ghost Watcher | Average bonus change |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 3 | 35 (32 steps between copies) | Jun 2024 to Nov 2026 | 10 | 29 alerts | 29 alerts | 10 alerts | $100 across 4 bonus changes |
+
+- **Chase Freedom Unlimited, Jan 28, 2026:** the bonus went down from $300 to $200, then up to $250
+  on Apr 22 and back down to $200 on May 31. Someone who applied in April and was paid on the May
+  terms would be $50 short, and a sealed pact would show it.
+- **TD Bank checking and savings, Apr 20, 2026:** the headline bonus went up from $300 to $500, the
+  kind of change a bonus-match letter asks about. Its offer deadline moved five times in the year.
+- **TD Bank checking and savings, Jul 18, 2026:** with the headline bonus unchanged at $500, the
+  payout and clawback sentences ("we'll deposit the bonus … on or before 180 days", "TD Bank reserves
+  the right to deduct the bonus amount at closing") dropped out of the terms block Ghost Watcher
+  reads; they were back on Aug 13. A whole-page watcher alerted on almost every copy, so a change
+  like this would have been buried.
+- **TD Bank student checking:** nothing watched changed in 28 months of copies, and Ghost Watcher
+  stayed silent while the other two watchers sent 9 alerts each.
+
+Real pages have no answer key, so these counts are alerts sent, not false alarms; the fixture run
+above is the one with known answers.
+

@@ -128,8 +128,13 @@ every 6 hours, through three watchers that see the exact same responses. Each ce
 | **Total** | 7 pages, 77 visits | 10 | **77 (67 false, 0 missed)** | **11 (1 false, 0 missed)** | **10 (0 false, 0 missed)** |
 
 The fixture pages are invented, but their noise is typical: timestamps, request ids, rotating promos
-and one night where a bank only reformats its offer. `scripts/real-pages.ts` replays a real page's
-Wayback Machine history through the same three watchers ([procedure](docs/real-pages.md)).
+and one night where a bank only reformats its offer.
+
+**On real pages.** `scripts/real-pages.ts` replays a real page's Wayback Machine history through the
+same three watchers. On three public bank and card bonus pages (35 archived copies, June 2024 to
+November 2026), the whole-page watcher sent 29 alerts and Ghost Watcher sent 10: four bonus changes
+averaging $100, five moved deadlines and one terms change under an unchanged $500 headline
+([result](docs/real-pages.md#result-november-2026)).
 
 ## Why not what you already use?
 

@@ -24,6 +24,7 @@ The fastest look: `npm install && npm run bonus`, open http://127.0.0.1:3130/?ni
 | --- | --- |
 | Tested end to end | `npm test`: type-check, 353 Vitest tests, 27 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
 | Fewer false alarms, measured | `npm run noise`: 10 alerts, none false, none missed, against 77 (67 false) from a whole-page watcher on the same responses; pinned by `template/test/noise.test.ts` |
+| Measured on real pages | Three public bank bonus pages through 35 Wayback copies: 29 alerts from a whole-page watcher, 10 from Ghost Watcher, including a $300 to $200 bonus cut and a terms change under an unchanged headline ([docs/real-pages.md](docs/real-pages.md#result-november-2026), built by Kiro in a vibe-coding session) |
 | Money is exact | Integer cents and BigInt-safe arithmetic in `template/src/normalize.ts`, tests in `template/test/money.test.ts` (built by Kiro) |
 | Polite by construction | RFC 9309 robots.txt parsing, per-host locks, Crawl-delay, back-off and an honest User-Agent in `template/src/robots.ts` and `template/src/fetcher.ts`; the watcher refuses real sites without a contact URL (`template/src/config.ts`) |
 | Proof that holds up | SHA-256 over the exact stored bytes plus an Internet Archive Save Page Now copy (`template/src/receipts.ts`); `shasum -a 256` on the snapshot files reproduces the hashes |
