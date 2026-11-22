@@ -2,6 +2,13 @@
 
 ## 2026-11-22
 
+- **A lease pact in Haunted Listings, by Kiro (call 11).** The pact became a template feature with
+  per-app wording: "I signed the lease" on the Larkspur Flats listing seals the advertised rent, fees
+  and move-in special, and Raise the dead turns a later rent rise or new monthly fee into a letter to
+  the landlord. The Bonus Crypt's wording is unchanged; the e2e block grows to eight ports.
+- **Measured on real pages, by Kiro (call 10).** Three public bonus pages replayed through 35
+  Wayback Machine copies: Ghost Watcher sent 10 alerts where a whole-page watcher and a selector
+  watcher each sent 29 (`docs/real-pages.md`).
 - **Raise the dead reads as evidence.** Exhibit A (the day you applied) and Exhibit B (now) with the
   changed clause marked, the letter on parchment under a Bait and switch stamp, the text boxes behind
   "Edit the text" and the hash commands behind "Check it yourself".
