@@ -22,8 +22,8 @@ The fastest look: `npm install && npm run bonus`, open http://127.0.0.1:3130/?ni
 
 | Claim | Evidence |
 | --- | --- |
-| Tested end to end | `npm test`: type-check, 435 Vitest tests, 38 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
-| Fewer false alarms, measured | `npm run noise`: 11 alerts, none false, none missed, against 88 (77 false) from a whole-page watcher on the same responses; pinned by `template/test/noise.test.ts` |
+| Tested end to end | `npm test`: type-check, 444 Vitest tests, 40 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
+| Fewer false alarms, measured | `npm run noise`: 12 alerts, none false, none missed, against 115 (103 false) from a whole-page watcher on the same responses; pinned by `template/test/noise.test.ts` |
 | Measured on real pages | Three public bank bonus pages through 35 Wayback copies: 29 alerts from a whole-page watcher, 10 from Ghost Watcher, including a $300 to $200 bonus cut and a terms change under an unchanged headline ([docs/real-pages.md](docs/real-pages.md#result-november-2026), built by Kiro in a vibe-coding session) |
 | Money is exact | Integer cents and BigInt-safe arithmetic in `template/src/normalize.ts`, tests in `template/test/money.test.ts` (built by Kiro) |
 | Polite by construction | RFC 9309 robots.txt parsing, per-host locks, Crawl-delay, back-off and an honest User-Agent in `template/src/robots.ts` and `template/src/fetcher.ts`; the watcher refuses real sites without a contact URL (`template/src/config.ts`) |
@@ -44,11 +44,11 @@ features at a glance and the who-wrote-what table.
 <!-- kiro-numbers:start -->
 | Kiro, by the numbers | |
 | --- | --- |
-| `kiro-cli` calls | 12 (calls 1 to 12), each with an explicit list of trusted tools, never `--trust-all-tools` |
-| Time in Kiro | 127 minutes (calls 3 to 12; calls 1 and 2 were timed only roughly, about 15 minutes together) |
-| Credits | 230.47 (calls 3 to 12, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
-| Lines Kiro added | 9,391 (calls 3 to 12; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
-| Tests Kiro added | 238 Vitest and 21 Playwright (suite counts before and after each call) |
+| `kiro-cli` calls | 13 (calls 1 to 13), each with an explicit list of trusted tools, never `--trust-all-tools` |
+| Time in Kiro | 141 minutes (calls 3 to 13; calls 1 and 2 were timed only roughly, about 15 minutes together) |
+| Credits | 252.66 (calls 3 to 13, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
+| Lines Kiro added | 9,991 (calls 3 to 13; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
+| Tests Kiro added | 247 Vitest and 23 Playwright (suite counts before and after each call) |
 | MCP calls | 22 (context7; calls 8 to 12), each with its arguments in the transcript |
 | Hand changes to Kiro's code | 2: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; and Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into |
 <!-- kiro-numbers:end -->
@@ -70,6 +70,7 @@ features at a glance and the who-wrote-what table.
 | History on day one | The Ghost of Terms Past replays a page's Wayback Machine copies through the same rules at the first sighting (`template/src/history.ts`) |
 | Bait and switch | `rules.stealthEdit` flags fine-print edits under an unchanged headline (`template/src/rules.ts`, `template/test/stealth.test.ts`) |
 | Receipts to dispute | Hashes and an archived copy become a dated letter and CFPB complaint text (`template/src/dispute.ts`) |
+| Slow drift and the bonus clock | Cuts too small to wake the ghost each night still shriek against the pact; a bonus clock counts the days left and flags "Bonus due, not posted" with a letter (`template/src/bonus-clock.ts`, `apps/bonus-watch/test/drift-clock.test.ts`, `e2e/drift-clock.spec.ts`) |
 | One pact, any promise | An app's pact vocabulary sets the button, letters and authority line: Haunted Listings seals a lease with "I signed the lease" and writes the landlord letter (`template/src/pact-vocabulary.ts`, `apps/listing-watch/test/lease-pact.test.ts`, `e2e/lease-pact.spec.ts`) |
 | What general watchers do not do | Comparison with changedetection.io, Visualping, Distill and the bonus-hunting community ([README](README.md#why-not-what-you-already-use)) |
 

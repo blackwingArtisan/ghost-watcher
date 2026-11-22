@@ -2,6 +2,10 @@
 
 ## 2026-11-22
 
+- **Slow drift and the bonus clock, by Kiro (call 13).** Fernwick, a fifth Bonus Crypt page, trims
+  its bonus in steps too small to wake the ghost; on the third night the pact flags the whole drift.
+  A bonus clock counts the days left, flags "Bonus due, not posted" with a letter, and a weekly
+  digest goes through the outbox. The noise replay now covers nine pages.
 - **The seal ceremony, by Kiro (call 12).** "I applied today" stamps a red wax seal with the ghost
   crest and shows the full SHA-256; the Bramblewick demo stone starts unsealed so anyone can try it,
   on the live site too. Fresh hero GIF and stills, plus `docs/seal-ceremony.png` and
