@@ -81,8 +81,8 @@ pack quotes what the page promised the day you applied against what it says now.
 improves its terms after you applied, the pack becomes a **bonus match** letter that asks for the
 better terms. Replacing or breaking a pact always asks first. In the demo the pact is back-dated 40
 days, so the first night already reads "Oct 10, the day you applied" against "Nov 19, what it says
-now" (the date depends on the day you run it), and the demo pact has no archived copy because none
-could honestly be dated that far back.
+now" (the date depends on the day you run it), and the demo pact links a copy kept by the local stand-in
+Wayback Machine, dated on the pact date (the real Internet Archive cannot back-date a copy).
 
 ![The Bonus Crypt after one night: four ghosts on tombstones, two glowing with the old values struck through beside the new ones, one asleep after a reformat-only change, one turned away by robots.txt, and Spirit mail with a Bait and switch letter](docs/bonus-crypt.png)
 

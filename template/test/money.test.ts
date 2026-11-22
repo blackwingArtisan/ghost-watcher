@@ -262,7 +262,7 @@ describe('money against a sealed pact stays in integer cents', () => {
   it('(PACT 5.8) $4.35 in a pact reference is 435 cents, never 434.99999999999994', () => {
     const found = judge('$4.35', '$4.35', '$1.15');
     expect(found[0]?.pact?.promised).toEqual({ kind: 'money', amountMinor: 435, currency: 'USD', display: '$4.35' });
-    expect(found[0]?.pact?.note).toBe('On Oct 10, 2026, the day you applied, Fee was $4.35; it is now $1.15 (-$3.20).');
+    expect(found[0]?.pact?.note).toBe('On Oct 10, 2026, the day you applied, the fee was $4.35; it is now $1.15 (-$3.20).');
     expect(found[0]?.pact?.tone).toBe('good');
   });
 });

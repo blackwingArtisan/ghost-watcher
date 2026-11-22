@@ -17,6 +17,9 @@
  *   GET  /__wayback/save/<url>                                      Save Page Now: keeps a copy of the
  *                                                                   page at the current version and
  *                                                                   redirects to it
+ *   GET  /__wayback/save/<14-digit stamp>/<url>                     stand-in only: the same, but the copy
+ *                                                                   is dated <stamp> (the demo's back-dated
+ *                                                                   pact; the real archive cannot do this)
  */
 import { createServer, type Server } from 'node:http';
 
@@ -51,6 +54,11 @@ export interface FixtureSite {
 /** `2026-06-11T09:30:44Z` to `20260611093044`. */
 function waybackStamp(iso: string): string {
   return iso.replace(/\.\d+Z$/, 'Z').replace(/[-:TZ]/g, '').slice(0, 14);
+}
+
+/** `20260611093044` to `2026-06-11T09:30:44Z`. */
+function stampToIso(stamp: string): string {
+  return `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}T${stamp.slice(8, 10)}:${stamp.slice(10, 12)}:${stamp.slice(12, 14)}Z`;
 }
 
 function pagePathOf(target: string): string | null {
@@ -164,12 +172,12 @@ export async function startFixtureServer(site: FixtureSite, options: { port?: nu
       const body = rows.length > 0 ? [['timestamp', 'original', 'statuscode'], ...rows] : [];
       return reply(200, JSON.stringify(body), 'application/json');
     }
-    const save = /^\/__wayback\/save\/(.+)$/.exec(url.pathname);
+    const save = /^\/__wayback\/save\/(?:(\d{14})\/)?(.+)$/.exec(url.pathname);
     if (method === 'GET' && save) {
-      const target = `${save[1] ?? ''}${url.search}`;
+      const target = `${save[2] ?? ''}${url.search}`;
       const path = pagePathOf(target);
       if (!path || !pages.has(path) || outage) return reply(path && pages.has(path) ? 503 : 404, '<h1>Could not save that page</h1>');
-      const capturedAt = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+      const capturedAt = save[1] ? stampToIso(save[1]) : new Date().toISOString().replace(/\.\d+Z$/, 'Z');
       const copy: SavedCopy = { stamp: waybackStamp(capturedAt), path, version, capturedAt };
       saved.push(copy);
       record(302);

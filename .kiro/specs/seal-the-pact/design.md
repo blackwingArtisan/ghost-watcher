@@ -507,7 +507,8 @@ already enforces (PACT 10.12).
    hash is over the back-dated document the store holds, so `shasum` on the pact file still matches.
 3. The record has `seeded: 'demo'`, `snapshotTakenAt: sealedAt` and
    `archive: { archiveUrl: null, archivedAt: null, archivedBy: null, note: 'Demo pact: back-dated for the demo, so no archived copy was made.' }`.
-   The archiver is never called: no archive can honestly be dated 40 days ago.
+   The real archiver is never asked for a back-dated copy: no archive can honestly be dated 40 days
+   ago. A stand-in archive that can date a copy changes this; see section 14.5 (PACT 12.25).
 4. Watches with no snapshot (the blocked Cinderhollow ghost) are skipped and returned as
    `no-snapshot`.
 
@@ -597,10 +598,15 @@ the demo pack is a separate item and out of scope for this spec.
    (`http://127.0.0.1:<port>/...` in the demo) and the archiver's own label ("the stand-in Wayback
    Machine"). This design reuses both and adds no rewriting. Confirm that this is the rule meant.
    **Decision:** Keep the default: no host rewriting; the pack quotes `alert.url` as stored and the archiver's own label.
+   **Superseded by requirement 12 (display URL, section 14.4).** A watch may now carry a `displayUrl`
+   that every human-facing text shows. Rewriting is by data on the watch, not by string replacement.
 2. **Seeded pact and archive.** The seeded pact has no archived copy, so Exhibit A in the demo shows
    "none: Demo pact ..." plus the hash. Using the stand-in archive would look better but would label a
    copy taken today as a copy from 40 days ago.
    **Decision:** Keep the default: the seeded pact has no archived copy.
+   **Superseded by requirement 12 (section 14.5).** The demo now saves a copy through the stand-in
+   Wayback route, dated on the pact date by the stand-in itself. Only the stand-in can be asked for a
+   dated copy, so the label still says "the stand-in archive" and no real archive is back-dated.
 3. **Stale reading.** Sealing uses the latest stored snapshot and does not force a check. If the page
    moved since the last visit, the séance shows the reading's age but the seal still says "today".
    An option is to run a forced check first; it adds a fetch to a button that should be instant.
@@ -609,3 +615,72 @@ the demo pack is a separate item and out of scope for this spec.
    reader sealed gets no pact-dated pack. Looking the pact up at pack time would change that, at the
    cost of packs that change when a pact is replaced.
    **Decision:** Keep the default: alerts embed a copy of the pact facts.
+
+## 14. Pact copy and state (requirement 12)
+
+### 14.1 Note wording (PACT 12.1 to 12.4)
+
+`summary.ts` gains `pairEdits(removed, added)`, the pairing `describeFieldChange` already does inline
+(a removed sentence and an added one are the same edit when `similar` says so). It returns
+`{ edited: { was, now }[], fresh: string[], gone: string[] }`. `describeFieldChange` calls it, so
+alerts and notes agree on what an edit is.
+
+`pactNote` builds `On <date>, the day you applied, <subject> <parts>.` The subject is `the` plus the
+label with its first letter lower-cased unless the second letter is a capital (`the APY`). Parts:
+an edit reads `said "<changed words>" and now says "<changed words>"` (from `changedWindow`, two
+words of context); a new sentence reads `now says "<sentence>"`; a removed one `no longer says
+"<sentence>"`. Quoted text loses its own trailing `.`, `!` or `?`, and the note ends with one `.`
+after the closing quote, so `."` never meets another `.`.
+
+### 14.2 Back-dated reading (PACT 12.5, 12.6)
+
+`renderPactSection` compares `snapshotTakenAt` with `sealedAt`. Equal: "the reading taken when it was
+sealed". Older: the existing "<age> when sealed". The words "just now" are not used for a pact.
+
+### 14.3 Letters quote the sentence (PACT 12.7 to 12.9, 12.10 to 12.12)
+
+`quoteLines` calls `pairEdits`. An edit puts the old sentence, whole, on the before side and the new
+one on the after side. A new sentence stays `did not say` on the before side; a removed one stays
+`no longer says` on the after side.
+
+`pactNoteRepeats(alert)` in `pact.ts` is true when `alert.stealth` is set, the pact relation is
+`differs`, and the pact's `promised` value equals `alert.before`. The note then says what the Bait and
+switch line and the summary already say. `view.ts` blanks `pact.note` on the alerts it sends to the
+dashboard in that case, and the one place that prints a note (the dashboard row) prints nothing for an
+empty note. The letter and the alert email have never printed `pact.note`; a test pins that they do
+not, so a later change cannot reintroduce the repeat. When the promised value differs from the value
+before this change (a drift over several nights) the note adds information and stays. "A different
+date" is not a separate test: the sealed date is always carried by the promised value's change.
+
+### 14.4 Display URL (PACT 12.13 to 12.19)
+
+`Watch.displayUrl?: string`, validated in `validateWatch` (http or https). A single helper,
+`shownUrl(watch)`, returns `watch.displayUrl ?? watch.url`. The runner uses it for `Alert.url`, for the
+alert email (`renderAlertMessage` gets the display URL as `watch.url`) and `view.ts` uses it for the
+stone subtitle and `GhostView.url`. The runner sets the new optional `Alert.fetchUrl` to the real URL
+only when it differs, and `disputePack` adds a `Fetched from` evidence row from it. Fetching,
+robots.txt, `Snapshot.url`, the snapshot hash and archiving keep `watch.url`. When the display URL
+is set, the séance shows it as text, not a link, because a `.example` address does not resolve.
+
+### 14.5 Turned-away stone (PACT 12.20 to 12.24)
+
+`ghostView` sets `canSeal` as before. `renderPactButton` and the séance pact section take the ghost's
+`state`; for `blocked` they render the plain line in place of the button and the hint. The stone has
+no "Check now" button; the séance's gets `btn--quiet` instead of `btn--glow` in that state.
+
+### 14.6 Demo pact with a dated stand-in copy (PACT 12.25 to 12.28)
+
+`SavePageNowArchiver.saveAt(url, at)` asks `{base}/save/<14-digit stamp>/<url>`, a route only the
+fixture's stand-in offers, and parses the redirect as `save` does. The fixture stores the copy with
+`capturedAt = at` and the page version it is serving, so `/__wayback/web/<stamp>/<url>` answers with
+that date. `seedDemoPacts` takes an optional `archive` with `saveAt`; when present it asks once per
+watch and records link, capture time and label. On failure it records `Could not reach <label>:
+<reason>` and still seeds. Without it, the old demo note stays. The hash is over the stored snapshot
+and does not depend on the copy.
+
+### 14.7 Steering and agent (PACT 12.29 to 12.33)
+
+`.kiro/steering/pact.md` carries `inclusion: fileMatch` and a `fileMatchPattern` list. The agent
+`.kiro/agents/pact-keeper.json` uses the universal kiro-cli format (`tools`, `allowedTools`,
+`resources` as `file://` paths, `prompt`). A Vitest file reads both and checks the keys, the bullet
+count and the resource paths; the CLI check is run by hand.

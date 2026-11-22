@@ -25,7 +25,7 @@ Every criterion is one sentence in strict EARS form and states one testable beha
 - **WHERE** *optional feature is present* **THE SYSTEM SHALL** *response*.
 - Ubiquitous: **THE SYSTEM SHALL** *response*.
 
-Requirements are numbered 1 to 11 and criteria `N.M`. A test title names its criterion in the form
+Requirements are numbered 1 to 12 and criteria `N.M`. A test title names its criterion in the form
 `(PACT 3.2)`, for example `it('(PACT 3.2) a pact survives a new GhostStore on the same files', ...)`.
 `tasks.md` cites the same numbers.
 
@@ -161,7 +161,7 @@ for the better terms, so that I get the bigger bonus or the lower fee.
 **Acceptance Criteria:**
 1. WHEN the demo takes its first sighting, THE SYSTEM SHALL seal a pact for every pact-enabled watch that has a snapshot, dated 40 days before the injected clock's now.
 2. WHEN a pact is seeded, THE SYSTEM SHALL set the seeded snapshot's `takenAt` to the seeded date and mark the pact `seeded: 'demo'`.
-3. WHEN a pact is seeded, THE SYSTEM SHALL NOT call the archiver and SHALL record the note "Demo pact: back-dated for the demo, so no archived copy was made."
+3. WHEN a pact is seeded and no dated stand-in archive is available, THE SYSTEM SHALL record the note "Demo pact: back-dated for the demo, so no archived copy was made." (Requirement 12 adds the dated stand-in copy, 12.25 to 12.28.)
 4. WHEN the demo is rewound, THE SYSTEM SHALL seed the pacts again after the new baseline.
 5. WHEN a night passes in the demo, THE SYSTEM SHALL produce a Lanternfield pack that reads the seeded date as the day applied and today as the date now.
 6. THE SYSTEM SHALL read every date in seeding, comparison and dispute code from the injected `Clock` or from stored ISO strings.
@@ -191,7 +191,7 @@ never leave the dashboard.
 
 **Acceptance Criteria:**
 1. WHERE the app is pact-enabled and a ghost has a snapshot and no pact, THE SYSTEM SHALL show an "I applied today" button on its stone.
-2. WHILE a ghost has no snapshot, THE SYSTEM SHALL show the button disabled with a reason in its accessible description.
+2. WHILE a ghost that robots.txt has not turned away has no snapshot, THE SYSTEM SHALL show the button disabled with a reason in its accessible description. (A turned-away ghost shows no button: 12.20 to 12.24.)
 3. WHILE a pact is sealed, THE SYSTEM SHALL show on the stone "Pact sealed" with the compact date and the short hash.
 4. WHILE a pact is corrupt, THE SYSTEM SHALL show "Pact unreadable" on the stone.
 5. WHEN a reader seals from a stone, THE SYSTEM SHALL update that stone and show a toast naming the watch and the short hash.
@@ -215,3 +215,68 @@ else breaks.
 3. THE SYSTEM SHALL escape every pact value before writing it into HTML.
 4. THE SYSTEM SHALL let apps use pacts only through exports of `template/src/index.ts`.
 5. WHERE an app does not set `copy.pacts`, THE SYSTEM SHALL behave exactly as before, including the listing-watch dashboard and API.
+
+### Requirement 12: Pact copy and state
+
+**User Story:** As a reader, I want the pact's wording, dates, hosts and demo state to read plainly and
+truthfully, so that a letter or a stone never repeats itself, shows a fixture address or promises
+something the ghost cannot do.
+
+**Acceptance Criteria:**
+
+*Pact note wording (`pact.ts`)*
+
+1. WHEN a pact note names a field after "the day you applied,", THE SYSTEM SHALL write the label as "the" plus the label in lower case, and keep a label whose second letter is also a capital (such as "APY") as it is.
+2. THE SYSTEM SHALL end every pact note with exactly one full stop, placed after any closing quotation mark and never inside it.
+3. WHEN a fine-print sentence was edited rather than added, THE SYSTEM SHALL quote in the pact note only the changed words of the old and the new sentence, with at most two words of context on each side.
+4. WHEN a fine-print sentence is wholly new, THE SYSTEM SHALL quote that sentence whole in the pact note as something the page now says.
+
+*Back-dated pacts (`ui/render.js`)*
+
+5. WHEN the sealed reading and the seal share the same moment, THE SYSTEM SHALL describe the reading as "the reading taken when it was sealed" and SHALL NOT say "just now".
+6. WHEN the sealed reading is older than the seal, THE SYSTEM SHALL say how old the reading was when it was sealed.
+
+*Dispute letters quote the old clause (`dispute.ts`)*
+
+7. WHEN a fine-print sentence was edited, THE SYSTEM SHALL quote the old sentence in full, as it read, on the "before" side of the letter and the pack.
+8. WHEN a fine-print sentence was edited, THE SYSTEM SHALL quote the new sentence in full on the "after" side of the letter and the pack.
+9. WHEN a fine-print sentence is wholly new, THE SYSTEM SHALL say on the "before" side that the page "did not say" it.
+
+*No repeated line*
+
+10. WHEN an alert is a Bait and switch and its pact's promised value equals the value the alert records as before, THE SYSTEM SHALL show no pact note on that alert's dashboard row.
+11. WHEN an alert is a Bait and switch and its pact's promised value equals the value the alert records as before, THE SYSTEM SHALL leave the pact note out of the dispute letter and the alert email.
+12. WHEN an alert is a Bait and switch and its pact's promised value differs from the value the alert records as before, THE SYSTEM SHALL keep the pact note on its dashboard row.
+
+*Display host*
+
+13. WHERE a watch sets an optional `displayUrl`, THE SYSTEM SHALL accept only an http or https URL, and refuse the watch definition otherwise.
+14. WHERE a watch sets `displayUrl`, THE SYSTEM SHALL show it instead of the fetch URL in the dispute letter, the complaint text and the pack's "Page" row.
+15. WHERE a watch sets `displayUrl`, THE SYSTEM SHALL show it instead of the fetch URL in the alert email (text and link).
+16. WHERE a watch sets `displayUrl`, THE SYSTEM SHALL show it instead of the fetch URL on the dashboard stone and in the séance.
+17. WHERE a watch sets `displayUrl`, THE SYSTEM SHALL still fetch the page, read robots.txt, hash the snapshot and ask the archiver using the fetch URL.
+18. WHERE a watch sets `displayUrl` and it differs from the fetch URL, THE SYSTEM SHALL add a "Fetched from" evidence row to the pack that names the fetch URL.
+19. THE SYSTEM SHALL give each of the four bonus-watch watches and each of the four Haunted Listings watches a `displayUrl` on a reserved `.example` domain.
+
+*Turned-away stone*
+
+20. WHILE a ghost is turned away by robots.txt, THE SYSTEM SHALL NOT show "I applied today" on its stone.
+21. WHILE a ghost is turned away by robots.txt, THE SYSTEM SHALL NOT show the hint "Not seen yet. Summon the ghost first." on its stone.
+22. WHILE a ghost is turned away by robots.txt, THE SYSTEM SHALL NOT show "I applied today" or that hint in its séance.
+23. WHILE a ghost is turned away by robots.txt, THE SYSTEM SHALL show "Check now" in its séance as a quiet secondary button (the stone has no such button).
+24. WHILE a ghost is turned away by robots.txt, THE SYSTEM SHALL show on its stone and in its séance the line "The site's robots.txt asks watchers to stay away, so the ghost does not visit and cannot seal a pact."
+
+*Demo pact with a stand-in archived copy*
+
+25. WHEN the demo seeds a pact and a stand-in archive that can date a copy is available, THE SYSTEM SHALL save one copy of the page through it, dated on the pact's sealed date, and record the copy's link, capture time and archive label in the pact.
+26. WHEN the fixture's stand-in archive is asked for a dated copy, THE SYSTEM SHALL answer with a copy whose capture time is the requested date.
+27. IF the stand-in archive cannot save the dated copy, THEN THE SYSTEM SHALL still seed the pact and record the note "Could not reach <archive label>: <reason>".
+28. WHEN an alert carries a seeded pact with a dated copy, THE SYSTEM SHALL list that copy's link in Exhibit A instead of "none".
+
+*Scoped pact steering and a custom agent*
+
+29. THE SYSTEM SHALL keep `.kiro/steering/pact.md` with front matter `inclusion: fileMatch` and a `fileMatchPattern` that matches `pact*.ts`, `sealing.ts` and `dispute.ts` in `template/src` and their tests.
+30. THE SYSTEM SHALL keep five to eight bullets in `.kiro/steering/pact.md`.
+31. THE SYSTEM SHALL keep `.kiro/agents/pact-keeper.json` with `pact.md`, `testing.md`, `tech.md` and `structure.md` as `file://` resources.
+32. THE SYSTEM SHALL let the `pact-keeper` agent use `fs_read`, `fs_write` and the shell tool (`execute_bash`, the kiro-cli name for "run command"), and give it a one-paragraph prompt.
+33. WHEN `kiro-cli agent validate --path .kiro/agents/pact-keeper.json` runs, THE SYSTEM SHALL exit with code 0.

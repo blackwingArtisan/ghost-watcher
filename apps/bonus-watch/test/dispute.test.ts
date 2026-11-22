@@ -92,6 +92,7 @@ describe('bonus-watch: Raise the dead turns a receipt into a dispute pack', () =
     expect(pack.complaint.whatHappened).toContain(receipt.before.sha256);
     expect(pack.evidence.map((row) => row.label)).toEqual([
       'Page',
+      'Fetched from',
       `Before (${pack.beforeDate})`,
       `After (${pack.afterDate})`,
       'Archived copy',

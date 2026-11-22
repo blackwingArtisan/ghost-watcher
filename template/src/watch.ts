@@ -116,7 +116,14 @@ export interface Watch {
   id: string;
   /** Display name of the ghost, e.g. `Lanternfield Savings: Everyday Checking`. */
   name: string;
+  /** The page that is fetched, checked against robots.txt, hashed and archived. */
   url: string;
+  /**
+   * Optional address that every human-facing text shows instead of `url`: letters, packs, alert emails
+   * and the dashboard. Demos use it to show a reserved `.example` address in place of the fixture
+   * server. Fetching, robots.txt, hashing and archiving never use it.
+   */
+  displayUrl?: string;
   /** Short line shown under the ghost's name. */
   subtitle?: string;
   fields: FieldSpec[];
@@ -140,6 +147,11 @@ export const DEFAULT_INTERVAL_MS = 6 * HOUR_MS;
 
 export class WatchDefinitionError extends Error {
   override name = 'WatchDefinitionError';
+}
+
+/** The address people read: the watch's display URL, or the URL it fetches. */
+export function shownUrl(watch: Pick<Watch, 'url' | 'displayUrl'>): string {
+  return watch.displayUrl ?? watch.url;
 }
 
 const ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,62}$/;
@@ -169,6 +181,14 @@ export function validateWatch(watch: Watch): string[] {
     if (url.protocol !== 'http:' && url.protocol !== 'https:') problems.push('url must be http or https');
   } catch {
     problems.push(`url "${watch.url}" is not a valid URL`);
+  }
+  if (watch.displayUrl !== undefined) {
+    try {
+      const shown = new URL(watch.displayUrl);
+      if (shown.protocol !== 'http:' && shown.protocol !== 'https:') problems.push('displayUrl must be http or https');
+    } catch {
+      problems.push(`displayUrl "${watch.displayUrl}" is not a valid URL`);
+    }
   }
   if (watch.fields.length === 0 && watch.lists.length === 0) {
     problems.push('a watch needs at least one field or list');

@@ -149,3 +149,10 @@ describe('listing-watch CLI end to end (fixture site on 127.0.0.1)', () => {
     expect(outbox).not.toContain('33 Ember Ct');
   });
 });
+
+describe('listing-watch display URLs', () => {
+  it('(PACT 12.19) every Haunted Listings watch carries a reserved .example display URL', () => {
+    expect(app.watches).toHaveLength(4);
+    for (const watch of app.watches) expect(new URL(watch.displayUrl as string).hostname).toMatch(/\.example$/);
+  });
+});

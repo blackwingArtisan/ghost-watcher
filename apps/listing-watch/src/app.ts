@@ -38,6 +38,7 @@ export function buildApp(env: Env = process.env): GhostApp {
         name: 'Larkspur Rentals',
         subtitle: `2+ bd under $${FILTERS.maxRent.toLocaleString('en-US')} in ${FILTERS.neighborhoods.join(' or ')}`,
         url: `${site}/rentals/search`,
+        displayUrl: 'https://larkspur-rentals.example/rentals/search',
         tags: ['rentals'],
         intervalMs: 2 * HOUR_MS,
         lists: [
@@ -77,6 +78,7 @@ export function buildApp(env: Env = process.env): GhostApp {
         name: 'The Vale Apartments',
         subtitle: `Fenwick & Vale · studios under $${FILTERS.studioMaxRent.toLocaleString('en-US')}`,
         url: `${site}/vale/availability`,
+        displayUrl: 'https://vale-apartments.example/availability',
         tags: ['rentals'],
         intervalMs: 6 * HOUR_MS,
         lists: [
@@ -106,6 +108,7 @@ export function buildApp(env: Env = process.env): GhostApp {
         name: 'Hollowmere Permits',
         subtitle: 'City of Hollowmere · new construction & demolition',
         url: `${site}/city/permits`,
+        displayUrl: 'https://hollowmere.example/permits',
         tags: ['permits'],
         intervalMs: 24 * HOUR_MS,
         lists: [
@@ -140,6 +143,7 @@ export function buildApp(env: Env = process.env): GhostApp {
         name: 'Old Mill Lofts',
         subtitle: 'Leasing status · riverfront lofts',
         url: `${site}/old-mill-lofts`,
+        displayUrl: 'https://old-mill-lofts.example/lofts',
         tags: ['rentals'],
         fields: [
           { name: 'status', label: 'Leasing', selector: '#leasing-status', kind: 'text' },

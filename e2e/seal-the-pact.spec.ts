@@ -27,6 +27,11 @@ const compactDate = (iso: string) => {
   return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })} '${String(d.getUTCFullYear()).slice(-2)}`;
 };
 
+/** `2026-10-10T10:00:00.000Z` to `20261010100000`, the stamp the stand-in archive puts in a copy's address. */
+function sealedStamp(iso: string): string {
+  return iso.replace(/\.\d+Z$/, 'Z').replace(/[-:TZ]/g, '').slice(0, 14);
+}
+
 async function readPact(page: Page, base: string, id = LANTERN): Promise<PactBody> {
   return (await (await page.request.get(`${base}/api/ghosts/${id}/pact`)).json()) as PactBody;
 }
@@ -132,12 +137,12 @@ test.describe('part 1: the bonus dashboard', () => {
     await expect(page.locator(`#ghost-${LANTERN}`).getByRole('button', { name: /^I applied today/ })).toBeEnabled();
   });
 
-  test('(PACT 1.7, 10.2, 10.9) a ghost that was turned away has nothing to seal: the button is disabled and says why', async ({ page }) => {
+  test('(PACT 1.7, 12.20, 12.21, 12.24) a ghost that was turned away has no seal button or hint, and says why in one line', async ({ page }) => {
     await page.goto(BONUS);
     const blocked = page.locator('#ghost-cinderhollow-members');
-    const seal = blocked.getByRole('button', { name: /^I applied today/ });
-    await expect(seal).toBeDisabled();
-    await expect(seal).toHaveAccessibleDescription('Not seen yet. Summon the ghost first.');
+    await expect(blocked.getByRole('button', { name: /^I applied today/ })).toHaveCount(0);
+    await expect(blocked).not.toContainText('Not seen yet');
+    await expect(blocked).toContainText("The site's robots.txt asks watchers to stay away, so the ghost does not visit and cannot seal a pact.");
     const refused = await page.request.post(`${BONUS}/api/ghosts/cinderhollow-members/pact`, { data: {} });
     expect(refused.status()).toBe(409);
     expect(((await refused.json()) as { code: string }).code).toBe('no-snapshot');
@@ -146,7 +151,7 @@ test.describe('part 1: the bonus dashboard', () => {
 });
 
 test.describe('part 2: the demo dashboard', () => {
-  test('(PACT 8.1, 8.2, 8.3, 10.3) after a rewind every stone with a reading is already sealed, tagged "demo"', async ({ page }) => {
+  test('(PACT 8.1, 8.2, 12.5, 12.25, 10.3) after a rewind every stone with a reading is already sealed, tagged "demo"', async ({ page }) => {
     await page.goto(DEMO);
     const rewind = page.getByRole('button', { name: 'Rewind to calm' });
     if (await rewind.isVisible()) {
@@ -166,12 +171,15 @@ test.describe('part 2: the demo dashboard', () => {
     expect(days).toBeLessThan(40.1);
     await expect(stone.locator('.ghost__pact')).toContainText(compactDate(pact.sealedAt));
     // The ghost that robots.txt turned away has no reading, so nothing was sealed for it.
-    await expect(page.locator('#ghost-cinderhollow-members').getByRole('button', { name: /^I applied today/ })).toBeDisabled();
+    await expect(page.locator('#ghost-cinderhollow-members').getByRole('button', { name: /^I applied today/ })).toHaveCount(0);
 
     await stone.locator('.ghost__hit').click();
     await expect(page.locator('#seance .pact')).toContainText('demo pact');
-    await expect(page.locator('#seance .pact')).toContainText('hashes only');
-    await expect(page.locator('#seance .pact')).toContainText('Demo pact: back-dated for the demo, so no archived copy was made.');
+    await expect(page.locator('#seance .pact')).toContainText('(the reading taken when it was sealed)');
+    await expect(page.locator('#seance .pact')).not.toContainText('just now');
+    const copy = page.locator('#seance .pact').getByRole('link', { name: 'archived copy' });
+    await expect(copy).toHaveAttribute('href', new RegExp(`/__wayback/web/${sealedStamp(pact.sealedAt)}/`));
+    await expect(page.locator('#seance .pact')).not.toContainText('no archived copy was made');
     await page.keyboard.press('Escape');
   });
 
@@ -217,7 +225,9 @@ test.describe('part 2: the demo dashboard', () => {
     const sealedAt = (await readPact(page, DEMO, 'mossgate-nightfall')).pact?.sealedAt;
     if (!sealedAt) throw new Error('the demo should seed a pact for Mossgate');
     const item = page.locator('#feed .feed__item[data-stealth="true"]');
-    await expect(item.locator('.pact-note')).toContainText(`the day you applied`);
+    // The note only repeats the Bait and switch line on night 1, so the row does not carry it (PACT 12.10).
+    await expect(item.locator('.stealth')).toBeVisible();
+    await expect(item.locator('.pact-note')).toHaveCount(0);
     await item.getByRole('button', { name: /^Raise the dead/ }).click();
     const seance = page.locator('#seance');
     await expect(seance.getByRole('heading', { name: 'Dispute pack: Mossgate Nightfall Card' })).toBeVisible();

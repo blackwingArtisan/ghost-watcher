@@ -28,7 +28,7 @@ import type { GhostDeps } from './config';
 import { allowedHostSet, checkRequest } from './guard';
 import { disputePack } from './dispute';
 import { breakPact, sealPact } from './sealing';
-import { dashboardState, ghostDetail, pactViewOf, pactViewOfReading } from './view';
+import { dashboardState, forDashboard, ghostDetail, pactViewOf, pactViewOfReading } from './view';
 // The renderer is a plain ES module shared with the browser (no build step).
 import { renderPage } from './ui/render.js';
 
@@ -279,7 +279,7 @@ function publicResult(result: Awaited<ReturnType<GhostDeps['runner']['check']>>)
         status: result.status,
         watchId: result.watchId,
         pageMoved: true,
-        alerts: result.alerts,
+        alerts: result.alerts.map(forDashboard),
         delivery: result.delivery ?? null,
         deliveryError: result.deliveryError ?? null,
       };

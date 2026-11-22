@@ -4,7 +4,7 @@ export * from './normalize';
 export { extract, type Extraction, type ListItem } from './extract';
 export { diff, compareValues, fingerprint, isEmptyDiff, type Diff, type FieldChange, type ListChange, type Snapshot } from './diff';
 export { evaluateRules, matchesFilter, describeRule, describeCondition, toneOf, type Finding } from './rules';
-export { describeFieldChange, describeItem, sentences, textChange, wordDiff, changedWindow, type WordSegment } from './summary';
+export { describeFieldChange, describeItem, pairEdits, sentences, textChange, wordDiff, changedWindow, type WordSegment } from './summary';
 export { parseRobots, isAllowed, crawlDelayMs, productToken, type RobotsPolicy } from './robots';
 export { PoliteFetcher, buildUserAgent, LOCAL_ONLY_CONTACT, type Fetcher, type FetchOutcome, type PoliteFetcherOptions, type Transport } from './fetcher';
 export { systemClock, manualClock, type Clock, type ManualClock } from './clock';
@@ -59,6 +59,8 @@ export {
 export {
   comparePact,
   pactNote,
+  pactNoteRepeats,
+  pactNoteToShow,
   pactVariant,
   DEMO_PACT_AGE_DAYS,
   PACT_VERSION,
@@ -68,13 +70,13 @@ export {
   type PactReading,
   type PactRecord,
 } from './pact';
-export { sealPact, breakPact, seedDemoPacts, type SealDeps, type SealOptions, type SealResult } from './sealing';
+export { sealPact, breakPact, seedDemoPacts, type DatedArchiver, type SealDeps, type SealOptions, type SealResult } from './sealing';
 export { Runner, backoffMs, nextEligibleAt, type CheckResult, type CheckOptions } from './runner';
 export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } from './app';
 export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env } from './config';
 export { createDashboardServer, listen, type DashboardOptions } from './server';
 export { checkRequest, allowedHostSet, parseHostList, hostnameOf, LOOPBACK_HOSTS, type GuardVerdict } from './guard';
-export { dashboardState, ghostDetail, ghostView, sortFeed, letterRank, ROUND_GAP_MS, type DashboardState, type GhostView, type GhostDetail, type PactView } from './view';
+export { dashboardState, forDashboard, ghostDetail, ghostView, sortFeed, letterRank, ROUND_GAP_MS, type DashboardState, type GhostView, type GhostDetail, type PactView } from './view';
 export { runCli, parseFlags, describeResult, type CliOptions } from './cli';
 // Cloud adapters (opt-in). Importing them loads the AWS SDK, so they are exported from their own paths
 // in `config.ts` and here only as types.

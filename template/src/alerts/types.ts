@@ -9,7 +9,10 @@ export interface Alert {
   id: string;
   watchId: string;
   watchName: string;
+  /** The address people read (the watch's display URL when it has one). */
   url: string;
+  /** The page actually fetched, kept only when it differs from `url`, so a pack can name it. */
+  fetchUrl?: string;
   createdAt: string;
   severity: Severity;
   ruleKind: RuleKind;

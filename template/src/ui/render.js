@@ -106,6 +106,20 @@ export function compactDay(iso) {
   return `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()} '${String(d.getUTCFullYear()).slice(-2)}`;
 }
 
+/** Why a turned-away ghost has no pact button: it never visits, so it has nothing to seal. */
+export const TURNED_AWAY_PACT_LINE = "The site's robots.txt asks watchers to stay away, so the ghost does not visit and cannot seal a pact.";
+
+/**
+ * How old the sealed reading was when the pact was sealed. A back-dated pact (the demo's) holds a
+ * reading taken at the very moment it was sealed, which is not "just now".
+ * @param {string} takenAt @param {string} sealedAt
+ */
+export function readingAge(takenAt, sealedAt) {
+  if (Date.parse(takenAt) === Date.parse(sealedAt)) return 'the reading taken when it was sealed';
+  const age = ago(takenAt, sealedAt);
+  return `${age === 'just now' ? 'seconds old' : age} when sealed`;
+}
+
 /** The pact line (or the "I applied today" button) on a stone. Apps without pacts have no `pact` key. @param {any} ghost */
 export function renderStonePact(ghost) {
   const p = ghost.pact;
@@ -116,6 +130,7 @@ export function renderStonePact(ghost) {
   if (p && p.state === 'corrupt') {
     return '<p class="ghost__pact" data-pact="corrupt"><span class="ghost__pact-tag ghost__pact-tag--warn">Pact unreadable</span> Open the séance to fix it.</p>';
   }
+  if (ghost.state === 'blocked') return `<p class="ghost__pact" data-pact="turned-away">${esc(TURNED_AWAY_PACT_LINE)}</p>`;
   const why = ghost.canSeal ? '' : `<span class="ghost__pact-why" id="pact-why-${esc(ghost.id)}">Not seen yet. Summon the ghost first.</span>`;
   return `<div class="ghost__pact" data-pact="none"><button type="button" class="btn btn--small btn--seal" data-action="pact-seal" data-id="${esc(ghost.id)}" aria-label="I applied today: seal the pact for ${esc(ghost.name)}"${
     ghost.canSeal ? '' : ` disabled aria-describedby="pact-why-${esc(ghost.id)}"`
@@ -133,6 +148,9 @@ export function renderPactSection(detail, confirm = null) {
   const id = esc(detail.id);
   const seal = (/** @type {string} */ label) =>
     `<button type="button" class="btn btn--small btn--seal" data-action="pact-seal" data-id="${id}" aria-label="${esc(label)}: seal the pact for ${name}"${detail.canSeal ? '' : ' disabled'}>${esc(label)}</button>`;
+  if (!p && detail.state === 'blocked') {
+    return `<section class="pact" data-pact="turned-away" aria-labelledby="pact-title"><h3 id="pact-title">The pact</h3><p class="small">${esc(TURNED_AWAY_PACT_LINE)}</p></section>`;
+  }
   if (!p) {
     return `<section class="pact" data-pact="none" aria-labelledby="pact-title"><h3 id="pact-title">The pact</h3><p class="muted small">No pact yet. Seal one on the day you apply.</p><div class="pact__actions">${seal('I applied today')}</div>${
       detail.canSeal ? '' : '<p class="muted small">Not seen yet. Summon the ghost first.</p>'
@@ -148,7 +166,7 @@ export function renderPactSection(detail, confirm = null) {
   return `<section class="pact" data-pact="sealed" aria-labelledby="pact-title"><h3 id="pact-title">The pact${p.seeded ? ' <span class="pact-demo">demo pact</span>' : ''}</h3>
 <dl class="pact__facts">
 <div><dt>Sealed</dt><dd><time datetime="${esc(p.sealedAt)}">${esc(p.sealedDate)}</time> · ${esc(clockTime(p.sealedAt))}</dd></div>
-<div><dt>Reading sealed</dt><dd>the page as the ghost saw it on <time datetime="${esc(p.snapshotTakenAt)}">${esc(clockTime(p.snapshotTakenAt))}</time> (${esc(ago(p.snapshotTakenAt, p.sealedAt))} when sealed)</dd></div>
+<div><dt>Reading sealed</dt><dd>the page as the ghost saw it on <time datetime="${esc(p.snapshotTakenAt)}">${esc(clockTime(p.snapshotTakenAt))}</time> (${esc(readingAge(p.snapshotTakenAt, p.sealedAt))})</dd></div>
 <div><dt>SHA-256</dt><dd><code class="pact__hash">${esc(p.sha256)}</code></dd></div>
 <div><dt>Copy</dt><dd>${copy}</dd></div>
 </dl>
@@ -479,7 +497,9 @@ export function renderDetail(detail, nowIso, options = {}) {
   <div>
     <p class="eyebrow">Séance</p>
     <h2 id="seance-title">${esc(detail.name)}</h2>
-    <p class="muted"><a href="${esc(detail.url)}" target="_blank" rel="noopener noreferrer">${esc(detail.url)}</a></p>
+    <p class="muted">${
+      detail.urlIsDisplay ? `<span class="seance__url">${esc(detail.url)}</span>` : `<a href="${esc(detail.url)}" target="_blank" rel="noopener noreferrer">${esc(detail.url)}</a>`
+    }</p>
     <p class="muted small">${esc(detail.lastMessage)}</p>
     <p class="muted small">Polite schedule: ${esc(detail.interval)} · ${next} · ${detail.checks} visits so far</p>${
       detail.ignored ? `\n    <p class="muted small seance__ignored">${esc(ignoredLine(detail.ignored))}: timestamps, banners and reformatting never wake it.</p>` : ''
@@ -487,7 +507,7 @@ export function renderDetail(detail, nowIso, options = {}) {
   </div>
 </header>
 <div class="seance__actions">
-  <button type="button" class="btn btn--glow" data-action="check" data-id="${esc(detail.id)}">Check now</button>
+  <button type="button" class="btn ${detail.state === 'blocked' ? 'btn--quiet' : 'btn--glow'}" data-action="check" data-id="${esc(detail.id)}">Check now</button>
   <button type="button" class="btn" data-action="ack" data-id="${esc(detail.id)}" ${detail.unread ? '' : 'disabled'}>Lay to rest${detail.unread ? ` (${detail.unread})` : ''}</button>
 </div>
 ${fields}

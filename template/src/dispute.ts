@@ -14,7 +14,7 @@
 import type { Alert } from './alerts/types';
 import { displayValue, type MaybeValue } from './normalize';
 import { pactVariant } from './pact';
-import { finish, letterDate, textChange } from './summary';
+import { finish, letterDate, pairEdits, textChange } from './summary';
 import type { Watch } from './watch';
 
 /** One product and issue pair from the CFPB complaint form. */
@@ -93,9 +93,20 @@ function quoteLines(label: string, before: MaybeValue | undefined, after: MaybeV
     // Long fine print: quote only the sentences that changed, so the letter points at the edit.
     const { added, removed } = textChange(before.text, after.text);
     if (added.length === 0 && removed.length === 0) return { before: [`${label}: "${before.text}"`], after: [`${label}: "${after.text}"`] };
+    // A reworded sentence is quoted whole on both sides: as it read, then as it reads now. "Did not
+    // say" is only for a sentence that is wholly new, "no longer says" only for one that is gone.
+    const { edited, fresh, gone } = pairEdits(removed, added);
     return {
-      before: removed.length ? removed.map((s) => `${label}: "${s}"`) : added.map((s) => `${label}: did not say "${s}"`),
-      after: added.length ? added.map((s) => `${label}: "${s}"`) : removed.map((s) => `${label}: no longer says "${s}"`),
+      before: [
+        ...edited.map(({ was }) => `${label}: "${was}"`),
+        ...gone.map((sentence) => `${label}: "${sentence}"`),
+        ...fresh.map((sentence) => `${label}: did not say "${sentence}"`),
+      ],
+      after: [
+        ...edited.map(({ now }) => `${label}: "${now}"`),
+        ...fresh.map((sentence) => `${label}: "${sentence}"`),
+        ...gone.map((sentence) => `${label}: no longer says "${sentence}"`),
+      ],
     };
   }
   return {
@@ -270,9 +281,11 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
         { label: 'Check Exhibit A', value: packPact.checkCommand },
       ]
     : [];
+  const fetched: EvidenceRow[] = alert.fetchUrl ? [{ label: 'Fetched from', value: alert.fetchUrl }] : [];
   const evidence: EvidenceRow[] = differs
     ? [
         { label: 'Page', value: alert.url },
+        ...fetched,
         ...exhibitRows,
         { label: `Now (${afterDate})`, value: quoted.after.join(' / ') },
         { label: 'Archived copy now', value: receipt.archiveUrl ?? `none: ${receipt.note ?? 'archiving was off'}` },
@@ -281,6 +294,7 @@ export function disputePack(alert: Alert, watch?: Watch): DisputePack | null {
       ]
     : [
         { label: 'Page', value: alert.url },
+        ...fetched,
         { label: `Before (${beforeDate})`, value: quoted.before.join(' / ') },
         { label: `After (${afterDate})`, value: quoted.after.join(' / ') },
         { label: 'Archived copy', value: receipt.archiveUrl ?? `none: ${receipt.note ?? 'archiving was off'}` },

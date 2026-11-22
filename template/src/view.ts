@@ -3,12 +3,12 @@ import type { Alert } from './alerts/types';
 import type { GhostDeps } from './config';
 import type { Fickleness, PastHeadline, PastTimeline } from './history';
 import { displayValue, type MaybeValue } from './normalize';
-import type { PactArchive, PactReading, PactRecord } from './pact';
+import { pactNoteToShow, type PactArchive, type PactReading, type PactRecord } from './pact';
 import { shortHash } from './receipts';
 import { describeRule } from './rules';
 import { nextEligibleAt } from './runner';
 import { describeItem, letterDate, wordDiff, type WordSegment } from './summary';
-import type { Severity, Tone, Watch } from './watch';
+import { shownUrl, type Severity, type Tone, type Watch } from './watch';
 
 export type GhostState = 'unborn' | 'dormant' | 'restless' | 'blocked' | 'lost';
 
@@ -65,6 +65,8 @@ export interface GhostView {
   name: string;
   subtitle: string;
   url: string;
+  /** True when `url` is a display address that does not resolve to the fetched page, so it is not linked. */
+  urlIsDisplay?: boolean;
   tags: string[];
   state: GhostState;
   checking: boolean;
@@ -264,8 +266,9 @@ export async function ghostView(deps: GhostDeps, watch: Watch): Promise<GhostVie
   return {
     id: watch.id,
     name: watch.name,
-    subtitle: watch.subtitle ?? new URL(watch.url).host,
-    url: watch.url,
+    subtitle: watch.subtitle ?? new URL(shownUrl(watch)).host,
+    url: shownUrl(watch),
+    ...(watch.displayUrl !== undefined && watch.displayUrl !== watch.url ? { urlIsDisplay: true } : {}),
     tags: watch.tags,
     state,
     checking: deps.runner.isChecking(watch.id),
@@ -284,6 +287,12 @@ export async function ghostView(deps: GhostDeps, watch: Watch): Promise<GhostVie
     fickleness: past?.fickleness ?? null,
     ...(pactReading ? { pact: pactViewOfReading(pactReading), canSeal: snapshot !== null } : {}),
   };
+}
+
+/** An alert as the dashboard shows it: a pact note that only repeats the Bait and switch line is left out. */
+export function forDashboard(alert: Alert): Alert {
+  if (!alert.pact || pactNoteToShow(alert) !== '') return alert;
+  return { ...alert, pact: { ...alert.pact, note: '' } };
 }
 
 /** Past changes from every ghost's Terms Past timeline, newest first. */
@@ -346,7 +355,7 @@ export async function dashboardState(deps: GhostDeps): Promise<DashboardState> {
     const [alerts, unread] = await Promise.all([deps.store.alerts(watch.id), deps.store.unacknowledged(watch.id)]);
     const unreadIds = new Set(unread.map((a) => a.id));
     for (const alert of alerts.slice(0, 25)) {
-      feed.push({ alert, acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null });
+      feed.push({ alert: forDashboard(alert), acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null });
     }
   }
   const { app } = deps;
@@ -425,7 +434,7 @@ export async function ghostDetail(deps: GhostDeps, watch: Watch): Promise<GhostD
     ...(pactReading ? { pact: pactViewOfFull(pactReading) } : {}),
     fields,
     lists,
-    alerts: alerts.slice(0, 40).map((alert) => ({ ...alert, acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null })),
+    alerts: alerts.slice(0, 40).map((alert) => ({ ...forDashboard(alert), acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null })),
     snapshots: history.map((s) => s.takenAt),
     past,
   };

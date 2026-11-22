@@ -380,7 +380,7 @@ describe('pact rendering (string level)', () => {
     expect(renderDetail(detail())).not.toContain('role="group"');
   });
 
-  const pactNote = 'On Oct 10, 2026, the day you applied, Bonus was $300; it is now $450 (+$150).';
+  const pactNote = 'On Oct 10, 2026, the day you applied, the bonus was $300; it is now $450 (+$150).';
   const alert = (pact: Record<string, unknown> | undefined, extra: Record<string, unknown> = {}) => ({
     id: 'a1',
     watchId: 'lantern',

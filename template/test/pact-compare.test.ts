@@ -92,7 +92,7 @@ describe('comparing a night with the pact', () => {
         relation: 'differs',
         promised: { kind: 'money', amountMinor: 40000, currency: 'USD', display: '$400' },
         tone: 'bad',
-        note: `On ${DAY}, the day you applied, Bonus was $400; it is now $300 (-$100).`,
+        note: `On ${DAY}, the day you applied, the bonus was $400; it is now $300 (-$100).`,
       },
     });
   });
@@ -182,7 +182,7 @@ describe('comparing a night with the pact', () => {
     const out = comparePact(small, pact, current, nightly, evaluateRules(small, nightly));
     expect(out[0]?.pact).toMatchObject({
       promised: { kind: 'money', amountMinor: 10 },
-      note: `On ${DAY}, the day you applied, Bonus was $0.10; it is now $0.30 (+$0.20).`,
+      note: `On ${DAY}, the day you applied, the bonus was $0.10; it is now $0.30 (+$0.20).`,
     });
     expect(Number.isInteger(diff(taken, current).fields[0]?.delta)).toBe(true);
     expect(diff(taken, current).fields[0]?.delta).toBe(20);
@@ -208,7 +208,7 @@ describe('comparing a night with the pact', () => {
     const bonusDown = night(pactOf(page({ bonus: '$400' })), page({ bonus: '$400' }), page({ bonus: '$300' }));
     expect(bonusDown.judged[0]?.pact?.tone).toBe('bad');
     const feeDown = night(pactOf(page({ fee: '$95' })), page({ fee: '$95' }), page({ fee: '$0' }));
-    expect(feeDown.judged[0]?.pact).toMatchObject({ relation: 'differs', tone: 'good', note: `On ${DAY}, the day you applied, Annual fee was $95; it is now $0 (-$95).` });
+    expect(feeDown.judged[0]?.pact).toMatchObject({ relation: 'differs', tone: 'good', note: `On ${DAY}, the day you applied, the annual fee was $95; it is now $0 (-$95).` });
     const feeUp = night(pactOf(page({ fee: '$0' })), page({ fee: '$0' }), page({ fee: '$95' }));
     expect(feeUp.judged[0]?.pact?.tone).toBe('bad');
   });
@@ -221,10 +221,10 @@ describe('comparing a night with the pact', () => {
   });
 
   it('(PACT 5.2) says so when the pact did not show the field, and when the page no longer does', () => {
-    expect(pactNote('Bonus', null, money('$300'), SEALED, 'differs')).toBe(`On ${DAY}, the day you applied, the page did not show Bonus; it now says $300.`);
-    expect(pactNote('Bonus', money('$400'), null, SEALED, 'differs')).toBe(`On ${DAY}, the day you applied, Bonus was $400; the page no longer shows it.`);
+    expect(pactNote('Bonus', null, money('$300'), SEALED, 'differs')).toBe(`On ${DAY}, the day you applied, the page did not show the bonus; it now says $300.`);
+    expect(pactNote('Bonus', money('$400'), null, SEALED, 'differs')).toBe(`On ${DAY}, the day you applied, the bonus was $400; the page no longer shows it.`);
     expect(pactNote('Fine print', text(TERMS), text(TERMS_FEE), SEALED, 'differs')).toBe(
-      `On ${DAY}, the day you applied, Fine print read differently: it now says "A $12 monthly fee applies.".`,
+      `On ${DAY}, the day you applied, the fine print now says "A $12 monthly fee applies".`,
     );
     const gone = night(pactOf(page({ bonus: '$400' })), page({ bonus: '$400' }), page({ bonus: '$400' }).replace('<p class="bonus">$400</p>', ''));
     expect(gone.judged[0]?.pact).toMatchObject({ relation: 'differs', tone: 'bad', promised: { amountMinor: 40000 } });

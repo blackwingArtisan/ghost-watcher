@@ -11,9 +11,9 @@
 import type { Alert } from './alerts/types';
 import { compareValues, diff, type Diff, type FieldChange, type Snapshot } from './diff';
 import type { Extraction } from './extract';
-import { displayValue, type MaybeValue } from './normalize';
+import { displayValue, valuesEqual, type MaybeValue } from './normalize';
 import { evaluateRules, toneOf, type Finding } from './rules';
-import { formatDelta, letterDate, textChange } from './summary';
+import { changedWindow, formatDelta, letterDate, pairEdits, textChange } from './summary';
 import type { Severity, Watch } from './watch';
 
 export const PACT_VERSION = 1;
@@ -72,11 +72,23 @@ export interface AlertPact {
 
 const LOUDNESS: Record<Severity, number> = { whisper: 0, moan: 1, shriek: 2 };
 
-const quoted = (text: string, max = 140): string => `"${text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text}"`;
+/** A quotation for a note: its own closing full stop goes, so the note ends with one and only one. */
+const quoted = (text: string, max = 140): string => {
+  const bare = text.replace(/[.!?]+$/, '');
+  return `"${bare.length > max ? `${bare.slice(0, max - 1).trimEnd()}…` : bare}"`;
+};
+
+/** "the bonus", "the fine print", but "the APY": a label whose second letter is a capital stays as written. */
+function subject(label: string): string {
+  const second = label.charAt(1);
+  const keep = second !== '' && second === second.toUpperCase() && second !== second.toLowerCase();
+  return `the ${keep ? label : label.charAt(0).toLowerCase() + label.slice(1)}`;
+}
 
 /**
  * One sentence about a field against the pact, e.g.
- * `On Oct 10, 2026, the day you applied, Bonus was $400; it is now $300 (-$100).`
+ * `On Oct 10, 2026, the day you applied, the bonus was $400; it is now $300 (-$100).`
+ * A reworded fine-print sentence quotes only the words that changed.
  */
 export function pactNote(
   label: string,
@@ -91,22 +103,45 @@ export function pactNote(
     return `The page is back to what it said on ${day}, the day you applied (${detail}).`;
   }
   const lead = `On ${day}, the day you applied,`;
-  if (promised === null) return `${lead} the page did not show ${label}; it now says ${quoteValue(now)}.`;
-  if (now === null) return `${lead} ${label} was ${quoteValue(promised)}; the page no longer shows it.`;
+  const what = subject(label);
+  if (promised === null) return `${lead} the page did not show ${what}; it now says ${quoteValue(now)}.`;
+  if (now === null) return `${lead} ${what} was ${quoteValue(promised)}; the page no longer shows it.`;
   if (promised.kind === 'text' && now.kind === 'text') {
-    const { added, removed } = textChange(promised.text, now.text);
+    const change = textChange(promised.text, now.text);
+    const { edited, fresh, gone } = pairEdits(change.removed, change.added);
     const parts = [
-      ...(removed.length ? [`it no longer says ${removed.map((s) => quoted(s)).join(' and ')}`] : []),
-      ...(added.length ? [`it now says ${added.map((s) => quoted(s)).join(' and ')}`] : []),
+      ...edited.map(({ was, now: after }) => {
+        const [wasWindow, nowWindow] = changedWindow(was, after);
+        return `said ${quoted(wasWindow)} and now says ${quoted(nowWindow)}`;
+      }),
+      ...(fresh.length ? [`now says ${fresh.map((s) => quoted(s)).join(' and ')}`] : []),
+      ...(gone.length ? [`no longer says ${gone.map((s) => quoted(s)).join(' and ')}`] : []),
     ];
-    return `${lead} ${label} read differently: ${parts.length ? parts.join('; ') : `it now says ${quoted(now.text)}`}.`;
+    return `${lead} ${what} ${parts.length ? parts.join('; ') : `now says ${quoted(now.text)}`}.`;
   }
   const change = compareValues(label, promised, now);
-  return `${lead} ${label} was ${quoteValue(promised)}; it is now ${quoteValue(now)}${change ? formatDelta(change) : ''}.`;
+  return `${lead} ${what} was ${quoteValue(promised)}; it is now ${quoteValue(now)}${change ? formatDelta(change) : ''}.`;
 }
 
 function quoteValue(value: MaybeValue): string {
   return value !== null && value.kind === 'text' ? quoted(value.text) : displayValue(value);
+}
+
+/**
+ * True when an alert's pact note only repeats the Bait and switch line. A bait and switch says the
+ * headline stayed put while the terms moved; when the page promised on the day you applied what it
+ * said the night before, the note adds nothing but the same change again. A note whose promised value
+ * differs from the night before (a drift over several nights) carries news and is kept.
+ */
+export function pactNoteRepeats(alert: Pick<Alert, 'pact' | 'stealth' | 'before'>): boolean {
+  const sealed = alert.pact;
+  if (!alert.stealth || !sealed || sealed.relation !== 'differs' || alert.before === undefined) return false;
+  return valuesEqual(sealed.promised, alert.before);
+}
+
+/** The pact note to show for an alert, or an empty string when there is none or it repeats the Bait and switch line. */
+export function pactNoteToShow(alert: Pick<Alert, 'pact' | 'stealth' | 'before'>): string {
+  return !alert.pact || pactNoteRepeats(alert) ? '' : alert.pact.note;
 }
 
 /** The letter for an alert: `match` only for better terms with no bait and switch. */

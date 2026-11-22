@@ -125,6 +125,31 @@ injected `Clock` or stored ISO strings, money in integer cents, apps import only
         then run the three files once with a later manual-clock year and confirm only the
         date-bearing assertions change. All must pass before this task is ticked.
 
+## Session C: pact copy and state (requirement 12)
+
+- [x] 29. Spec first: requirement 12 (12.1 to 12.33), design section 14, tasks 29 to 39. Amend 8.3 and
+      10.2 and the two superseded decisions in design section 13. (PACT 12.1–12.33)
+- [x] 30. Pact note wording. `pairEdits` in `summary.ts`; rewrite the text branch of `pactNote`;
+      lower-case subject; one closing period. (PACT 12.1, 12.2, 12.3, 12.4)
+- [x] 31. Back-dated reading in `renderPactSection`. (PACT 12.5, 12.6)
+- [x] 32. Letters quote the old and the new sentence in `quoteLines`. (PACT 12.7, 12.8, 12.9)
+- [x] 33. No repeated line: `pactNoteRepeats`, applied to dashboard alerts; pin that the letter and
+      the email do not carry the note. (PACT 12.10, 12.11, 12.12)
+- [x] 34. Display URL.
+  - [x] 34.1 `Watch.displayUrl`, validation, `shownUrl`; runner, email, view and séance use it;
+        `Alert.fetchUrl` and the `Fetched from` row. (PACT 12.13–12.18)
+  - [x] 34.2 Set display URLs in `apps/bonus-watch/src/app.ts` and `apps/listing-watch/src/app.ts`.
+        (PACT 12.19)
+- [x] 35. Turned-away stone: no seal button or hint, quiet "Check now", one plain line. (PACT 12.20–12.24)
+- [x] 36. Demo pact with a dated stand-in copy: `saveAt`, the fixture's dated save route,
+      `seedDemoPacts`, the README sentence. (PACT 12.25–12.28)
+- [x] 37. `.kiro/steering/pact.md` and `.kiro/agents/pact-keeper.json`, with a test of both and a run
+      of `kiro-cli agent validate`. (PACT 12.29–12.33)
+- [x] 38. Update the existing tests that A to G change, then run `npm run typecheck`,
+      `npx vitest run` and `GHOST_E2E_PORT=4230 npx playwright test`. (PACT 11.1, 11.2)
+- [x] 39. Screenshots of the demo dashboard at 1360 px and 390 px (turned-away stone, sealed stone,
+      Mossgate pack) under `test-results/pact-copy/`; fix what looks broken. (PACT 12.5, 12.14, 12.20–12.28)
+
 ## Traceability: requirement to task
 
 | Requirement | Criteria | Tasks (build) | Tasks (tests) |
@@ -140,6 +165,7 @@ injected `Clock` or stored ISO strings, money in integer cents, apps import only
 | 9 HTTP routes | 9.1–9.9 | 14, 15, 16 | 17 |
 | 10 Dashboard | 10.1–10.13 | 16, 18, 19, 20 | 17, 18, 23, 24, 25 |
 | 11 Constraints | 11.1–11.5 | 1, 12, 14, 18, 26 | 13, 17, 18, 27 |
+| 12 Pact copy and state | 12.1–12.33 | 29 to 37 | 30 to 38 |
 
 Per criterion:
 

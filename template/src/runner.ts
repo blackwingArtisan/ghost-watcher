@@ -15,7 +15,7 @@ import { needsReceipt, takeReceipt, type PageArchiver } from './receipts';
 import { renderAlertMessage } from './alerts/render';
 import type { Alert, AlertSink, DeliveryReceipt } from './alerts/types';
 import type { GhostStore, WatchStatus } from './store/ghost-store';
-import type { Watch } from './watch';
+import { shownUrl, type Watch } from './watch';
 
 /**
  * `pageMoved` is true when the page's visible text differs from the previous visit. An `unchanged`
@@ -185,7 +185,8 @@ export class Runner {
       id: `${watch.id}-${attemptAt.replace(/\D/g, '')}-${index + 1}`,
       watchId: watch.id,
       watchName: watch.name,
-      url: watch.url,
+      url: shownUrl(watch),
+      ...(shownUrl(watch) !== watch.url ? { fetchUrl: watch.url } : {}),
       createdAt: attemptAt,
       severity: finding.severity,
       ruleKind: finding.ruleKind,
@@ -212,7 +213,7 @@ export class Runner {
     const message = renderAlertMessage({
       appName: this.deps.app.name,
       to: this.deps.app.alertTo,
-      watch,
+      watch: { id: watch.id, name: watch.name, url: shownUrl(watch) },
       alerts,
       createdAt: attemptAt,
       ...(this.deps.app.copy.disclaimer ? { footer: this.deps.app.copy.disclaimer } : {}),

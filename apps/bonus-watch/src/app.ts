@@ -28,6 +28,7 @@ export function buildApp(env: Env = process.env): GhostApp {
         name: 'Lanternfield Everyday Checking',
         subtitle: 'Lanternfield Savings · checking bonus',
         url: `${site}/lanternfield/everyday-checking`,
+        displayUrl: 'https://lanternfield.example/everyday-checking',
         tags: ['checking'],
         intervalMs: 12 * HOUR_MS,
         fields: [
@@ -52,6 +53,7 @@ export function buildApp(env: Env = process.env): GhostApp {
         name: 'Bramblewick High-Yield Savings',
         subtitle: 'Bramblewick FCU · savings bonus',
         url: `${site}/bramblewick/savings`,
+        displayUrl: 'https://bramblewick.example/savings',
         tags: ['savings'],
         fields: [
           { name: 'bonus', label: 'Bonus', selector: '.bonus-box .amount', kind: 'money', better: 'higher' },
@@ -76,6 +78,7 @@ export function buildApp(env: Env = process.env): GhostApp {
         name: 'Mossgate Nightfall Card',
         subtitle: 'Mossgate Card Co. · card sign-up bonus',
         url: `${site}/mossgate/nightfall-card`,
+        displayUrl: 'https://mossgate.example/nightfall-card',
         tags: ['card'],
         fields: [
           { name: 'points', label: 'Bonus points', selector: '#points', kind: 'number', better: 'higher' },
@@ -100,6 +103,7 @@ export function buildApp(env: Env = process.env): GhostApp {
         name: 'Cinderhollow Member Offers',
         subtitle: 'Cinderhollow National Bank · members area',
         url: `${site}/members/cinderhollow/offers`,
+        displayUrl: 'https://cinderhollow.example/members/offers',
         tags: ['checking'],
         fields: [{ name: 'bonus', label: 'Bonus', selector: '#member-bonus', kind: 'money' }],
         rules: [rules.changed('bonus')],

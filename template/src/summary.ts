@@ -94,6 +94,32 @@ function similar(a: string, b: string): boolean {
   return shared / Math.max(wa.size, wb.length) >= 0.6;
 }
 
+export interface PairedEdits {
+  /** A sentence that was reworded: the old sentence and the new one, whole. */
+  edited: Array<{ was: string; now: string }>;
+  /** Sentences that are wholly new. */
+  fresh: string[];
+  /** Sentences that are gone and have no reworded successor. */
+  gone: string[];
+}
+
+/** Matches each removed sentence with the added sentence it was reworded into, if any. */
+export function pairEdits(removed: string[], added: string[]): PairedEdits {
+  const fresh = [...added];
+  const edited: PairedEdits['edited'] = [];
+  const gone: string[] = [];
+  for (const was of removed) {
+    const index = fresh.findIndex((candidate) => similar(was, candidate));
+    if (index >= 0) {
+      edited.push({ was, now: fresh[index] as string });
+      fresh.splice(index, 1);
+    } else {
+      gone.push(was);
+    }
+  }
+  return { edited, fresh, gone };
+}
+
 /** "Bonus went up from $300 to $400 (+$100)." */
 export function describeFieldChange(label: string, change: FieldChange): string {
   const before = displayValue(change.before);
@@ -103,19 +129,12 @@ export function describeFieldChange(label: string, change: FieldChange): string 
   if (change.before?.kind === 'text' && change.after?.kind === 'text') {
     const { added, removed } = textChange(change.before.text, change.after.text);
     const parts: string[] = [];
-    const unmatched = [...added];
-    const gone: string[] = [];
-    for (const old of removed) {
-      const index = unmatched.findIndex((candidate) => similar(old, candidate));
-      if (index >= 0) {
-        const [was, now] = changedWindow(old, unmatched[index] as string);
-        parts.push(`${quote(was)} became ${quote(now)}`);
-        unmatched.splice(index, 1);
-      } else {
-        gone.push(old);
-      }
+    const { edited, fresh, gone } = pairEdits(removed, added);
+    for (const { was, now } of edited) {
+      const [wasWindow, nowWindow] = changedWindow(was, now);
+      parts.push(`${quote(wasWindow)} became ${quote(nowWindow)}`);
     }
-    if (unmatched.length > 0) parts.push(`it now says ${unmatched.map((s) => quote(s)).join(' and ')}`);
+    if (fresh.length > 0) parts.push(`it now says ${fresh.map((s) => quote(s)).join(' and ')}`);
     if (gone.length > 0) parts.push(`it no longer says ${gone.map((s) => quote(s)).join(' and ')}`);
     if (parts.length > 0) return finish(`${label} changed: ${parts.join('; ')}`);
     return finish(`${label} changed from ${quote(before)} to ${quote(after)}`);

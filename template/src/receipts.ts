@@ -110,12 +110,26 @@ export class SavePageNowArchiver implements PageArchiver {
   }
 
   async save(url: string): Promise<{ archiveUrl: string; archivedAt: string | null }> {
+    return this.request(`${this.base}/save/${url}`, url);
+  }
+
+  /**
+   * Stand-in archives only: asks for a copy dated `at`, via `{base}/save/<14-digit stamp>/<url>`, a
+   * route the local fixture's stand-in Wayback offers so the demo's back-dated pact can have a copy
+   * on its own date. The Internet Archive cannot back-date a copy, so asking it is an error.
+   */
+  async saveAt(url: string, at: Date): Promise<{ archiveUrl: string; archivedAt: string | null }> {
+    if (this.base === WAYBACK_BASE) throw new Error('the Internet Archive cannot back-date a copy');
+    return this.request(`${this.base}/save/${stampOf(at)}/${url}`, url);
+  }
+
+  private async request(target: string, url: string): Promise<{ archiveUrl: string; archivedAt: string | null }> {
     const requestedAt = this.clock.now();
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
     let response: Awaited<ReturnType<Transport>>;
     try {
-      response = await this.transport(`${this.base}/save/${url}`, {
+      response = await this.transport(target, {
         headers: { 'User-Agent': this.options.userAgent, Accept: 'text/html;q=0.9,*/*;q=0.5' },
         signal: controller.signal,
         redirect: 'follow',

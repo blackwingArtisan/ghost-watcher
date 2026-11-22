@@ -18,6 +18,7 @@ import {
   type AlertMessage,
   type AlertSink,
   type PageArchiver,
+  forDashboard,
 } from '@ghost-watcher/template';
 import { MemoryBlobStore, startFixtureServer } from '@ghost-watcher/template/testing';
 import { bonusSite } from '../fixtures/site';
@@ -41,7 +42,7 @@ afterEach(async () => {
 });
 
 /** The demo's flow on the bonus fixture site: baseline, seed the pacts, then nights on demand. */
-async function demo(options: { dir?: string } = {}) {
+async function demo(options: { dir?: string; datedSeeds?: boolean } = {}) {
   const fixture = await startFixtureServer(bonusSite, { port: 0 });
   cleanups.push(() => fixture.close());
   const built = buildApp({ BONUS_SITE_ORIGIN: fixture.origin });
@@ -69,7 +70,7 @@ async function demo(options: { dir?: string } = {}) {
   });
   await runner.checkAll({ force: true });
   const callsBeforeSeeding = archiver.calls;
-  const seeded = await seedDemoPacts({ store, clock }, app.watches);
+  const seeded = await seedDemoPacts({ store, clock, ...(options.datedSeeds ? { archive: stand } : {}) }, app.watches);
   const night = async () => {
     fixture.advance();
     await runner.checkAll({ force: true });
@@ -121,7 +122,7 @@ describe('bonus-watch: seeded pacts on the fixture site', () => {
     await night();
     const shriek = (await alerts('lanternfield-checking')).find((a) => a.field === 'bonus') as Alert;
     expect(shriek.pact).toMatchObject({ relation: 'differs', tone: 'good', seeded: 'demo', sealedAt: SEEDED });
-    expect(shriek.pact?.note).toBe('On Oct 10, 2026, the day you applied, Bonus was $300; it is now $400 (+$100).');
+    expect(shriek.pact?.note).toBe('On Oct 10, 2026, the day you applied, the bonus was $300; it is now $400 (+$100).');
     const pack = disputePack(shriek, watch('lanternfield-checking'));
     if (!pack?.pact) throw new Error('expected a pack with a pact');
     expect(pack.pact).toMatchObject({ variant: 'match', relation: 'differs', appliedDate: 'Oct 10, 2026', seeded: true });
@@ -182,5 +183,49 @@ describe('bonus-watch: seeded pacts on the fixture site', () => {
     expect(results.map((r) => r.status)).toEqual(['sealed', 'sealed', 'sealed', 'no-snapshot']);
     const reading = await store.pactRecord('lanternfield-checking');
     expect(reading).toMatchObject({ status: 'sealed', record: { sealedAt: '2026-10-11T10:00:00.000Z', seeded: 'demo' } });
+  });
+});
+
+describe('bonus-watch: pact copy and state', () => {
+  it('(PACT 12.19) every bonus-watch watch carries a reserved .example display URL and keeps its fetch URL', () => {
+    const watches = buildApp({ BONUS_SITE_ORIGIN: 'http://127.0.0.1:3131' }).watches;
+    expect(watches).toHaveLength(4);
+    for (const watch of watches) {
+      expect(new URL(watch.displayUrl as string).hostname).toMatch(/\.example$/);
+      expect(watch.url).toMatch(/^http:\/\/127\.0\.0\.1:3131\//);
+    }
+  });
+
+  it('(PACT 12.14, 12.18) the Mossgate pack shows the .example page and names the fixture page it fetched', async () => {
+    const { night, alerts, watch } = await demo();
+    await night();
+    const stealth = (await alerts('mossgate-nightfall')).find((a) => a.stealth) as Alert;
+    const pack = disputePack(stealth, watch('mossgate-nightfall'));
+    expect(pack?.url).toBe('https://mossgate.example/nightfall-card');
+    expect(pack?.letter.body).toContain('relying on the terms published at https://mossgate.example/nightfall-card');
+    expect(pack?.evidence.find((row) => row.label === 'Fetched from')?.value).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/mossgate\/nightfall-card$/);
+  });
+
+  it('(PACT 12.10, 12.12) the Mossgate bait and switch repeats itself on night 1, so its dashboard row has no pact note', async () => {
+    const { night, alerts } = await demo();
+    await night();
+    const stealth = (await alerts('mossgate-nightfall')).find((a) => a.stealth) as Alert;
+    expect(stealth.pact?.note).toBeTruthy();
+    expect(forDashboard(stealth).pact?.note).toBe('');
+  });
+
+  it('(PACT 12.25, 12.28) seeding with the stand-in archive keeps a copy dated on the pact date, and Exhibit A links it', async () => {
+    const { store, night, alerts, watch } = await demo({ datedSeeds: true });
+    const reading = await store.pact('mossgate-nightfall');
+    if (reading.status !== 'sealed') throw new Error('expected a pact');
+    expect(reading.pact.archive).toMatchObject({ archivedAt: '2026-10-10T10:00:00Z', archivedBy: 'the stand-in Wayback Machine' });
+    expect(reading.pact.archive.archiveUrl).toMatch(/\/__wayback\/web\/20261010100000\/http:\/\/127\.0\.0\.1:\d+\/mossgate\/nightfall-card$/);
+    expect((await fetch(reading.pact.archive.archiveUrl as string)).status).toBe(200);
+    await night();
+    const stealth = (await alerts('mossgate-nightfall')).find((a) => a.stealth) as Alert;
+    const pack = disputePack(stealth, watch('mossgate-nightfall'));
+    expect(pack?.evidence.find((row) => row.label === 'Exhibit A archived copy')?.value).toBe(reading.pact.archive.archiveUrl);
+    // The blocked ghost has no snapshot and so no copy.
+    expect((await store.pactRecord('cinderhollow-members')).status).toBe('none');
   });
 });

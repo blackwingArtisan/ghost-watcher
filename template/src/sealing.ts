@@ -74,19 +74,43 @@ export async function breakPact(deps: Pick<SealDeps, 'store'>, watchId: string):
   return { removed: await deps.store.deletePact(watchId) };
 }
 
+/** An archive that can keep a copy dated on a given day: only the demo's stand-in Wayback Machine can. */
+export interface DatedArchiver {
+  readonly label: string;
+  saveAt(url: string, at: Date): Promise<{ archiveUrl: string; archivedAt: string | null }>;
+}
+
+function canDate(archive: PageArchiver | undefined): archive is PageArchiver & DatedArchiver {
+  return archive !== undefined && typeof (archive as Partial<DatedArchiver>).saveAt === 'function';
+}
+
 export const DEMO_PACT_NOTE = 'Demo pact: back-dated for the demo, so no archived copy was made.';
 
 const DAY_MS = 86_400_000;
+
+const demoArchive: PactArchive = { archiveUrl: null, archivedAt: null, archivedBy: null, note: DEMO_PACT_NOTE };
+
+async function datedCopy(archiver: DatedArchiver, url: string, sealedAt: string): Promise<PactArchive> {
+  try {
+    const saved = await archiver.saveAt(url, new Date(sealedAt));
+    return { archiveUrl: saved.archiveUrl, archivedAt: saved.archivedAt, archivedBy: archiver.label };
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error);
+    return { archiveUrl: null, archivedAt: null, archivedBy: null, note: `Could not reach ${archiver.label}: ${reason}` };
+  }
+}
 
 /**
  * The demo's pact: for every watch with a snapshot, seals that snapshot as if the reader had applied
  * `ageDays` ago (40 by default). The sealed snapshot's `takenAt` is moved back to the same date, and
  * its hash is taken over that back-dated document, so `shasum` on the stored file still matches.
- * The archiver is never asked: no archive can honestly be dated in the past. Watches with no snapshot
+ * The real archiver is never asked for a copy in the past. A stand-in archive that can date a copy
+ * (`saveAt`, the demo's fixture Wayback) is asked once per watch, so Exhibit A links a copy dated on
+ * the pact date; if it fails, the pact is still seeded with the reason. Watches with no snapshot
  * (a blocked page) are skipped and reported as `no-snapshot`. An existing pact is replaced.
  */
 export async function seedDemoPacts(
-  deps: Pick<SealDeps, 'store' | 'clock'>,
+  deps: Pick<SealDeps, 'store' | 'clock'> & { archive?: PageArchiver },
   watches: ReadonlyArray<Pick<Watch, 'id' | 'name'>>,
   options: { ageDays?: number } = {},
 ): Promise<SealResult[]> {
@@ -109,7 +133,7 @@ export async function seedDemoPacts(
       sealedAt,
       snapshotTakenAt: sealedAt,
       sha256: snapshotSha256(snapshot),
-      archive: { archiveUrl: null, archivedAt: null, archivedBy: null, note: DEMO_PACT_NOTE },
+      archive: canDate(deps.archive) ? await datedCopy(deps.archive, snapshot.url, sealedAt) : demoArchive,
       seeded: 'demo',
     };
     await deps.store.savePact(record, snapshot);

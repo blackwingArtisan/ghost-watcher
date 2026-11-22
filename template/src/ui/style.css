@@ -1985,6 +1985,19 @@ body[data-shriek='true'] .ghost[data-severity='shriek'][data-rising='true'] .gho
   margin-top: 4px;
   color: var(--ink-dim);
 }
+.btn--quiet {
+  border-color: color-mix(in srgb, var(--ink-dim) 45%, transparent);
+  background: transparent;
+  color: var(--ink);
+  font-weight: 500;
+}
+.ghost__pact[data-pact='turned-away'] {
+  margin-top: 10px;
+  text-align: center;
+}
+.pact[data-pact='turned-away'] p {
+  max-width: 62ch;
+}
 .btn--seal {
   border-color: color-mix(in srgb, var(--accent-2) 65%, transparent);
   background: color-mix(in srgb, var(--accent-2) 12%, transparent);
