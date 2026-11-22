@@ -13,6 +13,7 @@
  *   POST /api/check-all                 check every watch now
  *   POST /api/demo/next-night           demo mode only: advance the fixture site, then check every watch
  *   POST /api/demo/rewind               demo mode only: back to the first sighting
+ *   POST /api/demo/fresh-pact           demo mode only: clear one ghost's pact (body `{"id":"<ghost id>"}`)
  *   GET  /outbox/:file.html             preview of a letter in the local outbox
  *   GET  /healthz                       liveness
  *
@@ -140,7 +141,7 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
   const allowedHosts = allowedHostSet(options.allowedHosts);
   const currentState = async () => {
     const state = await dashboardState(deps);
-    return options.demo ? { ...state, app: { ...state.app, demo: true, night: options.demo.night() } } : state;
+    return options.demo ? { ...state, app: { ...state.app, demo: true, night: options.demo.night(), freshPact: deps.app.copy.demoUnsealed?.[0] ?? null } } : state;
   };
 
   async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> {
@@ -195,6 +196,16 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       if (!options.demo) return json(res, 404, { error: 'Not found' });
       await options.demo.rewind();
       return json(res, 200, { night: options.demo.night() });
+    }
+
+    if (method === 'POST' && path === '/api/demo/fresh-pact') {
+      if (!options.demo) return json(res, 404, { error: 'Not found' });
+      const body = await readJsonBody(req);
+      if (!body.ok) return json(res, body.status, { error: body.error });
+      const watch = typeof body.value.id === 'string' ? deps.runner.watch(body.value.id) : undefined;
+      if (!watch || !pactEnabledFor(deps.app, watch)) return json(res, 404, { error: 'No such ghost' });
+      const { removed } = await breakPact({ store: deps.store }, watch.id);
+      return json(res, 200, { state: 'none', removed });
     }
 
     if (method === 'POST' && path === '/api/demo/next-night') {

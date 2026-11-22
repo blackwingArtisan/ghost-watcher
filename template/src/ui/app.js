@@ -1,5 +1,5 @@
 // Dashboard client: keeps the graveyard live, opens séances, and sends "check now" and "lay to rest".
-import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderStats, renderTally, shortHash } from './render.js';
+import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderSealCeremony, renderStats, renderTally, shortHash } from './render.js';
 
 const $ = (/** @type {string} */ sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 const initial = document.getElementById('initial-state');
@@ -171,6 +171,34 @@ function focusSoon(selector) {
   requestAnimationFrame(() => /** @type {HTMLElement | null} */ (document.querySelector(selector))?.focus());
 }
 
+/**
+ * Plays the sealing ceremony under a stone's pact line: the seal stamps down (CSS), then the hash types
+ * out over about a second. Reduced motion gets the final state at once. @param {string} id @param {string} sha256
+ */
+function playCeremony(id, sha256) {
+  const line = document.querySelector(`#ghost-${CSS.escape(id)} .ghost__pact[data-pact="sealed"]`);
+  if (!line) return;
+  line.parentElement?.querySelector('.seal-ceremony')?.remove();
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  line.insertAdjacentHTML('afterend', renderSealCeremony(sha256, { final: still }));
+  const block = /** @type {HTMLElement | null} */ (line.nextElementSibling);
+  if (!block || still) return;
+  const live = /** @type {HTMLElement} */ (block.querySelector('[data-seal-live]'));
+  const typed = /** @type {HTMLElement} */ (block.querySelector('.seal-ceremony__typed'));
+  requestAnimationFrame(() => (live.textContent = `Pact sealed. SHA-256 ${sha256}`));
+  const STAMP_MS = 600;
+  const TYPE_MS = 1000;
+  const started = performance.now();
+  const timer = setInterval(() => {
+    const shown = Math.min(sha256.length, Math.floor(((performance.now() - started - STAMP_MS) / TYPE_MS) * sha256.length));
+    typed.textContent = sha256.slice(0, Math.max(0, shown));
+    if (shown >= sha256.length) {
+      clearInterval(timer);
+      block.dataset.playing = 'false';
+    }
+  }, 30);
+}
+
 /** Seals the pact, then explains the outcome in a toast. @param {string} id @param {boolean} confirmReplace */
 async function sealPact(id, confirmReplace) {
   const name = ghostName(id);
@@ -195,6 +223,7 @@ async function sealPact(id, confirmReplace) {
     throw new Error(`${status} ${data.error || 'The pact could not be sealed'}`);
   }
   await refresh();
+  if (status === 201) playCeremony(id, data.pact.sha256);
 }
 
 /** @param {string} targetId */
@@ -428,4 +457,21 @@ paint();
 if (state.app.demo && !state.app.night && new URLSearchParams(location.search).get('night') === '1') {
   const night = /** @type {HTMLButtonElement | null} */ (document.querySelector('[data-action="next-night"]'));
   if (night && !night.disabled) night.click();
+}
+
+// `?fresh-pact=<ghost id>` (or `=1` for the demo's unsealed ghost) clears that ghost's pact on load, in
+// demo mode only, so "I applied today" can be pressed and the ceremony seen every time.
+const freshPact = new URLSearchParams(location.search).get('fresh-pact');
+if (state.app.demo && freshPact) {
+  const id = freshPact === '1' ? state.app.freshPact : freshPact;
+  if (id) {
+    void withBusy(async () => {
+      const response = await fetch('/api/demo/fresh-pact', {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (response.ok) await refresh();
+    }).catch(() => undefined);
+  }
 }

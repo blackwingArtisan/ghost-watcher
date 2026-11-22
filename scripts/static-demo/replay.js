@@ -6,7 +6,8 @@
 // browser behaves as it does against `npm run bonus`, without fetching any page itself.
 
 /**
- * @typedef {{ routes: Record<string, string>; next?: string; acks?: Record<string, string> }} ReplayNode
+ * @typedef {{ status: number; answer: string; routes: Record<string, string> }} RecordedSeal
+ * @typedef {{ routes: Record<string, string>; next?: string; acks?: Record<string, string>; seals?: Record<string, RecordedSeal> }} ReplayNode
  * @typedef {{ root: string; nodes: Record<string, ReplayNode> }} ReplayManifest
  * @typedef {{ status: number; body: unknown }} ReplayResponse
  */
@@ -22,10 +23,14 @@ export const READ_ONLY_MESSAGE =
  */
 export function createReplay(manifest, load) {
   let at = manifest.root;
+  /** Ghosts sealed during this visit, oldest first: their reads come from the recording made after the seal. @type {string[]} */
+  let sealed = [];
 
   /** @param {string} route */
   const recorded = async (route) => {
-    const blob = manifest.nodes[at]?.routes[route];
+    const node = manifest.nodes[at];
+    const afterSeal = [...sealed].reverse().map((id) => node?.seals?.[id]?.routes[route]).find((id) => id !== undefined);
+    const blob = afterSeal ?? node?.routes[route];
     return blob === undefined ? undefined : load(blob);
   };
 
@@ -50,6 +55,7 @@ export function createReplay(manifest, load) {
 
       if (method === 'POST' && path === '/api/demo/rewind') {
         at = manifest.root;
+        sealed = [];
         return reply(200, { night: 0 });
       }
       if (method === 'POST' && path === '/api/demo/next-night') {
@@ -60,6 +66,8 @@ export function createReplay(manifest, load) {
         at = node.next;
         return reply(200, await recorded('arrival'));
       }
+      // The flag that clears a pact needs the live server; the recording starts with the stone unsealed.
+      if (method === 'POST' && path === '/api/demo/fresh-pact') return reply(200, { state: 'none', removed: false });
       if (method === 'POST' && path === '/api/check-all') return reply(200, await recorded('POST /api/check-all'));
 
       const ghost = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge|pact))?$/.exec(path);
@@ -76,6 +84,11 @@ export function createReplay(manifest, load) {
           if (target) at = target;
           const state = /** @type {any} */ (await recorded('GET /api/state'));
           return reply(200, { acknowledgedAt: state?.generatedAt ?? null });
+        }
+        const seal = node.seals?.[id];
+        if (action === 'pact' && method === 'POST' && seal && !sealed.includes(id)) {
+          sealed = [...sealed, id];
+          return reply(seal.status, await load(seal.answer));
         }
         if (action === 'pact' && method !== 'GET') return reply(409, { code: 'read-only', error: READ_ONLY_MESSAGE });
       }

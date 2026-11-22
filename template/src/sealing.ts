@@ -112,11 +112,12 @@ async function datedCopy(archiver: DatedArchiver, url: string, sealedAt: string)
 export async function seedDemoPacts(
   deps: Pick<SealDeps, 'store' | 'clock'> & { archive?: PageArchiver },
   watches: ReadonlyArray<Pick<Watch, 'id' | 'name'>>,
-  options: { ageDays?: number } = {},
+  options: { ageDays?: number; skip?: readonly string[] } = {},
 ): Promise<SealResult[]> {
   const ageDays = options.ageDays ?? DEMO_PACT_AGE_DAYS;
   const results: SealResult[] = [];
   for (const watch of watches) {
+    if (options.skip?.includes(watch.id)) continue;
     const latest = await deps.store.latestSnapshot(watch.id);
     if (!latest) {
       results.push({ status: 'no-snapshot' });

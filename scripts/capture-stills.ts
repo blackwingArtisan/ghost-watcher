@@ -3,28 +3,36 @@
  *
  *   docs/bonus-crypt.png               the Bonus Crypt after one night
  *   docs/haunted-listings.png          the Haunted Listings street after one night
+ *   docs/dispute-pack.png              the Mossgate dispute pack open after one night
+ *   docs/seal-ceremony.png             the Bramblewick stone just after "I applied today"
+ *
+ * STILLS_OUT sets the output folder (default docs/).
  *
  *   npx tsx scripts/capture-stills.ts      (or: npm run stills)
  *
- * Each demo runs on STILLS_PORT (default 3142) and the port after it, against a throwaway data
+ * Each demo runs on STILLS_PORT (default 3152) and the port after it, against a throwaway data
  * folder and its invented fixture site. Nothing leaves the machine.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { chromium, type Browser } from '@playwright/test';
 
 const root = resolve(import.meta.dirname, '..');
-const port = Number(process.env.STILLS_PORT ?? 3142);
+const port = Number(process.env.STILLS_PORT ?? 3152);
+const outDir = resolve(process.env.STILLS_OUT ?? join(root, 'docs'));
 // 1440 CSS pixels wide, saved 1200 pixels wide: the layout a laptop sees, at a README-friendly size.
 const viewport = { width: 1440, height: 900 };
 const deviceScaleFactor = 1200 / 1440;
 
+/** Each demo gets its own data folder, so a later still never starts from an earlier one's night. */
+let runs = 0;
+
 function startDemo(app: string, work: string): ChildProcess {
   return spawn(process.execPath, ['--import', 'tsx', 'src/main.ts', 'demo', '--port', String(port), '--fixture-port', String(port + 1)], {
     cwd: join(root, 'apps', app),
-    env: { ...process.env, GHOST_DATA_DIR: join(work, app), GHOST_HOST_GAP_MS: '0' },
+    env: { ...process.env, GHOST_DATA_DIR: join(work, `${app}-${runs++}`), GHOST_HOST_GAP_MS: '0' },
     stdio: 'ignore',
   });
 }
@@ -59,6 +67,7 @@ async function capture(browser: Browser, app: string, work: string, shoot: (url:
   }
 }
 
+await mkdir(outDir, { recursive: true });
 const work = await mkdtemp(join(tmpdir(), 'ghost-stills-'));
 const browser = await chromium.launch();
 try {
@@ -80,7 +89,7 @@ try {
       await page.screenshot({ path: out });
       await page.close();
     },
-    join(root, 'docs', 'bonus-crypt.png'),
+    join(outDir, 'bonus-crypt.png'),
   );
   await capture(
     browser,
@@ -98,7 +107,44 @@ try {
       await page.screenshot({ path: out });
       await page.close();
     },
-    join(root, 'docs', 'haunted-listings.png'),
+    join(outDir, 'haunted-listings.png'),
+  );
+  await capture(
+    browser,
+    'bonus-watch',
+    work,
+    async (url, out) => {
+      const page = await browser.newPage({ viewport, deviceScaleFactor, reducedMotion: 'reduce' });
+      await page.goto(url);
+      await page.getByRole('button', { name: 'Let a night pass' }).click({ force: true });
+      const letter = page.locator('#feed .feed__item[data-stealth="true"]').filter({ hasText: 'Mossgate' });
+      await letter.waitFor();
+      await page.locator('body:not([data-shriek])').waitFor();
+      await letter.getByRole('button', { name: /^Raise the dead/ }).click();
+      await page.locator('#seance .dispute__head').waitFor();
+      await page.mouse.move(0, 0);
+      await page.screenshot({ path: out });
+      await page.close();
+    },
+    join(outDir, 'dispute-pack.png'),
+  );
+  await capture(
+    browser,
+    'bonus-watch',
+    work,
+    async (url, out) => {
+      const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor, reducedMotion: 'reduce' });
+      await page.goto(url);
+      const stone = page.locator('#ghost-bramblewick-savings');
+      await stone.getByRole('button', { name: /^I applied today/ }).click();
+      await stone.locator('.seal-ceremony').waitFor();
+      await page.locator('#toast[data-show="false"]').waitFor({ state: 'attached', timeout: 10_000 });
+      await stone.scrollIntoViewIfNeeded();
+      await page.mouse.move(0, 0);
+      await page.screenshot({ path: out });
+      await page.close();
+    },
+    join(outDir, 'seal-ceremony.png'),
   );
 } finally {
   await browser.close();

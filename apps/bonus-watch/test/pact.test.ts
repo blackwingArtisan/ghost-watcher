@@ -70,7 +70,7 @@ async function demo(options: { dir?: string; datedSeeds?: boolean } = {}) {
   });
   await runner.checkAll({ force: true });
   const callsBeforeSeeding = archiver.calls;
-  const seeded = await seedDemoPacts({ store, clock, ...(options.datedSeeds ? { archive: stand } : {}) }, app.watches);
+  const seeded = await seedDemoPacts({ store, clock, ...(options.datedSeeds ? { archive: stand } : {}) }, app.watches, { skip: app.copy.demoUnsealed ?? [] });
   const night = async () => {
     fixture.advance();
     await runner.checkAll({ force: true });
@@ -83,12 +83,14 @@ async function demo(options: { dir?: string; datedSeeds?: boolean } = {}) {
 }
 
 describe('bonus-watch: seeded pacts on the fixture site', () => {
-  it('(PACT 8.1, 8.2, 8.3) seals a pact 40 days before now for every ghost with a snapshot, without calling the archiver', async () => {
-    const { store, seeded, archiver, callsBeforeSeeding } = await demo();
+  it('(PACT 8.1, 8.2, 8.3, 13.12, 13.13) seals a pact 40 days before now for every ghost with a snapshot except the unsealed Bramblewick, without calling the archiver', async () => {
+    const { app, store, seeded, archiver, callsBeforeSeeding } = await demo();
     expect(DEMO_PACT_AGE_DAYS).toBe(40);
-    expect(seeded.map((r) => r.status)).toEqual(['sealed', 'sealed', 'sealed', 'no-snapshot']);
+    expect(app.copy.demoUnsealed).toEqual(['bramblewick-savings']);
+    expect(seeded.map((r) => r.status)).toEqual(['sealed', 'sealed', 'no-snapshot']);
+    expect((await store.pact('bramblewick-savings')).status).toBe('none');
     expect(archiver.calls).toBe(callsBeforeSeeding);
-    for (const id of ['lanternfield-checking', 'bramblewick-savings', 'mossgate-nightfall']) {
+    for (const id of ['lanternfield-checking', 'mossgate-nightfall']) {
       const reading = await store.pact(id);
       if (reading.status !== 'sealed') throw new Error(`expected a sealed pact for ${id}`);
       expect(reading.pact).toMatchObject({
@@ -103,7 +105,7 @@ describe('bonus-watch: seeded pacts on the fixture site', () => {
 
   it('(PACT 8.7) the blocked ghost has no snapshot, so it is skipped and stays without a pact', async () => {
     const { store, seeded } = await demo();
-    expect(seeded[3]).toEqual({ status: 'no-snapshot' });
+    expect(seeded[2]).toEqual({ status: 'no-snapshot' });
     expect((await store.pactRecord('cinderhollow-members')).status).toBe('none');
   });
 
@@ -179,8 +181,8 @@ describe('bonus-watch: seeded pacts on the fixture site', () => {
     expect((await store.pactRecord('lanternfield-checking')).status).toBe('none');
     clock.advance(24 * 60 * 60 * 1000);
     await runner.checkAll({ force: true });
-    const results = await seedDemoPacts({ store, clock }, app.watches);
-    expect(results.map((r) => r.status)).toEqual(['sealed', 'sealed', 'sealed', 'no-snapshot']);
+    const results = await seedDemoPacts({ store, clock }, app.watches, { skip: app.copy.demoUnsealed ?? [] });
+    expect(results.map((r) => r.status)).toEqual(['sealed', 'sealed', 'no-snapshot']);
     const reading = await store.pactRecord('lanternfield-checking');
     expect(reading).toMatchObject({ status: 'sealed', record: { sealedAt: '2026-10-11T10:00:00.000Z', seeded: 'demo' } });
   });

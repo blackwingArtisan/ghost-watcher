@@ -150,6 +150,25 @@ injected `Clock` or stored ISO strings, money in integer cents, apps import only
 - [x] 39. Screenshots of the demo dashboard at 1360 px and 390 px (turned-away stone, sealed stone,
       Mossgate pack) under `test-results/pact-copy/`; fix what looks broken. (PACT 12.5, 12.14, 12.20–12.28)
 
+## Session C: the sealing ceremony (requirement 13)
+
+- [x] 40. Unsealed stone: `copy.demoUnsealed`, `seedDemoPacts` skip option, `cli.ts`, bonus-watch lists
+      Bramblewick; update the tests that expected every bonus ghost sealed. (PACT 8.1, 13.12, 13.13)
+- [x] 41. `POST /api/demo/fresh-pact`, `app.freshPact` in the demo state, and the `?fresh-pact` flag in
+      `app.js`. (PACT 13.14–13.17)
+- [x] 42. The ceremony: `renderSealCeremony`, wax badge, `playCeremony`, CSS stamp, reduced motion.
+      (PACT 13.1–13.9)
+- [x] 43. Vitest for the renderer and the server route. (PACT 13.2, 13.5, 13.7, 13.12–13.17)
+- [x] 44. Playwright: seal appears, badge stays after reload, reduced motion, axe, 360 px.
+      Use context7 once to check `page.emulateMedia`. (PACT 13.1, 13.6–13.11)
+- [x] 45. Static demo: record the seal answer in `build.ts`, answer it in `replay.js`, extend
+      `replay.test.ts`. Build with `STATIC_PORT=4238` and `STATIC_OUT` under `test-results/`.
+      (PACT 13.18–13.21)
+- [x] 46. Hero scenes and the two new stills; `STILLS_OUT`; run each script once. (PACT 13.22, 13.23)
+- [x] 47. Port defaults 3150 and 3152 and the docs that name the old ones. (PACT 13.24)
+- [x] 48. Run `npm run typecheck`, `npx vitest run`, `GHOST_E2E_PORT=4230 npx playwright test`; ceremony
+      screenshots at 360, 390 and 1360 px under `test-results/ceremony/`. (PACT 13.9–13.11)
+
 ## Traceability: requirement to task
 
 | Requirement | Criteria | Tasks (build) | Tasks (tests) |
@@ -166,6 +185,7 @@ injected `Clock` or stored ISO strings, money in integer cents, apps import only
 | 10 Dashboard | 10.1–10.13 | 16, 18, 19, 20 | 17, 18, 23, 24, 25 |
 | 11 Constraints | 11.1–11.5 | 1, 12, 14, 18, 26 | 13, 17, 18, 27 |
 | 12 Pact copy and state | 12.1–12.33 | 29 to 37 | 30 to 38 |
+| 13 The sealing ceremony | 13.1–13.24 | 40 to 47 | 43, 44, 45, 48 |
 
 Per criterion:
 

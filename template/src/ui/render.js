@@ -129,12 +129,28 @@ export const DEFAULT_PACT_COPY = {
   valueColumn: 'The day you applied',
 };
 
+/** A wax seal stamped with the ghost crest, drawn inline so it needs no image file. @param {number} size */
+export function waxSealSvg(size) {
+  return `<svg class="wax" viewBox="0 0 80 80" width="${size}" height="${size}" aria-hidden="true" focusable="false"><path class="wax__disc" d="M40 4c6 0 9 5 15 6s11 1 14 7-1 10 2 16 7 8 5 14-8 8-9 14-3 12-10 14-11-3-17-3-10 5-17 3-8-8-10-14-8-8-9-14 3-9 5-14-2-10 2-16 8-6 14-7S34 4 40 4z"/><circle class="wax__ring" cx="40" cy="40" r="25" fill="none"/><path class="wax__ghost" d="M40 22c-8 0-13 6-13 15v18l5-4 4 4 4-4 4 4 4-4 5 4V37c0-9-5-15-13-15z"/><circle class="wax__eye" cx="35" cy="37" r="2.2"/><circle class="wax__eye" cx="45" cy="37" r="2.2"/></svg>`;
+}
+
+/**
+ * The sealing ceremony under a stone's pact line: the wax seal stamps down and the pact's SHA-256 types
+ * out under it. The full hash is always in a visually hidden `aria-live` span, so a screen reader hears
+ * it at once whatever the typing is doing. With `final` (reduced motion) the typed line is already whole.
+ * @param {string} sha256 @param {{ final?: boolean }} [options]
+ */
+export function renderSealCeremony(sha256, options = {}) {
+  const final = options.final === true;
+  return `<div class="seal-ceremony" data-playing="${final ? 'false' : 'true'}"><span class="seal-ceremony__seal">${waxSealSvg(64)}</span><p class="seal-ceremony__hash"><span class="visually-hidden" role="status" aria-live="polite" data-seal-live>${final ? `Pact sealed. SHA-256 ${esc(sha256)}` : ''}</span><code class="seal-ceremony__typed" aria-hidden="true" data-hash="${esc(sha256)}">${final ? esc(sha256) : ''}</code></p></div>`;
+}
+
 /** The pact line (or the "I applied today" button) on a stone. Apps without pacts have no `pact` key. @param {any} ghost @param {any} [words] */
 export function renderStonePact(ghost, words = DEFAULT_PACT_COPY) {
   const p = ghost.pact;
   if (p === undefined) return '';
   if (p && p.state === 'sealed') {
-    return `<p class="ghost__pact" data-pact="sealed" title="Sealed ${esc(p.sealedDate)} · SHA-256 ${esc(p.sha256)}"><span class="ghost__pact-tag">${esc(words.sealedChip)}</span> <time datetime="${esc(p.sealedAt)}">${esc(compactDay(p.sealedAt))}</time> · <code>${esc(p.shortHash)}</code>${p.seeded ? ' <span class="pact-demo">demo</span>' : ''}</p>`;
+    return `<p class="ghost__pact" data-pact="sealed" title="Sealed ${esc(p.sealedDate)} · SHA-256 ${esc(p.sha256)}"><span class="ghost__pact-tag ghost__pact-tag--wax">${waxSealSvg(16)}${esc(words.sealedChip)}</span> <time datetime="${esc(p.sealedAt)}">${esc(compactDay(p.sealedAt))}</time> · <code>${esc(p.shortHash)}</code>${p.seeded ? ' <span class="pact-demo">demo</span>' : ''}</p>`;
   }
   if (p && p.state === 'corrupt') {
     return '<p class="ghost__pact" data-pact="corrupt"><span class="ghost__pact-tag ghost__pact-tag--warn">Pact unreadable</span> Open the séance to fix it.</p>';

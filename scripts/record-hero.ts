@@ -1,10 +1,11 @@
 /**
  * Records the README hero GIF: the Bonus Crypt in demo mode, the Ghost of Terms Past timeline, one
- * night passing, the change on the stone and the bait-and-switch letter.
+ * unsealed stone sealed live ("I applied today" and the ceremony), one night passing, and "Raise the
+ * dead" on the Bait and switch letter.
  *
  *   npx tsx scripts/record-hero.ts [out.gif]     (needs ffmpeg on PATH)
  *
- * The demo runs on HERO_PORT (default 3140) with its fixture site on the next port, against a
+ * The demo runs on HERO_PORT (default 3150) with its fixture site on the next port, against a
  * throwaway data folder. Nothing leaves the machine.
  */
 import { spawn, spawnSync } from 'node:child_process';
@@ -15,7 +16,7 @@ import { chromium, type Page } from '@playwright/test';
 
 const root = resolve(import.meta.dirname, '..');
 const out = resolve(process.argv[2] ?? join(root, 'docs', 'bonus-crypt-night.gif'));
-const port = Number(process.env.HERO_PORT ?? 3140);
+const port = Number(process.env.HERO_PORT ?? 3150);
 const size = { width: 1440, height: 900 };
 
 const work = await mkdtemp(join(tmpdir(), 'ghost-hero-'));
@@ -54,13 +55,28 @@ try {
   await page.keyboard.press('Escape');
   await pause(page, 700);
 
+  // The unsealed stone: press "I applied today" and watch the seal stamp down and the hash type out.
+  const bramble = page.locator('#ghost-bramblewick-savings');
+  await bramble.scrollIntoViewIfNeeded();
+  await pause(page, 1200);
+  await bramble.getByRole('button', { name: /^I applied today/ }).click();
+  await page.locator('#ghost-bramblewick-savings .seal-ceremony[data-playing="false"]').waitFor({ timeout: 8000 });
+  await pause(page, 2400);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await pause(page, 600);
+
   // One night passes.
   // force: the button pulses until pressed, so it never holds still for Playwright's stability check.
   await page.getByRole('button', { name: 'Let a night pass' }).click({ force: true });
   await page.locator('#ghost-lanternfield-checking[data-state="restless"]').waitFor();
   await pause(page, 3000);
-  await page.locator('#feed .feed__item[data-stealth="true"]').hover();
-  await pause(page, 2600);
+  const letter = page.locator('#feed .feed__item[data-stealth="true"]').filter({ hasText: 'Mossgate' });
+  await letter.hover();
+  await pause(page, 1800);
+  // Raise the dead on the Bait and switch letter: the dispute pack opens.
+  await letter.getByRole('button', { name: /^Raise the dead/ }).click();
+  await page.locator('#seance .dispute__head').waitFor();
+  await pause(page, 3200);
 
   await context.close();
   await browser.close();

@@ -32,6 +32,8 @@ interface ReplayNode {
   routes: Record<string, string>;
   next?: string;
   acks?: Record<string, string>;
+  /** The seal answer of each ghost the demo leaves unsealed, with the routes that read differently after it. */
+  seals?: Record<string, { status: number; answer: string; routes: Record<string, string> }>;
 }
 
 const blobs = new Map<string, string>();
@@ -112,8 +114,29 @@ async function record(path: Path): Promise<{ node: ReplayNode; state: any }> {
   for (const letter of letters) files.set(`outbox/${letter}.html`, portable((await call('GET', `/outbox/${encodeURIComponent(letter)}.html`)).text));
   // Last, because a check updates each ghost's "last visited" time.
   routes['POST /api/check-all'] = blob((await call('POST', '/api/check-all')).body);
+  const seals = await recordSeals(state);
   await keepArchivedCopies();
-  return { node: { routes }, state };
+  return { node: { routes, ...(seals ? { seals } : {}) }, state };
+}
+
+/**
+ * For each ghost the demo leaves unsealed: presses "I applied today" on the real demo, records the
+ * answer and the routes that read differently after it, then breaks the pact so later stops start clean.
+ */
+async function recordSeals(state: any): Promise<ReplayNode['seals']> {
+  const seals: NonNullable<ReplayNode['seals']> = {};
+  for (const ghost of state.ghosts) {
+    if (ghost.pact?.state === 'sealed' || !ghost.canSeal || !state.app.pacts) continue;
+    const answer = await call('POST', `/api/ghosts/${ghost.id}/pact`);
+    if (answer.status !== 201) continue;
+    const routes: Record<string, string> = {};
+    routes['GET /api/state'] = blob((await call('GET', '/api/state')).body);
+    routes[`GET /api/ghosts/${ghost.id}`] = blob((await call('GET', `/api/ghosts/${ghost.id}`)).body);
+    routes[`GET /api/ghosts/${ghost.id}/pact`] = blob((await call('GET', `/api/ghosts/${ghost.id}/pact`)).body);
+    seals[ghost.id] = { status: answer.status, answer: blob(answer.body), routes };
+    await call('DELETE', `/api/ghosts/${ghost.id}/pact`);
+  }
+  return Object.keys(seals).length > 0 ? seals : undefined;
 }
 
 /** Saves each newly linked archived copy now: a rewind clears the fixture archive's saved pages. */

@@ -159,7 +159,7 @@ for the better terms, so that I get the bigger bonus or the lower fee.
 "Nov 19, what it says now", so that the idea is clear without waiting 40 days.
 
 **Acceptance Criteria:**
-1. WHEN the demo takes its first sighting, THE SYSTEM SHALL seal a pact for every pact-enabled watch that has a snapshot, dated 40 days before the injected clock's now.
+1. WHEN the demo takes its first sighting, THE SYSTEM SHALL seal a pact for every pact-enabled watch that has a snapshot and is not listed in the app's `copy.demoUnsealed`, dated 40 days before the injected clock's now. (Requirement 13 leaves one bonus ghost unsealed, 13.12 and 13.13.)
 2. WHEN a pact is seeded, THE SYSTEM SHALL set the seeded snapshot's `takenAt` to the seeded date and mark the pact `seeded: 'demo'`.
 3. WHEN a pact is seeded and no dated stand-in archive is available, THE SYSTEM SHALL record the note "Demo pact: back-dated for the demo, so no archived copy was made." (Requirement 12 adds the dated stand-in copy, 12.25 to 12.28.)
 4. WHEN the demo is rewound, THE SYSTEM SHALL seed the pacts again after the new baseline.
@@ -280,3 +280,46 @@ something the ghost cannot do.
 31. THE SYSTEM SHALL keep `.kiro/agents/pact-keeper.json` with `pact.md`, `testing.md`, `tech.md` and `structure.md` as `file://` resources.
 32. THE SYSTEM SHALL let the `pact-keeper` agent use `fs_read`, `fs_write` and the shell tool (`execute_bash`, the kiro-cli name for "run command"), and give it a one-paragraph prompt.
 33. WHEN `kiro-cli agent validate --path .kiro/agents/pact-keeper.json` runs, THE SYSTEM SHALL exit with code 0.
+
+### Requirement 13: The sealing ceremony
+
+**User Story:** As a judge or a viewer of a video, I want to press "I applied today" on a stone that has
+no pact and watch the seal stamp down, so that sealing a pact is a moment I can see and not a toast.
+
+**Acceptance Criteria:**
+
+*The ceremony (`ui/render.js`, `ui/app.js`, `ui/style.css`)*
+
+1. WHEN the server answers that a pact was sealed for a request made from the dashboard, THE dashboard SHALL play the ceremony on that ghost's stone.
+2. WHEN the ceremony plays, THE dashboard SHALL draw a red wax seal bearing the ghost crest as inline SVG on the stone, with no image file.
+3. WHEN the ceremony starts, THE seal SHALL stamp down from scale 1.4 to scale 1 with a brief glow in about 600 ms.
+4. WHEN the seal has stamped, THE dashboard SHALL type the pact's full SHA-256 under it character by character over about 1 s.
+5. WHILE the hash types, THE dashboard SHALL give screen readers the full SHA-256 at once through visually hidden text in an `aria-live` region.
+6. WHEN the ceremony ends, THE stone's "Pact sealed" chip SHALL become a small wax badge that stays.
+7. WHEN a stone with a sealed pact is drawn on page load or on a refresh, THE dashboard SHALL show the wax badge and SHALL NOT play the ceremony.
+8. WHILE the reader prefers reduced motion, THE dashboard SHALL show the seal in its final state at once, with no scale, glow or typing.
+9. THE seal SHALL NOT cover the stone's values or buttons.
+10. THE ceremony SHALL NOT cause horizontal scroll at a viewport width of 360 px.
+11. WHILE the ceremony plays and after it ends, THE dashboard SHALL pass the axe scan with zero violations.
+
+*An unsealed stone to press live (`sealing.ts`, `cli.ts`, `server.ts`, `ui/app.js`)*
+
+12. WHEN the demo seeds pacts, THE SYSTEM SHALL skip each watch the app lists in `copy.demoUnsealed`.
+13. THE bonus-watch app SHALL list Bramblewick High-Yield Savings in `copy.demoUnsealed` and no other watch.
+14. WHERE the dashboard URL carries `?fresh-pact=<ghost id>` in demo mode, THE dashboard SHALL ask the server to clear that ghost's pact on load.
+15. WHERE the dashboard URL carries `?fresh-pact=1` in demo mode, THE dashboard SHALL clear the pact of the first ghost in `copy.demoUnsealed`.
+16. WHILE the app is not in demo mode, THE server SHALL answer the clear-pact route with 404 and THE dashboard SHALL NOT send it.
+17. IF `?fresh-pact` names no pact-enabled ghost, THEN THE server SHALL answer 404 and clear nothing.
+
+*The static recorded demo (`scripts/static-demo`)*
+
+18. WHEN the static demo is built, THE build SHALL record, at every stop, the seal answer of each `copy.demoUnsealed` ghost and the state, ghost detail and pact routes as they read after that seal.
+19. WHEN a visitor presses "I applied today" on an unsealed ghost with a recorded seal on the static site, THE replay SHALL answer with the recorded seal and THE dashboard SHALL play the ceremony.
+20. WHILE a ghost has been sealed on the static site, THE replay SHALL answer the state, detail and pact routes of that ghost from the recording made after its seal.
+21. WHEN any pact action other than that recorded seal is made on the static site, THE replay SHALL answer 409 `read-only` with the explanation.
+
+*Media and ports (`scripts/record-hero.ts`, `scripts/capture-stills.ts`)*
+
+22. THE hero recording SHALL show the unsealed stone, "I applied today" and the ceremony, then one night, then "Raise the dead" on the Bait and switch letter.
+23. THE stills script SHALL write `docs/dispute-pack.png` (the Mossgate dispute pack) and `docs/seal-ceremony.png` (the stone just after sealing).
+24. THE hero script SHALL default `HERO_PORT` to 3150 and THE stills script SHALL default `STILLS_PORT` to 3152, both overridable by the environment variable.

@@ -8,13 +8,20 @@ const bodies: Record<string, unknown> = {
   arrive1: { version: 2, moved: true, results: [{ status: 'changed', watchId: 'moss' }] },
   check0: { results: [{ status: 'unchanged', watchId: 'moss', pageMoved: false }] },
   detail0: { id: 'moss', alerts: [] },
+  sealA: { state: 'sealed', pact: { sha256: 'ab'.repeat(32) } },
+  sealState: { app: { night: 0 }, generatedAt: '2026-11-01T00:00:00.000Z', ghosts: [{ id: 'bram', pact: { state: 'sealed' } }] },
+  sealDetail: { id: 'bram', pact: { state: 'sealed' } },
   pack1: { letter: 'Dear bank' },
 };
 
 const manifest = {
   root: '',
   nodes: {
-    '': { routes: { 'GET /api/state': 's0', 'POST /api/check-all': 'check0', 'GET /api/ghosts/moss': 'detail0' }, next: '/' },
+    '': {
+      routes: { 'GET /api/state': 's0', 'POST /api/check-all': 'check0', 'GET /api/ghosts/moss': 'detail0', 'GET /api/ghosts/bram': 'detail0' },
+      next: '/',
+      seals: { bram: { status: 201, answer: 'sealA', routes: { 'GET /api/state': 'sealState', 'GET /api/ghosts/bram': 'sealDetail' } } },
+    },
     '/': {
       routes: { 'GET /api/state': 's1', arrival: 'arrive1', 'GET /api/ghosts/moss/alerts/a1/dispute': 'pack1' },
       acks: { moss: '/moss' },
@@ -60,5 +67,32 @@ describe('static demo replay', () => {
     for (const method of ['POST', 'DELETE']) {
       expect(await r.handle(method, '/api/ghosts/moss/pact')).toEqual({ status: 409, body: { code: 'read-only', error: READ_ONLY_MESSAGE } });
     }
+  });
+
+  it('(PACT 13.19, 13.20) answers the recorded seal for the unsealed ghost, then reads that ghost from the recording made after it', async () => {
+    const r = replay();
+    expect(await r.handle('GET', '/api/ghosts/bram')).toEqual({ status: 200, body: bodies.detail0 });
+    expect(await r.handle('POST', '/api/ghosts/bram/pact')).toEqual({ status: 201, body: bodies.sealA });
+    expect(await r.handle('GET', '/api/state')).toEqual({ status: 200, body: bodies.sealState });
+    expect(await r.handle('GET', '/api/ghosts/bram')).toEqual({ status: 200, body: bodies.sealDetail });
+    expect(await r.handle('GET', '/api/ghosts/moss')).toEqual({ status: 200, body: bodies.detail0 });
+  });
+
+  it('(PACT 13.21) sealing the same ghost again, replacing or breaking it, and sealing any other ghost keep the explanation', async () => {
+    const r = replay();
+    await r.handle('POST', '/api/ghosts/bram/pact');
+    const readOnly = { status: 409, body: { code: 'read-only', error: READ_ONLY_MESSAGE } };
+    expect(await r.handle('POST', '/api/ghosts/bram/pact')).toEqual(readOnly);
+    expect(await r.handle('DELETE', '/api/ghosts/bram/pact')).toEqual(readOnly);
+    expect(await r.handle('POST', '/api/ghosts/moss/pact')).toEqual(readOnly);
+  });
+
+  it('(PACT 13.20) a rewind forgets the seal, and the fresh-pact route is a harmless no-op', async () => {
+    const r = replay();
+    await r.handle('POST', '/api/ghosts/bram/pact');
+    await r.handle('POST', '/api/demo/rewind');
+    expect(await r.handle('GET', '/api/state')).toEqual({ status: 200, body: bodies.s0 });
+    expect((await r.handle('POST', '/api/ghosts/bram/pact')).status).toBe(201);
+    expect(await r.handle('POST', '/api/demo/fresh-pact')).toEqual({ status: 200, body: { state: 'none', removed: false } });
   });
 });

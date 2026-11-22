@@ -21,6 +21,9 @@ export function buildApp(env: Env = process.env): GhostApp {
       disclaimer: 'Reports what each page says. Not financial advice. Banks shown in the demo are invented.',
       disputes: true,
       pacts: true,
+      // Bramblewick stays unsealed in the demo: Lanternfield and Mossgate carry the pact stories (bonus
+      // match and dispute letter), so this stone is free for a visitor to press "I applied today".
+      demoUnsealed: ['bramblewick-savings'],
     },
     watches: [
       defineWatch({

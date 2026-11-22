@@ -36,6 +36,8 @@ export interface AppCopy {
    * change against what the page promised that day. For apps that watch financial offers.
    */
   pacts?: boolean;
+  /** Watch ids the demo leaves without a pact, so a visitor can press "I applied today" on them. */
+  demoUnsealed?: string[];
   /** The words of the pact (button, chip, notes, letters, authority). Omit it for the bank-offer wording. */
   pactCopy?: PactCopy;
 }

@@ -151,7 +151,7 @@ test.describe('part 1: the bonus dashboard', () => {
 });
 
 test.describe('part 2: the demo dashboard', () => {
-  test('(PACT 8.1, 8.2, 12.5, 12.25, 10.3) after a rewind every stone with a reading is already sealed, tagged "demo"', async ({ page }) => {
+  test('(PACT 8.1, 8.2, 12.5, 12.25, 10.3) after a rewind Lanternfield is already sealed and tagged "demo", and Bramblewick is left unsealed', async ({ page }) => {
     await page.goto(DEMO);
     const rewind = page.getByRole('button', { name: 'Rewind to calm' });
     if (await rewind.isVisible()) {

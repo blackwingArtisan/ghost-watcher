@@ -684,3 +684,56 @@ and does not depend on the copy.
 `.kiro/agents/pact-keeper.json` uses the universal kiro-cli format (`tools`, `allowedTools`,
 `resources` as `file://` paths, `prompt`). A Vitest file reads both and checks the keys, the bullet
 count and the resource paths; the CLI check is run by hand.
+
+## 15. The sealing ceremony (requirement 13)
+
+### 15.1 The ceremony (PACT 13.1 to 13.11)
+
+`render.js` gains `renderSealCeremony(pact, crest)`: a `<div class="seal-ceremony">` holding an inline
+SVG (a red wax disc with an irregular edge and the crest letter) and a typed-hash line. The hash line
+is `<code aria-hidden="true">` for the typing, next to a `visually-hidden` span inside an
+`aria-live="polite"` region that holds the full hash from the first frame. `renderStonePact` shows the
+badge (`.ghost__pact-tag` restyled as a wax chip with a tiny SVG disc) and, only when the ghost id is
+the one in `options.ceremony`, the ceremony block. Reloads and refreshes pass no ceremony, so they show
+the badge only (13.7).
+
+`app.js` `sealPact` sets `ceremonyId = id` before `refresh()`, and `paint` passes it to the renderer
+and clears it after the next frame. A small `playCeremony(card, hash)` types the hash with
+`setInterval` (about 16 ms per 1 to 2 characters so it takes about 1 s) and removes the block's
+`data-playing` attribute when done. CSS does the stamp: `@keyframes seal-stamp` from `scale(1.4)`
+with opacity 0 to `scale(1)`, 600 ms, with a `filter: drop-shadow` glow that fades. Under
+`@media (prefers-reduced-motion: reduce)` the animation is `none`, and `playCeremony` checks
+`matchMedia` and writes the whole hash at once (13.8).
+
+Layout: the seal sits in the normal flow under the pact line, in its own row, so it cannot cover values
+or buttons (13.9). It has `max-width: 100%` and the hash wraps with `overflow-wrap: anywhere`, so 360 px
+has no horizontal scroll (13.10).
+
+### 15.2 Unsealed stone and the fresh-pact flag (PACT 13.12 to 13.17)
+
+`AppCopy.demoUnsealed?: string[]` lists watch ids the demo leaves unsealed. `seedDemoPacts` takes
+`{ skip }` and `cli.ts` passes it, both at start and on rewind. bonus-watch lists
+`bramblewick-savings`: the demo's two pact stories belong to Lanternfield (bonus match) and Mossgate
+(dispute letter), so Bramblewick is the one stone whose pact is not needed by a pack, and it sits in the
+middle of the list where a viewer sees it.
+
+`POST /api/demo/fresh-pact` with `{ "id": "<ghost id>" }` exists only when the server has demo controls
+(404 otherwise), refuses an unknown or pact-disabled ghost with 404, and deletes that ghost's pact. The
+state sent in demo mode carries `app.freshPact`, the first `demoUnsealed` id or null. `app.js` reads
+`?fresh-pact` after the first paint; `1` means `app.freshPact`. It posts only when `state.app.demo`.
+
+### 15.3 Static recording (PACT 13.18 to 13.21)
+
+`build.ts` `record()` ends, for each `demoUnsealed` id, by calling `POST /api/ghosts/<id>/pact`, storing
+the answer and the three routes that change (`GET /api/state`, `GET /api/ghosts/<id>`,
+`GET /api/ghosts/<id>/pact`) in `node.seals[id]`, then `DELETE`ing the pact so later stops start clean.
+`replay.js` keeps a set of ghosts sealed in this visit: `POST .../pact` on a ghost with `node.seals[id]`
+answers 201 with the recording and adds it to the set; reads then prefer that ghost's recorded routes.
+A rewind empties the set. `POST /api/demo/fresh-pact` answers 200 `{ cleared: false }`. Limit: a pact
+sealed at night 0 and then followed by a night reads as sealed on the later night's own recording, not
+as a comparison with the earlier reading.
+
+### 15.4 Media and ports (PACT 13.22 to 13.24)
+
+The hero script adds the scenes and the stills script gains `STILLS_OUT` (default `docs`). Defaults
+move to 3150 and 3152, outside the e2e block of eight ports from `GHOST_E2E_PORT`.

@@ -149,7 +149,7 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
       const baseline = await deps.runner.checkAll({ force: true });
       out(`First sighting taken for ${baseline.filter((r) => r.status === 'baseline').length} of ${baseline.length} pages.`);
       // The demo reader "applied" 40 days ago, so the first night already has a pact to quote.
-      if (deps.app.copy.pacts) await seedDemoPacts(deps, deps.app.watches.filter((w) => pactEnabledFor(deps.app, w)), { ageDays: resolvePactVocabulary(deps.app).demoAgeDays });
+      if (deps.app.copy.pacts) await seedDemoPacts(deps, deps.app.watches.filter((w) => pactEnabledFor(deps.app, w)), { ageDays: resolvePactVocabulary(deps.app).demoAgeDays, skip: deps.app.copy.demoUnsealed ?? [] });
     }
     const server = createDashboardServer(deps, {
       allowedHosts: [...parseHostList(env.GHOST_ALLOWED_HOSTS), ...parseHostList(env.RENDER_EXTERNAL_HOSTNAME)],
@@ -166,7 +166,7 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
                 site.reset();
                 await deps.store.clear();
                 await deps.runner.checkAll({ force: true });
-                if (deps.app.copy.pacts) await seedDemoPacts(deps, deps.app.watches.filter((w) => pactEnabledFor(deps.app, w)), { ageDays: resolvePactVocabulary(deps.app).demoAgeDays });
+                if (deps.app.copy.pacts) await seedDemoPacts(deps, deps.app.watches.filter((w) => pactEnabledFor(deps.app, w)), { ageDays: resolvePactVocabulary(deps.app).demoAgeDays, skip: deps.app.copy.demoUnsealed ?? [] });
               },
             },
           }
