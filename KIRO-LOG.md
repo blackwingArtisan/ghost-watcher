@@ -1,5 +1,28 @@
 # Kiro log
 
+<!-- kiro-numbers:start -->
+| Kiro, by the numbers | |
+| --- | --- |
+| `kiro-cli` calls | 9 (calls 1 to 9), each with an explicit list of trusted tools, never `--trust-all-tools` |
+| Time in Kiro | 73 minutes (calls 3 to 9; calls 1 and 2 were timed only roughly, about 15 minutes together) |
+| Credits | 133.18 (calls 3 to 9, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
+| Lines Kiro added | 7,231 (calls 3 to 9; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
+| Tests Kiro added | 201 Vitest and 10 Playwright (suite counts before and after each call) |
+| MCP calls | 14 (context7; calls 8 and 9), each with its arguments in the transcript |
+| Hand fixes to Kiro's code | 1: a date assumption in a Kiro-written test (5 lines added, 2 removed after call 7); Kiro fixed the cause in call 8 |
+<!-- kiro-numbers:end -->
+
+## Kiro features at a glance
+
+| Feature | Where | Evidence |
+| --- | --- | --- |
+| Specs | `.kiro/specs/ghost-watcher-kit/` (the skeleton) and `.kiro/specs/seal-the-pact/` (the headline feature) | Kiro wrote both: [call 2](#call-2-spec-generation-three-files-written), [session 2](docs/kiro-sessions/session-2-seal-the-pact-spec.md); requirement 12 added in [session 6](docs/kiro-sessions/session-6-pact-copy.md) |
+| Steering | `.kiro/steering/`: `product.md`, `structure.md`, `tech.md` (always), `testing.md` and `pact.md` (scoped with `fileMatch`) | The scoped files were written by Kiro in [session 5](docs/kiro-sessions/session-5-test-clock.md) and [session 6](docs/kiro-sessions/session-6-pact-copy.md) after it checked the front matter with context7 |
+| Hooks | `.kiro/hooks/test-on-save.json`, `full-suite-on-stop.json` | The Stop hook ran the full suite after call 3 and caught a stale assertion that Kiro fixed ([call 3 follow-up](#follow-up-after-the-stop-hooks-full-suite-run)) |
+| Agent hook | `.kiro/hooks/money-guard.json` restates the integer-cents rule when money code is saved | Written by Kiro in [call 3](#call-3-spec-review-money-and-contact-url-kiro-cli-v3) |
+| Custom agent | `.kiro/agents/pact-keeper.json`, scoped to the pact code with its steering as resources | Written by Kiro and checked with `kiro-cli agent validate` in [session 6](docs/kiro-sessions/session-6-pact-copy.md) |
+| MCP | `.kiro/settings/mcp.json` (context7) | Every call from session 5 on makes real context7 calls; each transcript shows the arguments |
+
 ## What Kiro built
 
 - **Seal the pact, the headline feature, specced and built by Kiro.** Kiro wrote
@@ -8,7 +31,8 @@
   archived copy and date as your pact. Every later change is judged against the pact as well as last
   night. The dispute pack quotes what the page promised the day you applied against today, and a
   bonus-match letter asks for terms that improved. The demo pact is back-dated 40 days. Kiro wrote
-  4,526 of its lines, the developer none (calls 5 to 7 below).
+  all 4,526 lines of calls 5 to 7 below; one assertion was later loosened by hand, and Kiro fixed
+  the cause in call 8.
 - **Overridable e2e ports.** Kiro moved every Playwright port into `e2e/ports.ts` behind
   `GHOST_E2E_PORT`, with tests (call 4).
 - **The spec.** Kiro wrote the EARS requirements, the design and the task list in
@@ -34,12 +58,12 @@
 | Integer-cents money, contact URL policy, their tests | Kiro (call 3) |
 | `test-on-save` and `full-suite-on-stop` hooks | Outside Kiro; Kiro narrowed the matcher and validated both (call 3) |
 | `money-guard` agent hook | Kiro (call 3) |
-| Seal the pact: spec, pact store, comparison, dispute and bonus-match letters, routes, dashboard, demo seeding, 120 Vitest and 10 Playwright tests | Kiro (calls 5 to 7); the developer ran the shell and the checks and changed no line |
+| Seal the pact: spec, pact store, comparison, dispute and bonus-match letters, routes, dashboard, demo seeding, 120 Vitest and 10 Playwright tests | Kiro (calls 5 to 7); the developer ran the shell and the checks. One assertion was loosened by hand three days later (5 lines added, 2 removed) and Kiro fixed the cause in call 8 |
 | Overridable e2e ports (`e2e/ports.ts`) and its tests | Kiro (call 4) |
 | Later features (Ghost of Terms Past, bait and switch, receipts, noise table, webhook, dashboard polish) | Outside Kiro, with Claude Code; see [CHANGELOG.md](CHANGELOG.md) |
 
-Seven `kiro-cli` calls were made. None used `--trust-all-tools`; each was given an explicit list of
-trusted tools. Call 1 drafted the spec but could not save it; the lesson (name the tools the v3
+Every `kiro-cli` call is counted in the numbers block at the top. None used `--trust-all-tools`;
+each was given an explicit list of trusted tools. Call 1 drafted the spec but could not save it; the lesson (name the tools the v3
 engine uses) made call 2 work.
 
 ## Before the calls
@@ -328,3 +352,16 @@ added, 2 removed), and Kiro then fixed the cause.
   applied" against "Nov 19, 2026: what it says now", with no horizontal scroll.
 - **Open:** packs in the demo still show the fixture host `127.0.0.1:<port>` rather than a display
   name, which is a separate item. Haunted Listings does not use pacts yet.
+
+## Calls 8 and later (kiro-cli 3.5, 2026-11-22)
+
+Each call ran headless with `--output-format stream-json`, so every transcript keeps each tool
+call's arguments and exit code, and each call made real context7 MCP calls. The developer reran
+the full suite before every commit and from a fresh clone before every push.
+
+<!-- kiro-calls:start -->
+| Call | What Kiro did | Time | Credits | Lines Kiro added | MCP calls | Transcript |
+|---|---|---|---|---|---|---|
+| 8: test clock | Gave every Kiro-written test reading the manual clock, added a clock-hygiene test and the scoped `testing.md` steering | 6.5 min | 11.33 | 196 | 6 | [session 5](docs/kiro-sessions/session-5-test-clock.md) |
+| 9: pact copy | Requirement 12 of seal-the-pact: plainer pact notes and letters, a display address in letters, the turned-away stone, a dated demo archive copy, `pact.md` steering and the `pact-keeper` agent | 19.7 min | 37.56 | 1,068 | 8 | [session 6](docs/kiro-sessions/session-6-pact-copy.md) |
+<!-- kiro-calls:end -->

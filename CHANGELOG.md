@@ -2,11 +2,28 @@
 
 ## 2026-11-22
 
+- **Raise the dead reads as evidence.** Exhibit A (the day you applied) and Exhibit B (now) with the
+  changed clause marked, the letter on parchment under a Bait and switch stamp, the text boxes behind
+  "Edit the text" and the hash commands behind "Check it yourself".
+- **A clearer first screen.** One line above the stones says what they are; the tally adds up the
+  money that turned against you since you applied, in integer cents; `npm run bonus` and
+  `npm run listing` open the browser and print the one-night URL. Stones keep the name, readings
+  and one status line, with the rest in a tooltip or the séance.
+- **Phones and errors.** A smaller moon clear of the title, a banner after each night that jumps to
+  the loudest letter, a Spirit mail pill that steps aside while the letters are on screen, no ghost
+  stuck on "visiting...", an error toast with Retry and a lost-ghost page for unknown addresses.
+- **A street of different houses.** Haunted Listings houses alternate a gable, a mansard and a double
+  gable, each with a chimney and steps or a porch, windows that light one by one, and a street lamp.
+- **Pact copy, by Kiro (call 9).** Plainer pact notes and letters, a readable display address in
+  letters instead of the fixture host, a turned-away stone that explains robots.txt, a dated
+  archived copy for the demo pact, scoped `pact.md` steering and a `pact-keeper` custom agent.
+- **Kiro numbers in one place.** A single "Kiro, by the numbers" block, quoted word for word by the
+  README, JUDGES.md and KIRO-LOG.md and checked by a test, plus a Kiro features at a glance table.
 - **A live demo with no server.** `npm run build:static` drives the real Bonus Crypt demo through
   every night and every ghost laid to rest, records each API answer, and writes `dist/`: the
   dashboard, the outbox letters, the archived copies and a small replay that answers the
   dashboard's API calls in the browser. Sealing or breaking a pact says it needs the local server.
-- **A date-proof pact test.** The bonus-match letter's "now" date follows the receipt instead of a
+- **A date-proof pact test, by Kiro (call 8).** Every Kiro-written test reading uses the test clock, and the bonus-match letter's "now" date follows the receipt instead of a
   fixed day, so the test passes on any day it runs.
 
 ## 2026-11-18
