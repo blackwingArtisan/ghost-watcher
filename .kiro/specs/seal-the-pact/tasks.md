@@ -169,6 +169,16 @@ injected `Clock` or stored ISO strings, money in integer cents, apps import only
 - [x] 48. Run `npm run typecheck`, `npx vitest run`, `GHOST_E2E_PORT=4230 npx playwright test`; ceremony
       screenshots at 360, 390 and 1360 px under `test-results/ceremony/`. (PACT 13.9–13.11)
 
+- [x] 49. Slow drift: `driftSummary`, `nightsSince`, readings passed to `comparePact`. (PACT 14.1–14.7)
+- [x] 50. Fernwick fixture (four versions), watch with `minDelta: 1200`, demo seeding. (PACT 14.8–14.11)
+- [x] 51. `measureNoise` `sealPacts`; bonus noise test re-pinned. (PACT 14.12–14.14)
+- [x] 52. Vitest for drift (`drift-clock.test.ts`). (PACT 14.1–14.7)
+- [x] 53. Bonus clock: `bonus-clock.ts`, `Watch.bonusClock`, posted mark in the pact record, view, routes, stone and séance. (PACT 15.1–15.13)
+- [x] 54. Weekly digest: `digest.ts` and CLI `digest` through the sink. (PACT 15.14–15.17)
+- [x] 55. Vitest for the clock and digest. (PACT 15.2–15.16)
+- [x] 56. Playwright `drift-clock.spec.ts`: drift shriek on night 3, "Bonus due, not posted", axe. (PACT 14.10, 15.6–15.11)
+- [ ] 57. Screenshots of the drift stone and the clock at 390 and 1360 px (the spec writes them, but Playwright empties test-results before each run, so they must be looked at and kept); static demo recording of night 3 with `STATIC_PORT=4238`. (PACT 14.10)
+
 ## Traceability: requirement to task
 
 | Requirement | Criteria | Tasks (build) | Tasks (tests) |

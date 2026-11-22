@@ -7,6 +7,9 @@
  *            an annual fee and a 48-month eligibility clause; Bramblewick only reformats its page.
  * Version 3: Bramblewick's offer ends; Lanternfield's fine print adds a monthly fee clause.
  *
+ * Version 4: only Fernwick moves. Its bonus is cut in steps of $500 (v1 $5,000, v2 $4,500, v3 $4,000, v4
+ *            $3,500), each too small to wake the nightly ghost; only the pact adds them up.
+ *
  * Archived copies (served by the stand-in Wayback endpoints for the Ghost of Terms Past):
  * Version -1 (March 2026): Lanternfield $500, Bramblewick $200 at 4.10% APY, Mossgate 80,000 points.
  * Version 0 (June 2026):   Lanternfield cuts to $300 and moves its deadline; Bramblewick raises to
@@ -168,6 +171,19 @@ function mossgate(ctx: PageContext): string {
   );
 }
 
+function fernwick(ctx: PageContext): string {
+  const bonus = ['$5,000', '$5,000', '$4,500', '$4,000', '$3,500'][Math.max(1, Math.min(4, ctx.version))];
+  return chrome(
+    'Premier Savings bonus',
+    'Fernwick Trust',
+    '#2f5d62',
+    `<section class="offer"><h1>Premier Savings</h1><p>New money bonus</p><p class="big" id="fern-bonus">${bonus}</p>
+  <p>Deposit new funds within 20 days of opening. The bonus posts within 15 days after that.</p>
+  <div class="terms" id="fern-terms"><p>Rates are variable. Membership is open to everyone.</p></div></section>`,
+    ctx,
+  );
+}
+
 function cinderhollow(ctx: PageContext): string {
   return chrome(
     'Member offers',
@@ -180,7 +196,7 @@ function cinderhollow(ctx: PageContext): string {
 
 export const bonusSite: FixtureSite = {
   name: 'bonus-watch',
-  versions: 3,
+  versions: 4,
   past: [
     { version: -1, capturedAt: '2026-03-04T15:12:09Z' },
     { version: 0, capturedAt: '2026-06-11T09:30:44Z' },
@@ -197,6 +213,7 @@ Disallow: /
     { path: '/lanternfield/everyday-checking', title: 'Lanternfield Savings: Everyday Checking', render: lanternfield },
     { path: '/bramblewick/savings', title: 'Bramblewick FCU: High-Yield Savings', render: bramblewick },
     { path: '/mossgate/nightfall-card', title: 'Mossgate Card Co.: Nightfall Rewards Card', render: mossgate },
+    { path: '/fernwick/premier-savings', title: 'Fernwick Trust: Premier Savings', render: fernwick },
     { path: '/members/cinderhollow/offers', title: 'Cinderhollow National Bank: member offers (disallowed by robots.txt)', render: cinderhollow },
   ],
 };
@@ -211,4 +228,5 @@ export const bonusWorthKnowing: WorthKnowing[] = [
   { version: 2, watchId: 'mossgate-nightfall', why: 'a $95 annual fee and a 48-month eligibility clause' },
   { version: 3, watchId: 'lanternfield-checking', why: 'the fine print adds a $12 monthly fee' },
   { version: 3, watchId: 'bramblewick-savings', why: 'the bonus offer ends' },
+  { version: 4, watchId: 'fernwick-premier', why: 'the bonus was cut from $5,000 to $3,500 in three small steps (only a pact adds them up)' },
 ];

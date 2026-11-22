@@ -17,6 +17,7 @@ import { systemClock } from '../clock';
 import { PoliteFetcher, buildUserAgent, type FetchOutcome, type Fetcher } from '../fetcher';
 import { Runner } from '../runner';
 import { MemoryBlobStore } from '../store/blob';
+import { sealPact } from '../sealing';
 import { GhostStore } from '../store/ghost-store';
 import type { Watch } from '../watch';
 import { startFixtureServer, type FixtureSite } from './fixture-server';
@@ -36,6 +37,8 @@ export interface NoiseRatioOptions {
   worthKnowing: WorthKnowing[];
   /** Checks per night (version). Default 4, one every 6 hours. */
   checksPerNight?: number;
+  /** Seal every readable page's pact after the first night, as a reader who applied that day (PACT 14.12). */
+  sealPacts?: boolean;
 }
 
 export interface Tally {
@@ -119,7 +122,8 @@ export async function measureNoise(options: NoiseRatioOptions): Promise<NoiseRep
         maxCrawlDelayMs: 0,
       }),
     );
-    const runner = new Runner({ app, fetcher, store: new GhostStore(new MemoryBlobStore()), sink: silentSink, clock: systemClock });
+    const store = new GhostStore(new MemoryBlobStore());
+    const runner = new Runner({ app, fetcher, store, sink: silentSink, clock: systemClock });
     const worth = new Set(options.worthKnowing.map((w) => `${w.version}:${w.watchId}`));
     const tallies = { wholePage: emptyTally(), selectorText: emptyTally(), ghostWatcher: emptyTally() };
     const previousSelectorText = new Map<string, string>();
@@ -127,6 +131,10 @@ export async function measureNoise(options: NoiseRatioOptions): Promise<NoiseRep
     let visits = 0;
 
     for (let night = 1; night <= options.site.versions; night += 1) {
+      if (night === 2 && options.sealPacts) {
+        // The reader applied on the first night: seal each page's first reading (PACT 14.12).
+        for (const watch of app.watches) await sealPact({ store, clock: systemClock }, watch);
+      }
       if (night > 1) fixture.advance();
       for (let check = 0; check < checksPerNight; check += 1) {
         for (const watch of app.watches) {

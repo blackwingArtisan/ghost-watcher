@@ -737,3 +737,25 @@ as a comparison with the earlier reading.
 
 The hero script adds the scenes and the stills script gains `STILLS_OUT` (default `docs`). Defaults
 move to 3150 and 3152, outside the e2e block of eight ports from `GHOST_E2E_PORT`.
+
+## 16. Slow drift (PACT 14)
+
+`comparePact` already raises a finding when the total change since the pact meets a rule although the
+night did not. A finding raised that way (the field has no `own` finding) is a drift: its summary becomes
+`Drifted since you applied: $5,000 → $3,500 over 3 nights`. `comparePact` takes the stored readings
+(newest first) as a last parameter and counts the readings before the newest one that still holds the
+pact's value. Fernwick's bonus rule uses `minDelta: 1200`: nights of $500 and totals of $1,000 stay
+quiet; $1,500 on night 3 shrieks once. The fixture site grows to four versions. `measureNoise` gets
+`sealPacts`, so the Ghost can use the pact it is built for; the noise test pins the new numbers.
+
+## 17. The bonus clock (PACT 15)
+
+`Watch.bonusClock` is generic data. `bonus-clock.ts` holds pure functions: `bonusClockReading(clock,
+pactSealedAt, postedAt, now)` returns the days and state (`counting`, `posting`, `due`, `posted`) using
+UTC day arithmetic on ISO strings, with `now` from the injected clock. The pact record gains
+`bonusPostedAt`. `GhostStore.markBonusPosted` rewrites only the record. `POST /api/ghosts/:id/bonus-posted`
+answers 409 without clock or pact. The view adds `bonusClock` to the stone and séance; `render.js`
+prints the line, the "Bonus posted" button and the "Raise the dead" prompt, which opens the clock letter
+(`GET /api/ghosts/:id/bonus-letter`, plain text through the existing letter pack styling is not needed:
+the prompt shows the letter in a dialog-less `<details>`). `digest.ts` is a pure function; `cli.ts` `digest`
+builds one `AlertMessage` and delivers it through the sink.

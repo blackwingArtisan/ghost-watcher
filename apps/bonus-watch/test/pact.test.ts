@@ -87,7 +87,7 @@ describe('bonus-watch: seeded pacts on the fixture site', () => {
     const { app, store, seeded, archiver, callsBeforeSeeding } = await demo();
     expect(DEMO_PACT_AGE_DAYS).toBe(40);
     expect(app.copy.demoUnsealed).toEqual(['bramblewick-savings']);
-    expect(seeded.map((r) => r.status)).toEqual(['sealed', 'sealed', 'no-snapshot']);
+    expect(seeded.map((r) => r.status)).toEqual(['sealed', 'sealed', 'sealed', 'no-snapshot']);
     expect((await store.pact('bramblewick-savings')).status).toBe('none');
     expect(archiver.calls).toBe(callsBeforeSeeding);
     for (const id of ['lanternfield-checking', 'mossgate-nightfall']) {
@@ -105,7 +105,7 @@ describe('bonus-watch: seeded pacts on the fixture site', () => {
 
   it('(PACT 8.7) the blocked ghost has no snapshot, so it is skipped and stays without a pact', async () => {
     const { store, seeded } = await demo();
-    expect(seeded[2]).toEqual({ status: 'no-snapshot' });
+    expect(seeded[3]).toEqual({ status: 'no-snapshot' });
     expect((await store.pactRecord('cinderhollow-members')).status).toBe('none');
   });
 
@@ -182,7 +182,7 @@ describe('bonus-watch: seeded pacts on the fixture site', () => {
     clock.advance(24 * 60 * 60 * 1000);
     await runner.checkAll({ force: true });
     const results = await seedDemoPacts({ store, clock }, app.watches, { skip: app.copy.demoUnsealed ?? [] });
-    expect(results.map((r) => r.status)).toEqual(['sealed', 'sealed', 'no-snapshot']);
+    expect(results.map((r) => r.status)).toEqual(['sealed', 'sealed', 'sealed', 'no-snapshot']);
     const reading = await store.pactRecord('lanternfield-checking');
     expect(reading).toMatchObject({ status: 'sealed', record: { sealedAt: '2026-10-11T10:00:00.000Z', seeded: 'demo' } });
   });
@@ -191,7 +191,7 @@ describe('bonus-watch: seeded pacts on the fixture site', () => {
 describe('bonus-watch: pact copy and state', () => {
   it('(PACT 12.19) every bonus-watch watch carries a reserved .example display URL and keeps its fetch URL', () => {
     const watches = buildApp({ BONUS_SITE_ORIGIN: 'http://127.0.0.1:3131' }).watches;
-    expect(watches).toHaveLength(4);
+    expect(watches).toHaveLength(5);
     for (const watch of watches) {
       expect(new URL(watch.displayUrl as string).hostname).toMatch(/\.example$/);
       expect(watch.url).toMatch(/^http:\/\/127\.0\.0\.1:3131\//);

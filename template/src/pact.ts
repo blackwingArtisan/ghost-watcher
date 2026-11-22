@@ -44,6 +44,8 @@ export interface PactRecord {
   sha256: string;
   archive: PactArchive;
   seeded?: 'demo';
+  /** When the reader marked the bonus as posted; stops the bonus clock. */
+  bonusPostedAt?: string;
 }
 
 export interface Pact extends PactRecord {
@@ -163,6 +165,17 @@ function loudest(findings: Finding[]): Finding | undefined {
   return findings.reduce<Finding | undefined>((top, f) => (!top || LOUDNESS[f.severity] > LOUDNESS[top.severity] ? f : top), undefined);
 }
 
+/** Readings (newest first) before the newest one that still holds the pact's value; all of them when none does. */
+export function nightsSince(readings: Snapshot[], field: string, promised: MaybeValue): number {
+  const index = readings.findIndex((reading) => valuesEqual(reading.fields[field] ?? null, promised));
+  return index === -1 ? readings.length : index;
+}
+
+/** `Drifted since you applied: $5,000 → $3,500 over 3 nights` (PACT 14.2, 14.4). */
+export function driftSummary(since: string, change: FieldChange, nights: number): string {
+  return `Drifted since ${since}: ${displayValue(change.before)} → ${displayValue(change.after)} over ${nights} ${nights === 1 ? 'night' : 'nights'}`;
+}
+
 /**
  * Judges tonight's findings against the pact. A field that changed tonight is checked against the
  * value it had on the day the reader applied:
@@ -180,6 +193,7 @@ export function comparePact(
   nightly: Diff,
   findings: Finding[],
   words: { day: string; since: string } = { day: 'the day you applied', since: 'you applied' },
+  readings: Snapshot[] = [],
 ): Finding[] {
   if (nightly.firstRun || nightly.fields.length === 0) return findings;
   const since = diff(pact.snapshot, current);
@@ -207,7 +221,11 @@ export function comparePact(
       const t = f.stealth ? 'bad' : tone;
       return { ...base, relation: 'differs', promised: sinceChange.before, ...(t ? { tone: t } : {}), note };
     };
-    const raised = (f: Finding): Finding => ({ ...f, summary: `${prefix} ${f.summary}`, pact: reference(f) });
+    const raised = (f: Finding): Finding => ({
+      ...f,
+      summary: own.length === 0 && readings.length > 0 ? driftSummary(words.since, sinceChange, nightsSince(readings, name, promised)) : `${prefix} ${f.summary}`,
+      pact: reference(f),
+    });
 
     const outranks =
       top !== undefined &&

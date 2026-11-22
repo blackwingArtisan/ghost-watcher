@@ -10,7 +10,7 @@ import { buildApp as buildListing } from '../apps/listing-watch/src/app';
 
 const checksPerNight = 4;
 const reports = [
-  await measureNoise({ site: bonusSite, buildApp: (origin) => buildBonus({ BONUS_SITE_ORIGIN: origin }), worthKnowing: bonusWorthKnowing, checksPerNight }),
+  await measureNoise({ site: bonusSite, buildApp: (origin) => buildBonus({ BONUS_SITE_ORIGIN: origin }), worthKnowing: bonusWorthKnowing, checksPerNight, sealPacts: true }),
   await measureNoise({ site: listingSite, buildApp: (origin) => buildListing({ LISTING_SITE_ORIGIN: origin }), worthKnowing: listingWorthKnowing, checksPerNight }),
 ];
 

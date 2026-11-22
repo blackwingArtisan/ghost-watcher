@@ -323,3 +323,65 @@ no pact and watch the seal stamp down, so that sealing a pact is a moment I can 
 22. THE hero recording SHALL show the unsealed stone, "I applied today" and the ceremony, then one night, then "Raise the dead" on the Bait and switch letter.
 23. THE stills script SHALL write `docs/dispute-pack.png` (the Mossgate dispute pack) and `docs/seal-ceremony.png` (the stone just after sealing).
 24. THE hero script SHALL default `HERO_PORT` to 3150 and THE stills script SHALL default `STILLS_PORT` to 3152, both overridable by the environment variable.
+
+### Requirement 14: Slow drift
+
+**User Story:** As a bonus hunter, I want to hear when a bonus is cut in small nightly steps since the day I applied, so that a cut no single night would show is still reported.
+
+**Acceptance Criteria:**
+
+*Detection (`pact.ts`, `runner.ts`)*
+
+1. WHEN a watched field changes on a night and no nightly finding for that field is raised, and the field's total change since the pact meets a rule, THE SYSTEM SHALL raise one finding for that field against the pact.
+2. WHEN that finding is raised, THE SYSTEM SHALL word its summary "Drifted since you applied: <pact value> → <now value> over <N> nights". This replaces the "Since you applied on <date>:" wording of criterion 5.3 for checks that run with stored readings.
+3. THE SYSTEM SHALL count N as the number of stored readings, newest first, up to but not including the newest reading whose value for the field equals the pact's value.
+4. WHEN N is 1, THE SYSTEM SHALL write "1 night".
+5. WHILE the total change since the pact is below every rule's threshold, THE SYSTEM SHALL raise no alert for that field.
+6. WHEN the finding is a shriek, THE SYSTEM SHALL attach a receipt to its alert.
+7. WHEN the drift alert is shown, THE SYSTEM SHALL offer "Raise the dead" with the dispute letter quoting the pact day and the day of the page now.
+
+*The Fernwick Drift fixture (`apps/bonus-watch`)*
+
+8. THE bonus-watch fixture site SHALL serve four versions, and its Fernwick page SHALL show a bonus of $5,000, $4,500, $4,000 and $3,500 in versions 1 to 4.
+9. THE Fernwick watch SHALL set `minDelta` on its bonus rule so that no single night, and no total of two nights, meets it, and the total of three nights does.
+10. WHEN the demo reaches night 3, THE dashboard SHALL show the Fernwick alert "Drifted since you applied: $5,000 → $3,500 over 3 nights" and no Fernwick alert on nights 1 and 2.
+11. WHEN the demo seeds pacts, THE SYSTEM SHALL seal Fernwick's pact like the others.
+
+*Counting (`noise-ratio.ts`)*
+
+12. WHERE the noise measurement is asked to seal pacts, THE SYSTEM SHALL seal each watch's pact after its first reading.
+13. THE bonus-watch noise measurement SHALL list the Fernwick drift on night 4 as a change worth knowing and SHALL seal pacts.
+14. WHEN the Fernwick drift alert is raised, THE SYSTEM SHALL count it in Tonight's tally as one letter sent.
+
+### Requirement 15: The bonus clock
+
+**User Story:** As a bonus hunter, I want each stone to count down my requirement window and the day the bonus should post, so that I notice a bonus that is late.
+
+**Acceptance Criteria:**
+
+*The window (`watch.ts`, `bonus-clock.ts`, `app.ts` of bonus-watch)*
+
+1. WHERE a watch sets `bonusClock`, THE SYSTEM SHALL hold its requirement text, requirement days, requirement label, posting days and posting label.
+2. WHEN a pact is sealed on a watch with a bonus clock, THE SYSTEM SHALL count the requirement day as the pact date plus the requirement days, and the posting day as the requirement day plus the posting days.
+3. THE SYSTEM SHALL read "today" for the count from the injected `Clock` and never from `Date.now`.
+4. WHILE the requirement day has not passed, THE stone SHALL show "<n> days left to <requirement text>".
+5. WHILE the requirement day has passed and the posting day has not, THE stone SHALL show "Bonus due in <n> days".
+6. WHEN the posting day has passed and the bonus is not marked posted, THE stone SHALL show "Bonus due, not posted".
+7. WHEN the stone shows "Bonus due, not posted", THE stone SHALL offer a "Raise the dead" button for that clock.
+8. WHEN "Raise the dead" is pressed on a due clock, THE SYSTEM SHALL open a letter that cites the requirement, the pact date and the posting window.
+9. THE séance SHALL show the requirement day and the posting day as dates.
+
+*Bonus posted (`sealing.ts`, `server.ts`, `ui/app.js`)*
+
+10. WHEN "Bonus posted" is pressed, THE SYSTEM SHALL store the posted time in the pact record without asking for confirmation.
+11. WHILE the bonus is marked posted, THE stone SHALL show "Bonus posted" and no countdown.
+12. WHEN the pact is replaced or broken, THE SYSTEM SHALL drop the posted mark with it.
+13. IF the watch has no bonus clock or no sealed pact, THEN THE server SHALL answer the posted route with 409.
+
+*The weekly digest (`digest.ts`, `cli.ts`)*
+
+14. THE SYSTEM SHALL build the digest text with a pure function of the app name, the injected time, each watch's clock reading and each watch's alerts.
+15. THE digest SHALL list every clock with its state and every alert raised in the seven days before the injected time.
+16. WHEN a week holds no alert, THE digest SHALL say "No changes this week."
+17. WHEN `digest` runs, THE SYSTEM SHALL deliver the text through the alert sink as one message.
+18. THE Mossgate and Fernwick watches SHALL set a bonus clock, and Fernwick's SHALL be past its posting day on the day the demo starts.

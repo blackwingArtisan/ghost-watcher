@@ -295,6 +295,12 @@ document.addEventListener('click', (event) => {
       await sealPact(id, false);
       focusSoon(inSeance ? '#seance [data-action="pact-ask-replace"]' : `#ghost-${CSS.escape(id)} .ghost__hit`);
     });
+  } else if (action === 'bonus-posted') {
+    void withBusy(async () => {
+      await api(`/api/ghosts/${encodeURIComponent(id)}/bonus-posted`, { method: 'POST' });
+      toast(`Bonus marked as posted for ${ghostName(id)}.`);
+      await refresh();
+    });
   } else if (action === 'pact-ask-replace' || action === 'pact-ask-break') {
     pendingConfirm = { id, kind: action === 'pact-ask-replace' ? 'replace' : 'break', opener: String(action) };
     void withBusy(async () => {

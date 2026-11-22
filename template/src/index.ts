@@ -59,6 +59,8 @@ export {
 export {
   comparePact,
   pactNote,
+  driftSummary,
+  nightsSince,
   pactNoteRepeats,
   pactNoteToShow,
   pactVariant,
@@ -98,3 +100,6 @@ export {
   type PactUiCopy,
   type PactVocabulary,
 } from './pact-vocabulary';
+
+export { bonusClockView, bonusClockLetter, type BonusClock, type ClockView, type ClockState } from './bonus-clock';
+export { buildWeeklyDigest, type DigestItem } from './digest';

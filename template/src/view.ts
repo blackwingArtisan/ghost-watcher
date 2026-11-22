@@ -4,6 +4,7 @@ import type { GhostDeps } from './config';
 import type { Fickleness, PastHeadline, PastTimeline } from './history';
 import { displayValue, type MaybeValue } from './normalize';
 import { disputesEnabledFor, pactEnabledFor, pactUiCopy, type PactUiCopy } from './pact-vocabulary';
+import { bonusClockLetter, bonusClockView, type ClockView } from './bonus-clock';
 import { pactNoteToShow, type PactArchive, type PactReading, type PactRecord } from './pact';
 import { shortHash } from './receipts';
 import { describeRule } from './rules';
@@ -38,6 +39,8 @@ export interface PactView {
   seeded?: boolean;
   /** Corrupt only. */
   reason?: string;
+  /** The bonus clock, for a watch that sets one. */
+  clock?: ClockView;
 }
 
 /** The pact record as the dashboard shows it. */
@@ -52,6 +55,14 @@ export function pactViewOf(record: PactRecord): PactView {
     archive: record.archive,
     seeded: record.seeded === 'demo',
   };
+}
+
+/** Adds the bonus clock, counted with the injected clock's now (PACT 15.3). */
+export function withClock(view: PactView | null, watch: Watch, record: PactRecord | undefined, now: string): PactView | null {
+  if (!view || view.state !== 'sealed' || !watch.bonusClock || !record) return view;
+  const clock = bonusClockView(watch.bonusClock, record.sealedAt, record.bonusPostedAt, now);
+  const letter = clock.state === 'due' ? bonusClockLetter(watch.name, shownUrl(watch), watch.bonusClock, record.sealedAt, clock) : undefined;
+  return { ...view, clock: letter ? { ...clock, letter } : clock };
 }
 
 /** `null` when there is no pact. */
@@ -288,7 +299,7 @@ export async function ghostView(deps: GhostDeps, watch: Watch): Promise<GhostVie
     rules: watch.rules.map((rule) => describeRule(rule, watch)),
     headline: past?.headline ?? null,
     fickleness: past?.fickleness ?? null,
-    ...(pactReading ? { pact: pactViewOfReading(pactReading), canSeal: snapshot !== null } : {}),
+    ...(pactReading ? { pact: withClock(pactViewOfReading(pactReading), watch, pactReading.status === 'sealed' ? pactReading.record : undefined, deps.clock.now().toISOString()), canSeal: snapshot !== null } : {}),
   };
 }
 
@@ -435,7 +446,7 @@ export async function ghostDetail(deps: GhostDeps, watch: Watch): Promise<GhostD
   const unreadIds = new Set(unread.map((a) => a.id));
   return {
     ...view,
-    ...(pactReading ? { pact: pactViewOfFull(pactReading) } : {}),
+    ...(pactReading ? { pact: withClock(pactViewOfFull(pactReading), watch, sealed ? stripSnapshot(sealed) : undefined, deps.clock.now().toISOString()) } : {}),
     fields,
     lists,
     alerts: alerts.slice(0, 40).map((alert) => ({ ...forDashboard(alert), ...(disputesEnabledFor(deps.app, watch) ? {} : { disputable: false as const }), acknowledged: !unreadIds.has(alert.id), letter: letters.get(alert.id) ?? null })),
@@ -450,4 +461,9 @@ function pactViewOfFull(reading: PactReading): PactView | null {
   if (reading.status === 'corrupt') return { state: 'corrupt', reason: reading.reason };
   const { snapshot: _body, ...record } = reading.pact;
   return pactViewOf(record);
+}
+
+function stripSnapshot(pact: { snapshot: unknown } & PactRecord): PactRecord {
+  const { snapshot: _body, ...record } = pact;
+  return record;
 }

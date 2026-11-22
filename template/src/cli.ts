@@ -8,6 +8,8 @@
  *                                             --open opens the night view in the default browser
  *   list                                      print the watches
  */
+import { bonusClockView } from './bonus-clock';
+import { buildWeeklyDigest, type DigestItem } from './digest';
 import { spawn } from 'node:child_process';
 import { rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -142,6 +144,22 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
     return results.some((r) => r.status === 'error') ? 1 : 0;
   }
 
+  if (flags.command === 'digest') {
+    const now = deps.clock.now().toISOString();
+    const items: DigestItem[] = [];
+    for (const watch of deps.app.watches) {
+      const record = await deps.store.pactRecord(watch.id);
+      const clock = watch.bonusClock && record.status === 'sealed' ? bonusClockView(watch.bonusClock, record.record.sealedAt, record.record.bonusPostedAt, now) : null;
+      items.push({ name: watch.name, clock, alerts: await deps.store.alerts(watch.id) });
+    }
+    const { subject, text } = buildWeeklyDigest({ appName: deps.app.name, now, items });
+    const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+    const delivery = await deps.sink.deliver({ watchId: 'weekly-digest', watchName: 'Weekly digest', url: '', appName: deps.app.name, to: deps.app.alertTo, subject, text, html: `<pre>${escaped}</pre>`, alerts: [], createdAt: now });
+    out(text.trimEnd());
+    out(`delivered via ${delivery.channel}: ${delivery.reference}`);
+    return 0;
+  }
+
   if (flags.command === 'serve' || flags.command === 'demo') {
     const site = fixtures;
     if (flags.command === 'demo') {
@@ -201,7 +219,7 @@ export async function runCli(argv: string[], options: CliOptions): Promise<numbe
     return 0;
   }
 
-  out('Usage: check [--force] [--watch <id>] [--json] | serve [--port <n>] [--fresh] | demo | list');
+  out('Usage: check [--force] [--watch <id>] [--json] | digest | serve [--port <n>] [--fresh] | demo | list');
   return flags.command === 'help' ? 0 : 2;
 }
 

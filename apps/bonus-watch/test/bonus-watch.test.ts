@@ -26,8 +26,8 @@ function summaries(watchId: string, from: number, to: number): string[] {
 }
 
 describe('bonus-watch watches against its fixture pages', () => {
-  it('defines four valid watches built only from the template API', () => {
-    expect(app.watches.map((w) => w.id)).toEqual(['lanternfield-checking', 'bramblewick-savings', 'mossgate-nightfall', 'cinderhollow-members']);
+  it('defines five valid watches built only from the template API', () => {
+    expect(app.watches.map((w) => w.id)).toEqual(['lanternfield-checking', 'bramblewick-savings', 'mossgate-nightfall', 'fernwick-premier', 'cinderhollow-members']);
     expect(app.copy.disclaimer).toMatch(/Not financial advice/);
   });
 

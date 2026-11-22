@@ -111,6 +111,8 @@ export type Rule =
 
 export type RuleKind = Rule['kind'];
 
+import type { BonusClock } from './bonus-clock';
+
 export interface Watch {
   /** URL-safe id, unique within an app. */
   id: string;
@@ -133,6 +135,8 @@ export interface Watch {
   intervalMs: number;
   /** Free-form labels for grouping in the dashboard. */
   tags: string[];
+  /** Optional: the offer's requirement and posting windows, counted from the pact date. */
+  bonusClock?: BonusClock;
 }
 
 export type WatchInput = Omit<Watch, 'intervalMs' | 'lists' | 'tags' | 'fields'> & {

@@ -28,6 +28,8 @@ import { fileURLToPath } from 'node:url';
 import type { GhostDeps } from './config';
 import { allowedHostSet, checkRequest } from './guard';
 import { disputePack } from './dispute';
+import { bonusClockLetter, bonusClockView } from './bonus-clock';
+import { shownUrl } from './watch';
 import { disputesEnabledFor, pactEnabledFor, resolvePactVocabulary } from './pact-vocabulary';
 import { breakPact, sealPact } from './sealing';
 import { dashboardState, forDashboard, ghostDetail, pactViewOf, pactViewOfReading } from './view';
@@ -225,7 +227,7 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       return json(res, 200, pack);
     }
 
-    const ghostRoute = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge|pact))?$/.exec(path);
+    const ghostRoute = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge|pact|bonus-posted|bonus-letter))?$/.exec(path);
     if (ghostRoute) {
       const watch = deps.runner.watch(ghostRoute[1] ?? '');
       if (!watch) return json(res, 404, { error: 'No such ghost' });
@@ -259,6 +261,19 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
           return json(res, 200, { state: 'none', removed });
         }
         return json(res, 405, { error: 'Method not allowed' });
+      }
+      if (action === 'bonus-posted' || action === 'bonus-letter') {
+        const reading = await deps.store.pactRecord(watch.id);
+        if (!watch.bonusClock || reading.status !== 'sealed') return json(res, 409, { code: 'no-bonus-clock', error: 'This ghost has no bonus clock or no sealed pact' });
+        if (action === 'bonus-posted') {
+          if (method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
+          const record = await deps.store.markBonusPosted(watch.id, deps.clock.now().toISOString());
+          return json(res, 200, { state: 'posted', bonusPostedAt: record?.bonusPostedAt ?? null });
+        }
+        if (method !== 'GET') return json(res, 405, { error: 'Method not allowed' });
+        const view = bonusClockView(watch.bonusClock, reading.record.sealedAt, reading.record.bonusPostedAt, deps.clock.now().toISOString());
+        if (view.state !== 'due') return json(res, 409, { code: 'not-due', error: 'The bonus is not due, or is already posted' });
+        return json(res, 200, bonusClockLetter(watch.name, shownUrl(watch), watch.bonusClock, reading.record.sealedAt, view));
       }
       if (method === 'GET' && !action) return json(res, 200, await ghostDetail(deps, watch));
       if (method === 'POST' && action === 'check') {

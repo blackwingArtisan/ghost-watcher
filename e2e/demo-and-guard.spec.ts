@@ -48,7 +48,7 @@ test('demo mode: the first sighting is already taken, and one key press lets a n
   // N lets the night pass, the same as the button.
   await page.keyboard.press('n');
   await expect(page.locator('#toast')).toContainText('Night 1 passes.');
-  await expect(page.locator('#toast')).toContainText('3 pages changed: 2 worth waking for, 1 ignored as noise.');
+  await expect(page.locator('#toast')).toContainText('4 pages changed: 2 worth waking for, 2 ignored as noise.');
   await expect(page.locator('#toast')).toContainText('2 newly restless.');
   await expect(lanternfield).toHaveAttribute('data-state', 'restless');
   // A shriek gets its scene (red moon, lightning) and leaves a crack in the stone.
@@ -122,7 +122,7 @@ test('demo mode: ?night=1 opens on the night itself, and Rewind to calm goes bac
   await expect(rewind).toBeVisible();
   // Spirit mail leads the night with its loudest letter: the bait and switch.
   await expect(page.locator('#feed .feed__item').first()).toHaveAttribute('data-stealth', 'true');
-  await expect(page.locator('#tally')).toContainText('1 page change slept through');
+  await expect(page.locator('#tally')).toContainText('2 page changes slept through');
   await expect(page.locator('#tally')).toContainText('1 door respected (robots.txt)');
   // A second load of the same link does not pass another night.
   await page.goto(`${DEMO}/?night=1`);

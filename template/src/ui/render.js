@@ -145,12 +145,27 @@ export function renderSealCeremony(sha256, options = {}) {
   return `<div class="seal-ceremony" data-playing="${final ? 'false' : 'true'}"><span class="seal-ceremony__seal">${waxSealSvg(64)}</span><p class="seal-ceremony__hash"><span class="visually-hidden" role="status" aria-live="polite" data-seal-live>${final ? `Pact sealed. SHA-256 ${esc(sha256)}` : ''}</span><code class="seal-ceremony__typed" aria-hidden="true" data-hash="${esc(sha256)}">${final ? esc(sha256) : ''}</code></p></div>`;
 }
 
+/**
+ * The bonus clock of a sealed pact: the line, "Raise the dead" with the letter once the bonus is due,
+ * and "Bonus posted". @param {string} id @param {string} name @param {any} clock @param {boolean} [full]
+ */
+export function renderBonusClock(id, name, clock, full = false) {
+  if (!clock) return '';
+  const posted = clock.state === 'posted';
+  const letter = clock.letter
+    ? `<details class="clock__letter"><summary class="btn btn--small btn--raise">Raise the dead</summary><div class="clock__letter-body"><p><b>${esc(clock.letter.subject)}</b></p><pre>${esc(clock.letter.body)}</pre></div></details>`
+    : '';
+  const button = posted ? '' : `<button type="button" class="btn btn--small" data-action="bonus-posted" data-id="${esc(id)}" aria-label="Bonus posted: stop the bonus clock for ${esc(name)}">Bonus posted</button>`;
+  const dates = full ? `<p class="muted small">Requirement day ${esc(clock.requirementDate)} · bonus should post by ${esc(clock.postingDate)}</p>` : '';
+  return `<div class="ghost__clock" data-clock="${esc(clock.state)}"><p class="clock__line"><span class="clock__tag">Bonus clock</span> <span class="clock__text">${esc(clock.line)}</span></p>${dates}<div class="clock__actions">${letter}${button}</div></div>`;
+}
+
 /** The pact line (or the "I applied today" button) on a stone. Apps without pacts have no `pact` key. @param {any} ghost @param {any} [words] */
 export function renderStonePact(ghost, words = DEFAULT_PACT_COPY) {
   const p = ghost.pact;
   if (p === undefined) return '';
   if (p && p.state === 'sealed') {
-    return `<p class="ghost__pact" data-pact="sealed" title="Sealed ${esc(p.sealedDate)} · SHA-256 ${esc(p.sha256)}"><span class="ghost__pact-tag ghost__pact-tag--wax">${waxSealSvg(16)}${esc(words.sealedChip)}</span> <time datetime="${esc(p.sealedAt)}">${esc(compactDay(p.sealedAt))}</time> · <code>${esc(p.shortHash)}</code>${p.seeded ? ' <span class="pact-demo">demo</span>' : ''}</p>`;
+    return `<p class="ghost__pact" data-pact="sealed" title="Sealed ${esc(p.sealedDate)} · SHA-256 ${esc(p.sha256)}"><span class="ghost__pact-tag ghost__pact-tag--wax">${waxSealSvg(16)}${esc(words.sealedChip)}</span> <time datetime="${esc(p.sealedAt)}">${esc(compactDay(p.sealedAt))}</time> · <code>${esc(p.shortHash)}</code>${p.seeded ? ' <span class="pact-demo">demo</span>' : ''}</p>${renderBonusClock(ghost.id, ghost.name, p.clock)}`;
   }
   if (p && p.state === 'corrupt') {
     return '<p class="ghost__pact" data-pact="corrupt"><span class="ghost__pact-tag ghost__pact-tag--warn">Pact unreadable</span> Open the séance to fix it.</p>';
@@ -196,6 +211,7 @@ export function renderPactSection(detail, confirm = null, words = DEFAULT_PACT_C
 <div><dt>Copy</dt><dd>${copy}</dd></div>
 </dl>
 <p class="muted small">Check it yourself: <code>shasum -a 256 .ghost-data/store/pacts/${esc(detail.id)}/${esc(p.sha256)}.json</code></p>
+${renderBonusClock(detail.id, detail.name, p.clock, true)}
 <div class="pact__actions"><button type="button" class="btn btn--small" data-action="pact-ask-replace" data-id="${id}" aria-label="Seal again: replace the pact for ${name}">Seal again</button><button type="button" class="btn btn--small" data-action="pact-ask-break" data-id="${id}" aria-label="Break the pact for ${name}">Break the pact</button></div>${renderPactConfirm(detail, confirm)}</section>`;
 }
 

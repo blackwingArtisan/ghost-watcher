@@ -328,7 +328,7 @@ describe('the runner judges every changed night against the pact', () => {
     expect(outcomes).toEqual(['unchanged', 'unchanged', 'changed']);
     const alert = sink.messages[0]?.alerts[0];
     expect(sink.messages).toHaveLength(1);
-    expect(alert?.summary).toBe(`Since you applied on ${DAY}: Bonus went up from $300 to $360 (+$60).`);
+    expect(alert?.summary).toBe("Drifted since you applied: $300 → $360 over 3 nights"); // (PACT 14.2) replaces the 5.3 wording with stored readings
     expect(alert?.pact).toMatchObject({ sealedAt: sealed.pact.sealedAt, sha256: sealed.pact.sha256, relation: 'differs', tone: 'good', promised: { amountMinor: 30000 } });
     expect(alert?.pact?.archive).toEqual(sealed.pact.archive);
   });

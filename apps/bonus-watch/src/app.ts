@@ -90,6 +90,14 @@ export function buildApp(env: Env = process.env): GhostApp {
           { name: 'applyBy', label: 'Apply by', selector: '#apply-by', kind: 'date', better: 'higher' },
           { name: 'finePrint', label: 'Fine print', selector: '#card-terms p', kind: 'text' },
         ],
+        // Spend $4,000 in the first 3 months; "points are awarded 8 weeks after the spending requirement is met".
+        bonusClock: {
+          requirement: 'spend $4,000',
+          requirementDays: 91,
+          requirementLabel: '3 months',
+          postingDays: 56,
+          postingLabel: 'within 8 weeks after the spending requirement is met',
+        },
         rules: [
           rules.wentUp('points', { severity: 'shriek' }),
           rules.wentDown('points', { severity: 'shriek' }),
@@ -100,6 +108,26 @@ export function buildApp(env: Env = process.env): GhostApp {
           rules.changed('finePrint', { severity: 'whisper' }),
           rules.stealthEdit('finePrint', ['points']),
         ],
+      }),
+      defineWatch({
+        id: 'fernwick-premier',
+        name: 'Fernwick Premier Savings',
+        subtitle: 'Fernwick Trust · new-money bonus',
+        url: `${site}/fernwick/premier-savings`,
+        displayUrl: 'https://fernwick.example/premier-savings',
+        tags: ['savings'],
+        fields: [{ name: 'bonus', label: 'Bonus', selector: '#fern-bonus', kind: 'money', better: 'higher' }],
+        // Deposit within 20 days; the bonus posts within 15 days after that.
+        bonusClock: {
+          requirement: 'deposit new funds',
+          requirementDays: 20,
+          requirementLabel: '20 days of opening',
+          postingDays: 15,
+          postingLabel: 'within 15 days after the deposit',
+        },
+        // The page cuts the bonus $500 a night. No single night, and no two nights together ($1,000),
+        // reaches $1,200, so the nightly ghost sleeps; the pact's total of $1,500 on night 3 does.
+        rules: [rules.wentDown('bonus', { severity: 'shriek', minDelta: 1200 })],
       }),
       defineWatch({
         id: 'cinderhollow-members',

@@ -236,7 +236,9 @@ export class Runner {
     if (isEmptyDiff(changes)) return findings;
     try {
       const reading = await this.deps.store.pact(watch.id);
-      return reading.status === 'sealed' ? comparePact(watch, reading.pact, extraction, changes, findings, resolvePactVocabulary(this.deps.app)) : findings;
+      if (reading.status !== 'sealed') return findings;
+      const readings = await this.deps.store.history(watch.id, 20);
+      return comparePact(watch, reading.pact, extraction, changes, findings, resolvePactVocabulary(this.deps.app), readings);
     } catch {
       return findings;
     }

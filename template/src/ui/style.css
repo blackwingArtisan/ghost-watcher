@@ -2465,3 +2465,12 @@ body[data-shriek='true'] .ghost[data-severity='shriek'][data-rising='true'] .gho
     animation: none;
   }
 }
+
+/* The bonus clock */
+.ghost__clock { position: relative; z-index: 4; margin-top: 0.5rem; padding: 0.5rem 0.6rem; border: 1px dashed var(--line, #5c6b6b); border-radius: 8px; overflow-wrap: anywhere; }
+.ghost__clock[data-clock='due'] { border-style: solid; border-color: #ffb4a8; }
+.clock__line { margin: 0 0 0.35rem; }
+.clock__tag { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; opacity: 0.85; }
+.clock__actions { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-start; }
+.clock__letter-body { margin-top: 0.4rem; max-width: 100%; }
+.clock__letter-body pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0.25rem 0; }

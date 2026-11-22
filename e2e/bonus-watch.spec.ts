@@ -34,7 +34,7 @@ test('bonus-watch: a bonus change makes the ghost glow and lands in the outbox',
 
   // First visit: every ghost records a baseline, and robots.txt turns one away.
   await page.getByRole('button', { name: 'Summon every ghost' }).click();
-  await expect(page.locator('#toast')).toContainText('4 ghosts visited');
+  await expect(page.locator('#toast')).toContainText('5 ghosts visited');
   await expect(lanternfield).toHaveAttribute('data-state', 'dormant');
   await expect(page.locator('#ghost-cinderhollow-members')).toHaveAttribute('data-state', 'blocked');
   expect(await readOutbox()).toHaveLength(0);

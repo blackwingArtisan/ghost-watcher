@@ -76,6 +76,7 @@ function recordProblem(value: unknown, watchId: string): string | null {
     return 'the pact record lacks its archive facts';
   }
   if (archive.note !== undefined && typeof archive.note !== 'string') return 'the pact record has a bad archive note';
+  if (value.bonusPostedAt !== undefined && typeof value.bonusPostedAt !== 'string') return 'the pact record has a bad posted mark';
   if (value.seeded !== undefined && value.seeded !== 'demo') return 'the pact record has a bad "seeded" mark';
   return null;
 }
@@ -179,6 +180,15 @@ export class GhostStore {
     for (const key of await this.blobs.list(`pacts/${record.watchId}/`)) {
       if (key !== snapshotKey && key !== recordKey) await this.blobs.delete(key);
     }
+  }
+
+  /** Stores the posted mark in the pact record only. Null when there is no readable pact. */
+  async markBonusPosted(watchId: string, at: string): Promise<PactRecord | null> {
+    const reading = await this.pactRecord(watchId);
+    if (reading.status !== 'sealed') return null;
+    const record: PactRecord = { ...reading.record, bonusPostedAt: at };
+    await this.writeJson(pactKey(watchId, 'pact'), record);
+    return record;
   }
 
   /** Removes everything under the watch's pact path, readable or not. True when something was there. */
