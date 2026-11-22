@@ -97,9 +97,17 @@ export interface PackPact {
   note: string | null;
   seeded: boolean;
   checkCommand: string;
+  /** The verify page, with the stored snapshot's address, the pact's SHA-256 and the sealed time in the query. */
+  verifyUrl: string;
 }
 
 export { letterDate };
+
+/** `/verify` with the address of the stored snapshot, the pact's hash and the sealed time. */
+export function verifyUrl(watchId: string, sha256: string, sealedAt: string): string {
+  const query = new URLSearchParams({ copy: `/api/ghosts/${watchId}/pact/snapshot`, sha256, sealed: sealedAt });
+  return `/verify?${query.toString()}`;
+}
 
 /** Deposit accounts unless the watch is tagged as a card. */
 export function complaintCategory(watch: Pick<Watch, 'tags'> | undefined): ComplaintCategory {
@@ -167,6 +175,7 @@ export function disputePack(alert: Alert, watch?: Watch, vocabulary: PactVocabul
         note: sealed.archive.note ?? null,
         seeded: sealed.seeded === 'demo',
         checkCommand: `shasum -a 256 .ghost-data/store/pacts/${alert.watchId}/${sealed.sha256}.json`,
+        verifyUrl: verifyUrl(alert.watchId, sealed.sha256, sealed.sealedAt),
       }
     : undefined;
   const exhibitLines = packPact

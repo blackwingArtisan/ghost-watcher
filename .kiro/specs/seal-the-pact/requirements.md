@@ -385,3 +385,47 @@ no pact and watch the seal stamp down, so that sealing a pact is a moment I can 
 16. WHEN a week holds no alert, THE digest SHALL say "No changes this week."
 17. WHEN `digest` runs, THE SYSTEM SHALL deliver the text through the alert sink as one message.
 18. THE Mossgate and Fernwick watches SHALL set a bonus clock, and Fernwick's SHALL be past its posting day on the day the demo starts.
+
+### Requirement 16: The ghost testifies
+
+**User Story:** As a bonus hunter, I want to check in my own browser that a saved copy of the page is the one my pact sealed, so that I can show the bank evidence I did not have to take on trust.
+
+**Acceptance Criteria:**
+
+*The hashing helper (`ui/verify-core.js`)*
+
+1. WHEN the helper is given bytes, THE helper SHALL return their SHA-256 as 64 lowercase hexadecimal characters, computed with `crypto.subtle`.
+2. WHEN the helper is given the stored bytes of a snapshot, THE helper SHALL return the same digest as `snapshotSha256`.
+3. WHEN the helper compares two hashes, THE helper SHALL ignore letter case and surrounding whitespace.
+4. IF the expected hash is not 64 hexadecimal characters, THEN THE helper SHALL report it as invalid and SHALL NOT compare it.
+5. WHEN the helper reads a query string, THE helper SHALL return the `copy`, `sha256` and `sealed` values, and `null` for each one that is absent.
+6. WHEN the helper is given the sealed ISO time, THE helper SHALL return the date as `Mon D, YYYY` in UTC.
+7. IF the copy address is not an `http:` or `https:` address, THEN THE helper SHALL refuse to fetch it.
+8. IF fetching the copy throws, THEN THE helper SHALL report the copy as unreachable and SHALL NOT report a match or a mismatch.
+
+*The page (`/verify`)*
+
+9. WHEN `GET /verify` is requested with an accepted Host, THE dashboard SHALL answer the verify page as HTML.
+10. WHEN `scripts/static-demo/build.ts` runs, THE script SHALL write the verify page to `verify.html` in the static site.
+11. WHEN the query holds a copy address and an expected hash, THE page SHALL fetch the copy and show the result without a button press.
+12. WHEN the computed hash equals the expected hash, THE page SHALL show "Matches the pact sealed <date>".
+13. WHEN the computed hash differs from the expected hash, THE page SHALL show "Does not match".
+14. WHEN the page shows a result, THE page SHALL show the expected hash and the computed hash in full.
+15. WHEN a file is chosen, THE page SHALL hash the file's bytes in the browser and show the result.
+16. IF the copy cannot be fetched from the browser, THEN THE page SHALL say the browser could not fetch it and SHALL point at the file upload.
+17. WHEN the page shows a result, THE page SHALL put the result in a `role="status"` region.
+18. WHILE the viewport is 390 px wide, THE page SHALL not scroll sideways.
+
+*The dispute pack*
+
+19. WHEN a dispute pack quotes a sealed pact, THE pack SHALL carry a `verifyUrl` that names `/verify` and holds the copy address, the pact's SHA-256 and the sealed time.
+20. WHEN the dispute pack is shown with a `verifyUrl`, THE pack SHALL show a "Verify it" link to it.
+
+*The stored copy (`GET /api/ghosts/:id/pact/snapshot`)*
+
+21. WHEN a readable pact exists, THE server SHALL answer `GET /api/ghosts/:id/pact/snapshot` with the stored snapshot bytes, so that their SHA-256 is the pact's SHA-256.
+22. IF the pact is missing or corrupt, THEN THE server SHALL answer that route with 404.
+
+*The static site*
+
+23. WHEN the static build runs, THE script SHALL save the stored snapshot bytes of each sealed demo pact as a file, and the static site SHALL answer the snapshot route from that file.

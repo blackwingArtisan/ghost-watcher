@@ -13,6 +13,8 @@ export { GhostStore, type WatchStatus } from './store/ghost-store';
 export type { Alert, AlertMessage, AlertSink, DeliveryReceipt } from './alerts/types';
 export { OutboxAlertSink, ConsoleAlertSink, FanOutAlertSink, toEml, type OutboxEntry } from './alerts/sinks';
 export { renderAlertMessage } from './alerts/render';
+// The dashboard's renderers, so an app can test what its pages show without reaching into internals.
+export { renderDispute, renderFeed } from './ui/render.js';
 export { pageText, pageFingerprint, hashText } from './noise';
 export {
   WaybackHistorySource,

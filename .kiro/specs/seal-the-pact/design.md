@@ -759,3 +759,27 @@ prints the line, the "Bonus posted" button and the "Raise the dead" prompt, whic
 (`GET /api/ghosts/:id/bonus-letter`, plain text through the existing letter pack styling is not needed:
 the prompt shows the letter in a dialog-less `<details>`). `digest.ts` is a pure function; `cli.ts` `digest`
 builds one `AlertMessage` and delivers it through the sink.
+
+## 18. The ghost testifies (PACT 16)
+
+The SHA-256 of a pact covers the snapshot JSON the store holds (`shasum -a 256` on the file), so a saved
+web page from an archive can never match it: it is a different document. The verify page therefore checks
+bytes, and the pack points it at the stored snapshot. The page takes any address or file.
+
+- `ui/verify-core.js`: pure helpers plus `fetchBytes` with an injected `fetch`. `sha256OfBytes` uses
+  `crypto.subtle.digest('SHA-256', bytes)`. `compareHashes` returns `invalid`, `match` or `mismatch`.
+  `readVerifyQuery`, `sealedDate` (UTC, fixed month names, no locale) and `copyAddress` (http/https only,
+  relative addresses resolve against the page).
+- `ui/verify-page.js`: `renderVerifyPage` returns the HTML; `ui/verify.js` wires the DOM. The page has a
+  copy-address field, a file input, an expected-hash field and a "Check the hash" button. A result goes
+  in a `role="status"` region with the two hashes in `<code>` blocks. A failed fetch (CORS or network)
+  says the browser could not fetch the copy and points at the upload.
+- `server.ts`: `GET /verify` with a CSP whose `connect-src` also allows `https:` and loopback addresses,
+  because the page's job is to fetch an address the visitor names. `GET /api/ghosts/:id/pact/snapshot`
+  answers `GhostStore.pactSnapshotText`, the verified stored bytes, or 404.
+- `dispute.ts`: `PackPact.verifyUrl` is `/verify?copy=/api/ghosts/<id>/pact/snapshot&sha256=<hash>&sealed=<iso>`.
+  `renderDispute` shows a "Verify it" link beside "Check it yourself".
+- Static site: `build.ts` writes `verify.html`, `ui/verify.js`, `ui/verify-core.js`, saves each sealed
+  pact's raw snapshot (never passed through `portable`, which would change the bytes) as
+  `pact-files/<id>.json`, and `shim.js` answers the snapshot route from that file. `_headers` keeps the strict
+  CSP on the dashboard pages and gives `/verify` its own.

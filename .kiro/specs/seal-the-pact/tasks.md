@@ -179,6 +179,16 @@ injected `Clock` or stored ISO strings, money in integer cents, apps import only
 - [x] 56. Playwright `drift-clock.spec.ts`: drift shriek on night 3, "Bonus due, not posted", axe. (PACT 14.10, 15.6–15.11)
 - [ ] 57. Screenshots of the drift stone and the clock at 390 and 1360 px (the spec writes them, but Playwright empties test-results before each run, so they must be looked at and kept); static demo recording of night 3 with `STATIC_PORT=4238`. (PACT 14.10)
 
+## Session D: the ghost testifies (requirement 16)
+
+- [x] 58. Spec first: requirement 16 (16.1 to 16.23), design section 18, tasks 58 to 64.
+- [x] 59. `ui/verify-core.js` and its Vitest file `template/test/verify-core.test.ts`. (PACT 16.1 to 16.8)
+- [x] 60. Verify page, `/verify` route, snapshot route, `GhostStore.pactSnapshotText`, `PackPact.verifyUrl`, "Verify it" link, CSS. (PACT 16.9, 16.11 to 16.17, 16.19 to 16.22)
+- [x] 61. Vitest for the routes and the pack link; Playwright `e2e/verify.spec.ts`: match, mismatch, CORS, upload, 390 px. (PACT 16.9 to 16.22)
+- [x] 62. Static build: `verify.html`, `pact-files/`, shim route, `_headers`; run once with `STATIC_PORT=4238` and a `STATIC_OUT` under `test-results/`. (PACT 16.10, 16.23)
+- [x] 63. Screenshots of the verify page, match and mismatch, at 390 and 1360 px; look at them and fix what is broken. (PACT 16.18)
+- [ ] 64. Run `npm run typecheck`, `npx vitest run`, `GHOST_E2E_PORT=4230 npx playwright test`. (PACT 16.1 to 16.23)
+
 ## Traceability: requirement to task
 
 | Requirement | Criteria | Tasks (build) | Tasks (tests) |

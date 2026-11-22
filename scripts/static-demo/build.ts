@@ -37,6 +37,7 @@ interface ReplayNode {
 }
 
 const blobs = new Map<string, string>();
+/** Files to write next to the page: site path -> exact content. */
 const files = new Map<string, string>();
 /** Archived copies to save next to the page: site path -> address on the fixture site's archive. */
 const archived = new Map<string, string>();
@@ -129,7 +130,11 @@ async function record(path: Path, arrival: unknown, state: any): Promise<ReplayN
   for (const ghost of state.ghosts) {
     const detail = (await call('GET', `/api/ghosts/${ghost.id}`)).body as any;
     routes[`GET /api/ghosts/${ghost.id}`] = blob(detail);
-    if (state.app.pacts) routes[`GET /api/ghosts/${ghost.id}/pact`] = blob((await call('GET', `/api/ghosts/${ghost.id}/pact`)).body);
+    if (state.app.pacts) {
+      const pact = await call('GET', `/api/ghosts/${ghost.id}/pact`);
+      routes[`GET /api/ghosts/${ghost.id}/pact`] = blob(pact.body);
+      await keepPactSnapshot(ghost.id, pact.body);
+    }
     for (const alert of detail.alerts) {
       if (alert.letter) letters.add(alert.letter);
       const pack = await call('GET', `/api/ghosts/${ghost.id}/alerts/${alert.id}/dispute`);
@@ -142,6 +147,23 @@ async function record(path: Path, arrival: unknown, state: any): Promise<ReplayN
   const seals = await recordSeals(state);
   await keepArchivedCopies();
   return { routes, ...(seals ? { seals } : {}) };
+}
+
+/**
+ * Saves a sealed pact's stored snapshot byte for byte (never through `portable`, which would change
+ * the bytes and so the SHA-256) as `pact-files/<id>/<sha256>.json`, for the verify page. Each rewind
+ * seals new pacts with new hashes, so the file is named by hash.
+ */
+async function keepPactSnapshot(id: string, pact: unknown): Promise<void> {
+  const sha256 = (pact as { pact?: { sha256?: string } } | null)?.pact?.sha256;
+  if (!sha256) return;
+  const rel = `pact-files/${id}/${sha256}.json`;
+  if (files.has(rel)) return;
+  const response = await fetch(`${origin}/api/ghosts/${id}/pact/snapshot`);
+  if (!response.ok) throw new Error(`The demo did not serve the snapshot of ${id}'s pact (${response.status})`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (createHash('sha256').update(bytes).digest('hex') !== sha256) throw new Error(`The saved snapshot of ${id} does not match its pact SHA-256`);
+  files.set(rel, bytes.toString('utf8'));
 }
 
 /**
@@ -259,7 +281,10 @@ try {
   };
   await write('index.html', portable(page).replace('<script type="module" src="/ui/app.js">', '<script type="module" src="/ui/shim.js"></script>\n<script type="module" src="/ui/app.js">'));
   await write('ui/style.css', css);
-  for (const name of ['app.js', 'render.js']) await write(`ui/${name}`, (await call('GET', `/ui/${name}`)).text);
+  const verify = await call('GET', '/verify');
+  if (verify.status !== 200) throw new Error(`The demo did not serve the verify page (${verify.status})`);
+  await write('verify.html', portable(verify.text));
+  for (const name of ['app.js', 'render.js', 'verify.js', 'verify-core.js']) await write(`ui/${name}`, (await call('GET', `/ui/${name}`)).text);
   for (const font of css.matchAll(/url\('\/ui\/fonts\/([\w-]+\.woff2)'\)/g)) {
     const response = await fetch(`${origin}/ui/fonts/${font[1]}`);
     await write(`ui/fonts/${font[1]}`, Buffer.from(await response.arrayBuffer()));
@@ -273,13 +298,18 @@ try {
   for (const [rel, content] of files) await write(rel, content);
   for (const [id, text] of blobs) await write(`replay/${id}.json`, text);
   await write('replay/manifest.json', JSON.stringify({ root: keyOf([[]]), nodes }));
+  const strict = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; frame-ancestors 'none'";
+  // The verify page fetches an address the visitor names, so its connect-src is wider. Headers from
+  // matching rules add up, so the strict policy goes only on the dashboard pages, not on /*.
+  const verifyPolicy = "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self' https:; frame-ancestors 'none'";
+  const basics = ['  X-Content-Type-Options: nosniff', '  Referrer-Policy: no-referrer'];
   await write(
     '_headers',
     [
       '/*',
-      '  X-Content-Type-Options: nosniff',
-      '  Referrer-Policy: no-referrer',
-      "  Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; frame-ancestors 'none'",
+      ...basics,
+      ...['/', '/index.html', '/404.html'].flatMap((route) => [route, `  Content-Security-Policy: ${strict}`]),
+      ...['/verify', '/verify.html'].flatMap((route) => [route, `  Content-Security-Policy: ${verifyPolicy}`]),
       '',
     ].join('\n'),
   );

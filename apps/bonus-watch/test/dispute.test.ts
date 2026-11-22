@@ -16,7 +16,7 @@ import {
   type AlertSink,
 } from '@ghost-watcher/template';
 import { MemoryBlobStore, startFixtureServer } from '@ghost-watcher/template/testing';
-import { renderDispute, renderFeed } from '../../../template/src/ui/render.js';
+import { renderDispute, renderFeed } from '@ghost-watcher/template';
 import { bonusSite } from '../fixtures/site';
 import { buildApp } from '../src/app';
 
@@ -136,7 +136,7 @@ describe('bonus-watch: Raise the dead turns a receipt into a dispute pack', () =
     expect(listings).not.toContain('data-action="dispute"');
 
     const pack = disputePack(withReceipt[0] as Alert, watch((withReceipt[0] as Alert).watchId));
-    const page = renderDispute(pack);
+    const page = renderDispute(pack as object);
     expect(page).toContain('id="dispute-letter"');
     expect(page).toContain('id="dispute-cfpb"');
     expect(page).toContain('Show the bank its own terms from the day you applied.');

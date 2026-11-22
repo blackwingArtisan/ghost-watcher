@@ -8,6 +8,8 @@ import { ConsoleAlertSink, FanOutAlertSink, OutboxAlertSink, toEml } from '../sr
 import type { Alert, AlertSink } from '../src/alerts/types';
 import { ConfigError, loadDeps } from '../src/config';
 import { defineApp } from '../src/app';
+import { manualClock } from '../src/clock';
+import { fakeS3 } from './pact-support';
 import { FileBlobStore, MemoryBlobStore } from '../src/store/blob';
 import { GhostStore } from '../src/store/ghost-store';
 import { S3BlobStore, type S3Like } from '../src/store/s3';
@@ -206,12 +208,24 @@ describe('configuration', () => {
     await expect(loadDeps(app, { env: { GHOST_DATA_DIR: dir, GHOST_INTERVAL_MINUTES: '-5' } })).rejects.toThrow(/non-negative/);
   });
 
-  it('wires the real cloud adapters when selected (constructed, never called)', async () => {
+  it('(REQ-STORE-03.4, REQ-ALERTS-03.4, REQ-TEST-06.1) selects the S3 store and the SES sink with injected fake clients, and sends nothing real', async () => {
+    const s3 = fakeS3();
+    const sent: unknown[] = [];
+    const ses: SesLike = { send: (async (command: { input: unknown }) => {
+      sent.push(command.input);
+      return { MessageId: 'fake-456' };
+    }) as unknown as SesLike['send'] };
     const deps = await loadDeps(app, {
       env: { GHOST_DATA_DIR: dir, GHOST_STORE: 's3', GHOST_S3_BUCKET: 'example-bucket', GHOST_ALERTS: 'ses', GHOST_SES_FROM: 'alerts@example.com', AWS_REGION: 'us-east-1' },
+      clients: { s3: s3.client, ses },
+      clock: manualClock('2026-10-31T00:00:00Z'),
     });
     expect(deps.describe.store).toBe('s3 (s3://example-bucket/ghost-watcher/demo/)');
     expect(deps.sink.channel).toBe('ses');
     expect(deps.store.blobs).toBeInstanceOf(S3BlobStore);
+    await deps.store.blobs.put('probe.json', '{}');
+    expect([...s3.objects.keys()]).toEqual(['ghost-watcher/demo/probe.json']);
+    expect(await deps.sink.deliver(message())).toEqual({ channel: 'ses', reference: 'fake-456' });
+    expect(sent).toHaveLength(1);
   });
 });

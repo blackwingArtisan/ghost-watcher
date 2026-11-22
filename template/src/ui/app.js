@@ -1,6 +1,14 @@
 // Dashboard client: keeps the graveyard live, opens séances, and sends "check now" and "lay to rest".
 import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderSealCeremony, renderStats, renderTally, shortHash } from './render.js';
 
+/**
+ * @typedef {import('./render.js').FeedEntry} FeedEntry
+ * @typedef {import('./render.js').GhostView} GhostView
+ * @typedef {import('./render.js').AlertView} AlertView
+ * @typedef {import('./render.js').CheckResultView} CheckResultView
+ */
+
+
 const $ = (/** @type {string} */ sel) => /** @type {HTMLElement} */ (document.querySelector(sel));
 const initial = document.getElementById('initial-state');
 let state = JSON.parse(initial ? initial.textContent || '{}' : '{}');
@@ -21,8 +29,8 @@ function paint() {
   const rewind = document.querySelector('[data-action="rewind"]');
   if (rewind) /** @type {HTMLButtonElement} */ (rewind).hidden = !state.app.night;
   const pill = document.getElementById('feed-pill-count');
-  if (pill) pill.textContent = String(state.feed.filter((/** @type {any} */ e) => !e.acknowledged).length);
-  document.body.dataset.restless = String(state.ghosts.some((/** @type {any} */ g) => g.state === 'restless'));
+  if (pill) pill.textContent = String(state.feed.filter((/** @type {FeedEntry} */ e) => !e.acknowledged).length);
+  document.body.dataset.restless = String(state.ghosts.some((/** @type {GhostView} */ g) => g.state === 'restless'));
 }
 
 /** @param {string} text */
@@ -79,7 +87,7 @@ async function api(url, init) {
 /**
  * One-shot entrance after a night: ghosts whose page changed rise out of their stones, and Spirit
  * mail deals its letters in one by one. Reduced motion stills both (see style.css).
- * @param {any[]} results
+ * @param {CheckResultView[]} results
  */
 function riseAfterNight(results) {
   for (const result of results) {
@@ -89,7 +97,7 @@ function riseAfterNight(results) {
   }
   showNightBanner(results);
   // A shriek gets its own scene: the moon flushes red, lightning flashes, and the ghost shakes.
-  const shrieked = results.some((r) => r.status === 'changed' && (r.alerts || []).some((/** @type {any} */ a) => a.severity === 'shriek'));
+  const shrieked = results.some((r) => r.status === 'changed' && (r.alerts || []).some((/** @type {AlertView} */ a) => a.severity === 'shriek'));
   if (shrieked) {
     document.body.dataset.shriek = 'true';
     setTimeout(() => delete document.body.dataset.shriek, 1800);
@@ -105,14 +113,14 @@ function riseAfterNight(results) {
 /**
  * Small screens stack Spirit mail under the stones, so after a night the loudest catch gets a banner
  * that jumps to the letters. Wide screens show the letters beside the stones and hide it (style.css).
- * @param {any[]} results
+ * @param {CheckResultView[]} results
  */
 function showNightBanner(results) {
   const banner = document.getElementById('night-banner');
   if (!banner) return;
   const alerts = results.flatMap((r) => (r.status === 'changed' ? r.alerts || [] : []));
-  const stealth = alerts.find((/** @type {any} */ a) => a.stealth);
-  const shriek = alerts.find((/** @type {any} */ a) => a.severity === 'shriek');
+  const stealth = alerts.find((/** @type {AlertView} */ a) => a.stealth);
+  const shriek = alerts.find((/** @type {AlertView} */ a) => a.severity === 'shriek');
   if (!stealth && !shriek) {
     banner.hidden = true;
     return;
@@ -148,7 +156,7 @@ async function openDispute(id, alertId) {
 
 /** @param {string} id */
 function ghostName(id) {
-  const ghost = (state.ghosts || []).find((/** @type {any} */ g) => g.id === id);
+  const ghost = (state.ghosts || []).find((/** @type {GhostView} */ g) => g.id === id);
   return ghost ? ghost.name : id;
 }
 
@@ -240,7 +248,7 @@ async function copyText(targetId) {
   }
 }
 
-/** @param {any} result */
+/** @param {CheckResultView} result */
 function describeResult(result) {
   switch (result.status) {
     case 'changed':
@@ -356,7 +364,7 @@ document.addEventListener('click', (event) => {
         if (!night.moved) {
           toast('The fixture site has no more nights to show. Restart the demo to begin again.');
         } else {
-          const changed = night.results.filter((/** @type {any} */ r) => r.status === 'changed').length;
+          const changed = night.results.filter((/** @type {CheckResultView} */ r) => r.status === 'changed').length;
           const noise = noiseSummary(night.results);
           toast(
             `Night ${night.version - 1} passes. ${noise ? `${noise} ` : ''}${changed ? `${changed} newly restless.` : 'All quiet.'}`,
@@ -389,8 +397,8 @@ document.addEventListener('click', (event) => {
     document.querySelectorAll('.ghost').forEach((card) => ((/** @type {HTMLElement} */ (card)).dataset.checking = 'true'));
     void withBusy(async () => {
       const { results } = await api('/api/check-all', { method: 'POST' });
-      const changed = results.filter((/** @type {any} */ r) => r.status === 'changed').length;
-      const blocked = results.filter((/** @type {any} */ r) => r.status === 'blocked').length;
+      const changed = results.filter((/** @type {CheckResultView} */ r) => r.status === 'changed').length;
+      const blocked = results.filter((/** @type {CheckResultView} */ r) => r.status === 'blocked').length;
       const noise = noiseSummary(results);
       toast(
         `${results.length} ghosts visited. ${noise ? `${noise} ` : ''}${changed ? `${changed} newly restless.` : 'All quiet.'}${blocked ? ` ${blocked} turned away by robots.txt.` : ''}`,

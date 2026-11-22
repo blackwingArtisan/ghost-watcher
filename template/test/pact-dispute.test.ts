@@ -166,6 +166,7 @@ describe('a dispute pack for an alert judged against a pact', () => {
       note: null,
       seeded: false,
       checkCommand: `shasum -a 256 .ghost-data/store/pacts/lanternfield-checking/${EXHIBIT_HASH}.json`,
+      verifyUrl: expect.stringContaining(`/verify?copy=%2Fapi%2Fghosts%2Flanternfield-checking%2Fpact%2Fsnapshot&sha256=${EXHIBIT_HASH}&sealed=`),
     });
     expect(pack?.evidence).toEqual([
       { label: 'Page', value: URL },

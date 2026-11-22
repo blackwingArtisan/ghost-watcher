@@ -167,6 +167,14 @@ export class GhostStore {
     return { status: 'sealed', pact };
   }
 
+  /** The exact stored bytes of the pact snapshot, or null when the pact is missing or does not match its hash. */
+  async pactSnapshotText(watchId: string): Promise<string | null> {
+    const reading = await this.pactRecord(watchId);
+    if (reading.status !== 'sealed') return null;
+    const text = await this.blobs.get(pactKey(watchId, reading.record.sha256));
+    return text !== null && sha256Hex(text) === reading.record.sha256 ? text : null;
+  }
+
   /**
    * Writes the snapshot document, then the record, then removes older snapshot documents. If the
    * record write fails, the old record still points at its own untouched document.

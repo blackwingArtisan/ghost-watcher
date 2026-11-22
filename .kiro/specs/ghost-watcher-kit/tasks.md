@@ -214,9 +214,9 @@ code and a test implement it. Section 21 holds work found in the pass 2 review.
 - [x] 19.3 `playwright` end-to-end tests pass for both apps. (REQ-TEST-05) Re-run in pass 2 after the
        money and contact URL changes: 11 passed in the full run, and the bonus-watch spec passed after
        its User-Agent assertion was updated to the local-only token.
-- [ ] 19.4 Confirm no test scrapes a live site or constructs a real cloud client; all tests run only
+- [x] 19.4 Confirm no test scrapes a live site or constructs a real cloud client; all tests run only
        against `127.0.0.1`. (REQ-TEST-02, REQ-TEST-06) Reopened in pass 2: one config test constructs
-       the real AWS SDK clients. See 21.6.
+       the real AWS SDK clients. See 21.6. Done: `template/test/kit-closeout.test.ts` scans every test for `new S3Client(` or `new SESv2Client(`, and `test-setup/loopback-only.ts` (a Vitest setup file) makes `fetch` refuse any host but this machine; 21.6 removed the config test that built the real clients.
 - [x] 19.5 Confirm the default run uses only local adapters and needs no environment variables (the
        local-only User-Agent covers the fixture sites). (REQ-NF-04, REQ-FETCH-02)
 
@@ -242,22 +242,22 @@ code and a test implement it. Section 21 holds work found in the pass 2 review.
       watch is on a loopback or reserved host, refuse to start when a real host is watched without a
       real contact URL, and remove the `example.com` contact URLs from both apps, with tests for each
       branch. (REQ-FETCH-02, REQ-FETCH-SEC-01)
-- [ ] 21.3 Test that `defineApp` rejects two watches with the same id. (REQ-WATCH-01.4)
-- [ ] 21.4 Test that every app source and test file imports template code only from
+- [x] 21.3 Test that `defineApp` rejects two watches with the same id. (REQ-WATCH-01.4) Test: `template/test/kit-closeout.test.ts`.
+- [x] 21.4 Test that every app source and test file imports template code only from
       `@ghost-watcher/template` or `@ghost-watcher/template/testing`. (REQ-WATCH-05.4, REQ-BONUS-06,
-      REQ-LISTING-06)
-- [ ] 21.5 Test that a stored snapshot contains no raw HTML. (REQ-STORE-04.2)
-- [ ] 21.6 Give `loadDeps` an injectable client factory for S3 and SES and replace the config test that
+      REQ-LISTING-06) Test: `template/test/kit-closeout.test.ts`. It found `apps/bonus-watch/test/dispute.test.ts` importing `template/src/ui/render.js`; `renderDispute` and `renderFeed` are now exported from the template index and the test imports them from the package.
+- [x] 21.5 Test that a stored snapshot contains no raw HTML. (REQ-STORE-04.2) Test: `template/test/kit-closeout.test.ts`.
+- [x] 21.6 Give `loadDeps` an injectable client factory for S3 and SES and replace the config test that
       constructs the real AWS SDK clients with one that uses fakes. (REQ-STORE-03.4, REQ-ALERTS-03.4,
-      REQ-TEST-06.1)
-- [ ] 21.7 Test restarts: a new `Runner` and `GhostStore` over the same file store still honor the
-      interval and keep an acknowledgment. (REQ-FETCH-03.5, REQ-DASH-04.2)
-- [ ] 21.8 Test the in-flight `checking` flag of a ghost card while a check runs. (REQ-DASH-05.4)
-- [ ] 21.9 Test the contrast ratio of the dashboard text colors against the sky color in the app
-      palettes. (REQ-DASH-07.1)
-- [ ] 21.10 Replace the JSDoc `any` types in `template/src/ui/*.js` with named typedefs. (REQ-NF-03.1)
-- [ ] 21.11 Test that the `serve` startup output and the dashboard footer show the User-Agent in use,
-      including the local-only token. (REQ-FETCH-02.6)
+      REQ-TEST-06.1) `loadDeps` takes an optional `clients: { s3, ses }`; unset, it behaves as before. Test: `template/test/adapters.test.ts`.
+- [x] 21.7 Test restarts: a new `Runner` and `GhostStore` over the same file store still honor the
+      interval and keep an acknowledgment. (REQ-FETCH-03.5, REQ-DASH-04.2) Test: `template/test/kit-closeout.test.ts`.
+- [x] 21.8 Test the in-flight `checking` flag of a ghost card while a check runs. (REQ-DASH-05.4) Test: `template/test/kit-closeout.test.ts`.
+- [x] 21.9 Test the contrast ratio of the dashboard text colors against the sky color in the app
+      palettes. (REQ-DASH-07.1) Test: `template/test/kit-closeout.test.ts` (all three palettes pass at 4.5:1).
+- [x] 21.10 Replace the JSDoc `any` types in `template/src/ui/*.js` with named typedefs. (REQ-NF-03.1) `render.js` and `app.js` now use named typedefs (`object` shapes that name their TypeScript type); comments only, no behavior change.
+- [x] 21.11 Test that the `serve` startup output and the dashboard footer show the User-Agent in use,
+      including the local-only token. (REQ-FETCH-02.6) Test: `template/test/kit-closeout.test.ts` (runs `serve` through `runCli` and stops it with SIGTERM).
 
 ## Implementation notes
 

@@ -36,6 +36,8 @@ import type { AlertSink } from './alerts/types';
 import { FileBlobStore, MemoryBlobStore, type BlobStore } from './store/blob';
 import { GhostStore } from './store/ghost-store';
 import { Runner } from './runner';
+import type { S3Like } from './store/s3';
+import type { SesLike } from './alerts/ses';
 
 export type Env = Record<string, string | undefined>;
 
@@ -66,7 +68,7 @@ function int(env: Env, name: string, fallback: number): number {
   return value;
 }
 
-async function makeBlobStore(env: Env, app: GhostApp, dataDir: string): Promise<{ blobs: BlobStore; label: string }> {
+async function makeBlobStore(env: Env, app: GhostApp, dataDir: string, clients: CloudClients): Promise<{ blobs: BlobStore; label: string }> {
   const kind = env.GHOST_STORE ?? 'file';
   switch (kind) {
     case 'file': {
@@ -82,7 +84,7 @@ async function makeBlobStore(env: Env, app: GhostApp, dataDir: string): Promise<
       const { S3BlobStore } = await import('./store/s3');
       const prefix = env.GHOST_S3_PREFIX ?? `ghost-watcher/${app.id}/`;
       return {
-        blobs: new S3BlobStore({ bucket, prefix, clientConfig: env.AWS_REGION ? { region: env.AWS_REGION } : {} }),
+        blobs: new S3BlobStore({ bucket, prefix, clientConfig: env.AWS_REGION ? { region: env.AWS_REGION } : {}, ...(clients.s3 ? { client: clients.s3 } : {}) }),
         label: `s3 (s3://${bucket}/${prefix})`,
       };
     }
@@ -91,7 +93,7 @@ async function makeBlobStore(env: Env, app: GhostApp, dataDir: string): Promise<
   }
 }
 
-async function makeSink(env: Env, dataDir: string): Promise<{ sink: AlertSink; outbox?: OutboxAlertSink; label: string }> {
+async function makeSink(env: Env, dataDir: string, clients: CloudClients): Promise<{ sink: AlertSink; outbox?: OutboxAlertSink; label: string }> {
   const kinds = (env.GHOST_ALERTS ?? 'outbox').split(',').map((k) => k.trim()).filter(Boolean);
   const sinks: AlertSink[] = [];
   let outbox: OutboxAlertSink | undefined;
@@ -112,6 +114,7 @@ async function makeSink(env: Env, dataDir: string): Promise<{ sink: AlertSink; o
           from,
           ...(env.GHOST_SES_CONFIGURATION_SET ? { configurationSetName: env.GHOST_SES_CONFIGURATION_SET } : {}),
           clientConfig: env.AWS_REGION ? { region: env.AWS_REGION } : {},
+          ...(clients.ses ? { client: clients.ses } : {}),
         }),
       );
     } else if (kind === 'webhook') {
@@ -221,7 +224,15 @@ export function visitsThirdParty(url: string): boolean {
   }
 }
 
+/** Cloud clients a caller may supply instead of the real AWS SDK ones. Tests pass fakes here. */
+export interface CloudClients {
+  s3?: S3Like;
+  ses?: SesLike;
+}
+
 export interface LoadOptions {
+  /** Replaces the AWS clients the S3 store and the SES sink would build. Unset: the SDK builds its own. */
+  clients?: CloudClients;
   env?: Env;
   cwd?: string;
   clock?: Clock;
@@ -273,9 +284,9 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
       minHostGapMs: int(env, 'GHOST_HOST_GAP_MS', 1000),
       timeoutMs: int(env, 'GHOST_TIMEOUT_MS', 15_000),
     });
-  const { blobs, label: storeLabel } = await makeBlobStore(env, app, dataDir);
+  const { blobs, label: storeLabel } = await makeBlobStore(env, app, dataDir, options.clients ?? {});
   const store = new GhostStore(blobs);
-  const { sink, outbox, label: alertLabel } = await makeSink(env, dataDir);
+  const { sink, outbox, label: alertLabel } = await makeSink(env, dataDir, options.clients ?? {});
   const { history, label: historyLabel } = makeHistory(env, userAgent, Boolean(contactUrl));
   const { archive, label: receiptLabel } = makeArchive(env, userAgent, Boolean(contactUrl));
   const runner = new Runner({ app, fetcher, store, sink, clock, ...(history ? { history } : {}), ...(archive ? { archive } : {}) });

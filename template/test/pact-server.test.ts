@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { request as httpRequest } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -252,6 +253,72 @@ describe('pact routes on a real dashboard server', () => {
     expect(pack.pact).toMatchObject({ variant: 'match', relation: 'differs', seeded: false });
     expect(pack.pact.checkCommand).toContain(`pacts/lantern/${alert.pact.sha256}.json`);
     expect(pack.letter.subject).toBe('Request to match the improved terms of Lanternfield Everyday Checking');
+  });
+});
+
+describe('the ghost testifies: routes and pack link', () => {
+  let running: Running | undefined;
+  afterEach(async () => {
+    await running?.close();
+    running = undefined;
+  });
+
+  it('(PACT 16.9) GET /verify answers the verify page as HTML with a CSP that lets it fetch a named copy', async () => {
+    running = await start();
+    const response = await fetch(`${running.base}/verify`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    expect(response.headers.get('content-security-policy')).toContain("connect-src 'self' https:");
+    const html = await response.text();
+    expect(html).toContain('The ghost testifies');
+    expect(html).toContain('<script type="module" src="/ui/verify.js">');
+    const port = Number(new URL(running.base).port);
+    const refused = await new Promise<number>((resolve, reject) => {
+      const req = httpRequest({ host: '127.0.0.1', port, path: '/verify', headers: { Host: 'evil.example' } }, (res) => {
+        res.resume();
+        res.on('end', () => resolve(res.statusCode ?? 0));
+      });
+      req.on('error', reject);
+      req.end();
+    });
+    expect(refused).toBe(403);
+  });
+
+  it('(PACT 16.21) the snapshot route answers the stored bytes, whose SHA-256 is the pact SHA-256', async () => {
+    running = await start();
+    await running.json('/api/ghosts/lantern/check', 'POST');
+    const sealed = (await running.json('/api/ghosts/lantern/pact', 'POST', '{}')).body;
+    const response = await fetch(`${running.base}/api/ghosts/lantern/pact/snapshot`);
+    expect(response.status).toBe(200);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    expect(createHash('sha256').update(bytes).digest('hex')).toBe(sealed.pact.sha256);
+  });
+
+  it('(PACT 16.22) the snapshot route answers 404 with no pact and when the stored snapshot is damaged', async () => {
+    running = await start();
+    await running.json('/api/ghosts/lantern/check', 'POST');
+    expect((await running.json('/api/ghosts/lantern/pact/snapshot')).status).toBe(404);
+    const sealed = (await running.json('/api/ghosts/lantern/pact', 'POST', '{}')).body;
+    await running.deps.store.blobs.put(`pacts/lantern/${sealed.pact.sha256}.json`, '{"tampered":true}');
+    expect((await running.json('/api/ghosts/lantern/pact/snapshot')).status).toBe(404);
+  });
+
+  it('(PACT 16.19, 16.20) the pack carries a verifyUrl with copy, hash and sealed time, and the page shows "Verify it"', async () => {
+    running = await start({ archive: 'saving' });
+    await running.json('/api/ghosts/lantern/check', 'POST');
+    await running.json('/api/ghosts/lantern/pact', 'POST');
+    running.fixtures.advance();
+    const alert = (await running.json('/api/ghosts/lantern/check', 'POST')).body.result.alerts[0];
+    const pack = (await running.json(`/api/ghosts/lantern/alerts/${alert.id}/dispute`)).body;
+    const link = new URL(pack.pact.verifyUrl, 'http://page.local');
+    expect(link.pathname).toBe('/verify');
+    expect(link.searchParams.get('copy')).toBe('/api/ghosts/lantern/pact/snapshot');
+    expect(link.searchParams.get('sha256')).toBe(alert.pact.sha256);
+    expect(link.searchParams.get('sealed')).toBe(alert.pact.sealedAt);
+    const html = renderDispute(pack);
+    expect(html).toContain('>Verify it</a>');
+    expect(html).toContain(`href="${pack.pact.verifyUrl.replace(/&/g, '&amp;')}"`);
+    expect(renderDispute({ ...pack, pact: { ...pack.pact, verifyUrl: undefined } })).not.toContain('Verify it');
   });
 });
 

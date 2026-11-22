@@ -10,6 +10,8 @@
  *   GET  /api/ghosts/:id/pact           the sealed pact (apps with `copy.pacts` only; 404 otherwise)
  *   POST /api/ghosts/:id/pact           seal the pact: "I applied today" (body `{}` or `{"confirmReplace":true}`)
  *   DELETE /api/ghosts/:id/pact         break the pact
+ *   GET  /api/ghosts/:id/pact/snapshot  the stored snapshot bytes the pact's SHA-256 covers
+ *   GET  /verify                        the verify page: recompute a SHA-256 in the browser
  *   POST /api/check-all                 check every watch now
  *   POST /api/demo/next-night           demo mode only: advance the fixture site, then check every watch
  *   POST /api/demo/rewind               demo mode only: back to the first sighting
@@ -35,6 +37,7 @@ import { breakPact, sealPact } from './sealing';
 import { dashboardState, forDashboard, ghostDetail, pactViewOf, pactViewOfReading } from './view';
 // The renderer is a plain ES module shared with the browser (no build step).
 import { renderPage } from './ui/render.js';
+import { renderVerifyPage } from './ui/verify-page.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -48,6 +51,8 @@ const FONT_PACKAGES: Record<string, string> = {
 const STATIC: Record<string, { file: string; type: string }> = {
   '/ui/app.js': { file: join(here, 'ui', 'app.js'), type: 'text/javascript; charset=utf-8' },
   '/ui/render.js': { file: join(here, 'ui', 'render.js'), type: 'text/javascript; charset=utf-8' },
+  '/ui/verify.js': { file: join(here, 'ui', 'verify.js'), type: 'text/javascript; charset=utf-8' },
+  '/ui/verify-core.js': { file: join(here, 'ui', 'verify-core.js'), type: 'text/javascript; charset=utf-8' },
   '/ui/style.css': { file: join(here, 'ui', 'style.css'), type: 'text/css; charset=utf-8' },
 };
 
@@ -71,6 +76,10 @@ function send(res: ServerResponse, status: number, body: string | Buffer, type: 
 
 /** Largest request body the pact routes accept. */
 export const MAX_JSON_BODY_BYTES = 1024;
+
+/** The verify page may fetch a saved copy from an archive (https) or from a local stand-in. */
+export const VERIFY_CSP =
+  "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; connect-src 'self' https: http://127.0.0.1:* http://localhost:*; frame-ancestors 'none'";
 
 type JsonBody = { ok: true; value: Record<string, unknown> } | { ok: false; status: 400 | 413; error: string };
 
@@ -163,6 +172,14 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       });
       return;
     }
+    if (method === 'GET' && path === '/verify') {
+      send(res, 200, renderVerifyPage({ appName: deps.app.name, theme }), 'text/html; charset=utf-8', {
+        'Cache-Control': 'no-store',
+        // The page fetches an address the visitor names, so connect-src is wider than on the dashboard.
+        'Content-Security-Policy': VERIFY_CSP,
+      });
+      return;
+    }
     if (method === 'GET' && path === '/healthz') return json(res, 200, { ok: true, app: deps.app.id });
     if (method === 'GET' && path === '/api/state') return json(res, 200, await currentState());
 
@@ -227,11 +244,17 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       return json(res, 200, pack);
     }
 
-    const ghostRoute = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge|pact|bonus-posted|bonus-letter))?$/.exec(path);
+    const ghostRoute = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge|pact|pact\/snapshot|bonus-posted|bonus-letter))?$/.exec(path);
     if (ghostRoute) {
       const watch = deps.runner.watch(ghostRoute[1] ?? '');
       if (!watch) return json(res, 404, { error: 'No such ghost' });
       const action = ghostRoute[2];
+      if (action === 'pact/snapshot') {
+        if (method !== 'GET') return json(res, 405, { error: 'Method not allowed' });
+        const text = pactEnabledFor(deps.app, watch) ? await deps.store.pactSnapshotText(watch.id) : null;
+        if (text === null) return json(res, 404, { error: 'No readable pact for this ghost' });
+        return send(res, 200, text, 'application/json; charset=utf-8', { 'Cache-Control': 'no-store' });
+      }
       if (action === 'pact') {
         if (!pactEnabledFor(deps.app, watch)) return json(res, 404, { error: 'Not found' });
         const sealDeps = { store: deps.store, clock: deps.clock, ...(deps.archive ? { archive: deps.archive } : {}) };

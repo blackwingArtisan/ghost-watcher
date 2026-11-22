@@ -1,6 +1,30 @@
 // Dashboard rendering shared by the server (first paint) and the browser (live updates).
 // Plain ES module with no dependencies, so it runs in both places without a build step.
 
+/**
+ * Named shapes of what the server sends the dashboard. Each is `object`, because tests and the static
+ * demo hand the renderers partial fixtures; the comment names the TypeScript type that describes it.
+ * @typedef {object} DashboardState `DashboardState` in view.ts
+ * @typedef {object} GhostView `GhostView` in view.ts
+ * @typedef {object} GhostDetail `GhostDetail` in view.ts
+ * @typedef {object} FeedEntry `FeedEntry` in view.ts: an alert, whether it is acknowledged, its letter
+ * @typedef {object} FieldRow `FieldRow` in view.ts
+ * @typedef {object} ListView `ListView` in view.ts
+ * @typedef {object} ListItem one item of a `ListView`
+ * @typedef {object} Reading `Reading` in view.ts: one value on a stone
+ * @typedef {object} ArchiveLetter `ArchiveLetter` in view.ts
+ * @typedef {object} WordSegment `WordSegment` in summary.ts: a run of words, added, removed or kept
+ * @typedef {object} PastTimeline `PastTimeline` in history.ts
+ * @typedef {object} PastEntry `PastEntry` in history.ts
+ * @typedef {object} Receipt `Receipt` in receipts.ts
+ * @typedef {object} ClockView `ClockView` in bonus-clock.ts
+ * @typedef {object} DisputePack `DisputePack` in dispute.ts
+ * @typedef {object} EvidenceRow `EvidenceRow` in dispute.ts: a label and a value
+ * @typedef {object} PactUiCopy `PactUiCopy` in pact-vocabulary.ts
+ * @typedef {object} AlertView `Alert` in alerts/types.ts, with the dashboard's `acknowledged`, `letter` and `watchName`
+ * @typedef {object} CheckResultView what a check answers to the browser (`status`, `watchId`, `alerts`)
+ */
+
 /** @param {unknown} value */
 export function esc(value) {
   return String(value ?? '')
@@ -34,7 +58,7 @@ export function calendarDate(iso) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 
-/** The Ghost of Terms Past: what the ghost would have said, had it been watching. @param {any} past */
+/** The Ghost of Terms Past: what the ghost would have said, had it been watching. @param {PastTimeline} past */
 export function renderPast(past) {
   if (!past) return '';
   const title = `<h3>Ghost of Terms Past <span class="muted">(from ${esc(past.source)})</span></h3>`;
@@ -42,7 +66,7 @@ export function renderPast(past) {
   const words = { first: 'Earliest copy', change: 'Changed', now: 'First sighting' };
   const items = past.entries
     .map(
-      (/** @type {any} */ e) => `<li class="past__entry" data-kind="${esc(e.kind)}" data-severity="${esc(e.severity || '')}" data-tone="${esc(e.tone || 'neutral')}">
+      (/** @type {PastEntry} */ e) => `<li class="past__entry" data-kind="${esc(e.kind)}" data-severity="${esc(e.severity || '')}" data-tone="${esc(e.tone || 'neutral')}">
   <span class="past__dot" aria-hidden="true"></span>
   <div><p class="past__when"><time datetime="${esc(e.at)}">${esc(calendarDate(e.at))}</time> · ${esc(words[/** @type {keyof typeof words} */ (e.kind)] || e.kind)}${
     e.archiveUrl ? ` · <a href="${esc(e.archiveUrl)}" target="_blank" rel="noopener noreferrer">archived copy</a>` : ''
@@ -63,7 +87,7 @@ export function shortHash(hex) {
 
 /**
  * The receipt a ghost kept for a shriek or a bait and switch: a link to the archived copy and the
- * hashes of the snapshots before and after. @param {any} receipt
+ * hashes of the snapshots before and after. @param {Receipt | null | undefined} receipt
  */
 export function renderReceipt(receipt) {
   if (!receipt) return '';
@@ -73,13 +97,13 @@ export function renderReceipt(receipt) {
   return `<p class="receipt"><span class="receipt__tag">Receipt</span> ${link} · sha256 <code title="before: ${esc(receipt.before.sha256)}">${esc(shortHash(receipt.before.sha256))}</code> → <code title="after: ${esc(receipt.after.sha256)}">${esc(shortHash(receipt.after.sha256))}</code></p>`;
 }
 
-/** The bonus match variant: the page improved on what it promised the day you applied. @param {any} alert */
+/** The bonus match variant: the page improved on what it promised the day you applied. @param {AlertView} alert */
 export function isMatch(alert) {
   const p = alert && alert.pact;
   return Boolean(p && p.relation === 'differs' && p.tone === 'good' && !alert.stealth);
 }
 
-/** One plain sentence about the change against the pact. @param {any} alert */
+/** One plain sentence about the change against the pact. @param {AlertView} alert */
 export function renderPactNote(alert) {
   if (!alert || !alert.pact || !alert.pact.note) return '';
   return `<p class="pact-note" data-relation="${esc(alert.pact.relation)}"><span class="pact-note__tag">Pact</span> ${esc(alert.pact.note)}</p>`;
@@ -88,7 +112,7 @@ export function renderPactNote(alert) {
 /**
  * "Raise the dead": shown on every change that kept a receipt. It opens the dispute pack, or the
  * bonus match letter when the terms improved after the reader applied.
- * @param {any} alert
+ * @param {AlertView} alert
  */
 export function renderRaiseButton(alert) {
   if (!alert || !alert.receipt || alert.disputable === false) return '';
@@ -147,7 +171,7 @@ export function renderSealCeremony(sha256, options = {}) {
 
 /**
  * The bonus clock of a sealed pact: the line, "Raise the dead" with the letter once the bonus is due,
- * and "Bonus posted". @param {string} id @param {string} name @param {any} clock @param {boolean} [full]
+ * and "Bonus posted". @param {string} id @param {string} name @param {ClockView} clock @param {boolean} [full]
  */
 export function renderBonusClock(id, name, clock, full = false) {
   if (!clock) return '';
@@ -160,7 +184,7 @@ export function renderBonusClock(id, name, clock, full = false) {
   return `<div class="ghost__clock" data-clock="${esc(clock.state)}"><p class="clock__line"><span class="clock__tag">Bonus clock</span> <span class="clock__text">${esc(clock.line)}</span></p>${dates}<div class="clock__actions">${letter}${button}</div></div>`;
 }
 
-/** The pact line (or the "I applied today" button) on a stone. Apps without pacts have no `pact` key. @param {any} ghost @param {any} [words] */
+/** The pact line (or the "I applied today" button) on a stone. Apps without pacts have no `pact` key. @param {GhostView} ghost @param {PactUiCopy} [words] */
 export function renderStonePact(ghost, words = DEFAULT_PACT_COPY) {
   const p = ghost.pact;
   if (p === undefined) return '';
@@ -179,7 +203,7 @@ export function renderStonePact(ghost, words = DEFAULT_PACT_COPY) {
 
 /**
  * The pact section of the séance, with its confirmation step.
- * @param {any} detail @param {'replace' | 'break' | null} [confirm] @param {any} [words]
+ * @param {GhostDetail} detail @param {'replace' | 'break' | null} [confirm] @param {PactUiCopy} [words]
  */
 export function renderPactSection(detail, confirm = null, words = DEFAULT_PACT_COPY) {
   const p = detail.pact;
@@ -215,7 +239,7 @@ ${renderBonusClock(detail.id, detail.name, p.clock, true)}
 <div class="pact__actions"><button type="button" class="btn btn--small" data-action="pact-ask-replace" data-id="${id}" aria-label="Seal again: replace the pact for ${name}">Seal again</button><button type="button" class="btn btn--small" data-action="pact-ask-break" data-id="${id}" aria-label="Break the pact for ${name}">Break the pact</button></div>${renderPactConfirm(detail, confirm)}</section>`;
 }
 
-/** @param {any} detail @param {'replace' | 'break' | null} confirm */
+/** @param {GhostDetail} detail @param {'replace' | 'break' | null} confirm */
 function renderPactConfirm(detail, confirm) {
   if (!confirm) return '';
   const p = detail.pact;
@@ -231,13 +255,13 @@ function renderPactConfirm(detail, confirm) {
 
 /**
  * The dispute pack: a letter to the bank, the evidence, and prefilled CFPB complaint text.
- * @param {any} pack
+ * @param {DisputePack} pack
  */
 export function renderDispute(pack) {
-  const isCheck = (/** @type {any} */ row) => /^check\b/i.test(row.label);
+  const isCheck = (/** @type {EvidenceRow} */ row) => /^check\b/i.test(row.label);
   const evidence = pack.evidence
-    .filter((/** @type {any} */ row) => !isCheck(row))
-    .map((/** @type {any} */ row) => `<tr><th scope="row">${esc(row.label)}</th><td><code>${esc(row.value)}</code></td></tr>`)
+    .filter((/** @type {EvidenceRow} */ row) => !isCheck(row))
+    .map((/** @type {EvidenceRow} */ row) => `<tr><th scope="row">${esc(row.label)}</th><td><code>${esc(row.value)}</code></td></tr>`)
     .join('');
   const c = pack.complaint;
   const pact = pack.pact;
@@ -254,10 +278,13 @@ export function renderDispute(pack) {
     : match
     ? '<p class="letter__stamp letter__stamp--match" aria-hidden="true">Bonus match</p>'
     : `<p class="letter__stamp" aria-hidden="true">${stealth ? 'Bait and switch' : 'Terms changed'}</p>`;
+  const verifyLink = pact && pact.verifyUrl
+    ? `<p class="dispute__verify"><a class="btn btn--small" href="${esc(pact.verifyUrl)}" target="_blank" rel="noopener">Verify it</a> <span class="muted small">Your browser recomputes the SHA-256 and compares it with the sealed one.</span></p>`
+    : '';
   const checks = pack.evidence.filter(isCheck);
   const checkYourself = checks.length
     ? `<details class="dispute__check"><summary>Check it yourself</summary><p class="muted small">Run these in the app folder. Each hash must match the one in the evidence above.</p>${checks
-        .map((/** @type {any} */ row) => `<p class="small">${esc(row.label)}</p><pre><code>${esc(row.value)}</code></pre>`)
+        .map((/** @type {EvidenceRow} */ row) => `<p class="small">${esc(row.label)}</p><pre><code>${esc(row.value)}</code></pre>`)
         .join('')}</details>`
     : '';
   const beforeHead = ui && ui.promisedHead ? esc(ui.promisedHead) : promised ? `${esc(pack.beforeDate)}, the day you applied: what the page promised` : `${esc(pack.beforeDate)}: what the page said`;
@@ -313,7 +340,7 @@ export function renderDispute(pack) {
 </section>
 <section class="dispute__block">
   <h3>2. Evidence</h3>
-  <table class="values dispute__evidence"><tbody>${evidence}</tbody></table>${checkYourself}
+  <table class="values dispute__evidence"><tbody>${evidence}</tbody></table>${verifyLink}${checkYourself}
 </section>${complaint}`;
 }
 
@@ -398,10 +425,10 @@ export function noiseSummary(results) {
   return `${moved} page${moved === 1 ? '' : 's'} changed: ${woke} worth waking for, ${ignored} ignored as noise.`;
 }
 
-/** @param {any} ghost @param {string} [nowIso] */
+/** @param {GhostView} ghost @param {string} [nowIso] */
 export function renderGhostCard(ghost, nowIso, pactWords = DEFAULT_PACT_COPY) {
   const readings = (ghost.readings || [])
-    .map((/** @type {any} */ r) =>
+    .map((/** @type {Reading} */ r) =>
       r.match
         ? `<div class="reading reading--match"${r.tone ? ` data-tone="${esc(r.tone)}"` : ''}><dt>${esc(r.label)}</dt><dd>${esc(r.value)}</dd></div>`
         : r.before !== undefined
@@ -444,20 +471,20 @@ export function renderGhostCard(ghost, nowIso, pactWords = DEFAULT_PACT_COPY) {
 </article>`;
 }
 
-/** @param {any} state */
+/** @param {DashboardState} state */
 export function renderGraveyard(state) {
-  const cards = state.ghosts.map((/** @type {any} */ g) => renderGhostCard(g, state.generatedAt, state.app.pactCopy || DEFAULT_PACT_COPY)).join('\n');
+  const cards = state.ghosts.map((/** @type {GhostView} */ g) => renderGhostCard(g, state.generatedAt, state.app.pactCopy || DEFAULT_PACT_COPY)).join('\n');
   // Haunted Listings is a street, and a street has a lamp at the end of it.
   return state.app && state.app.motif === 'house' ? `${cards}\n<div class="street-lamp" aria-hidden="true"><i class="street-lamp__head"></i></div>` : cards;
 }
 
-/** @param {any} state */
+/** @param {DashboardState} state */
 export function renderStats(state) {
   const ghosts = state.ghosts;
-  const restless = ghosts.filter((/** @type {any} */ g) => g.state === 'restless').length;
-  const blocked = ghosts.filter((/** @type {any} */ g) => g.state === 'blocked').length;
-  const lost = ghosts.filter((/** @type {any} */ g) => g.state === 'lost').length;
-  const last = ghosts.map((/** @type {any} */ g) => g.lastAttemptAt).filter(Boolean).sort().pop();
+  const restless = ghosts.filter((/** @type {GhostView} */ g) => g.state === 'restless').length;
+  const blocked = ghosts.filter((/** @type {GhostView} */ g) => g.state === 'blocked').length;
+  const lost = ghosts.filter((/** @type {GhostView} */ g) => g.state === 'lost').length;
+  const last = ghosts.map((/** @type {GhostView} */ g) => g.lastAttemptAt).filter(Boolean).sort().pop();
   const parts = [
     `<span><b>${ghosts.length}</b> ghosts haunting ${esc(state.app.watchNoun)}</span>`,
     `<span class="stat-restless" data-count="${restless}"><b>${restless}</b> restless</span>`,
@@ -470,13 +497,13 @@ export function renderStats(state) {
 
 /**
  * Tonight's tally, under the graveyard: letters sent, page changes slept through, doors respected.
- * @param {any} state
+ * @param {DashboardState} state
  */
 export function renderTally(state) {
   const letters = state.feed.length;
   const drift = moneySinceApplied(state.feed);
-  const ignored = state.ghosts.reduce((sum, /** @type {any} */ g) => sum + (g.ignored || 0), 0);
-  const doors = state.ghosts.filter((/** @type {any} */ g) => g.state === 'blocked').length;
+  const ignored = state.ghosts.reduce((sum, /** @type {GhostView} */ g) => sum + (g.ignored || 0), 0);
+  const doors = state.ghosts.filter((/** @type {GhostView} */ g) => g.state === 'blocked').length;
   const plural = (/** @type {number} */ n, /** @type {string} */ one, /** @type {string} */ many) => `<b>${n}</b> ${n === 1 ? one : many}`;
   return `<span class="tally__title">Tonight's tally</span><span>${plural(letters, 'letter sent', 'letters sent')}</span><span>${plural(ignored, 'page change slept through', 'page changes slept through')}</span><span>${plural(doors, 'door respected', 'doors respected')} (robots.txt)</span>${
     drift > 0 ? `<span class="tally__drift"><b>${esc(dollarsFromCents(drift))}</b> of terms turned against you since you applied</span>` : ''
@@ -487,7 +514,7 @@ export function renderTally(state) {
  * Money that turned against the reader since the pacts were sealed: for each watched field, the newest
  * change judged against a pact, counted only when it went the bad way, as the difference between what
  * the page promised and what it says now, in cents.
- * @param {any[]} feed
+ * @param {FeedEntry[]} feed
  * @returns {number}
  */
 export function moneySinceApplied(feed) {
@@ -518,12 +545,12 @@ export function dollarsFromCents(cents) {
 
 /**
  * Letters from the Ghost of Terms Past: changes found in archived copies before the ghost arrived.
- * Dimmed, and never counted as alerts. @param {any} state
+ * Dimmed, and never counted as alerts. @param {DashboardState} state
  */
 export function renderArchiveLetters(state) {
   return (state.archive || [])
     .map(
-      (/** @type {any} */ letter) => `<li class="feed__item feed__item--archive" data-archive="true" data-tone="${esc(letter.tone || 'neutral')}">
+      (/** @type {ArchiveLetter} */ letter) => `<li class="feed__item feed__item--archive" data-archive="true" data-tone="${esc(letter.tone || 'neutral')}">
   <div class="feed__meta"><span class="sev sev--archive">Archive</span><button type="button" class="feed__watch" data-action="open" data-id="${esc(letter.watchId)}">${esc(letter.watchName)}</button><time datetime="${esc(letter.at)}">${esc(calendarDate(letter.at))}</time></div>
   ${letter.lines.map((/** @type {string} */ line) => `<p class="feed__summary">${esc(line)}</p>`).join('')}
   ${letter.archiveUrl ? `<a class="feed__letter" href="${esc(letter.archiveUrl)}" target="_blank" rel="noopener noreferrer">Archived copy</a>` : ''}
@@ -532,7 +559,7 @@ export function renderArchiveLetters(state) {
     .join('\n');
 }
 
-/** @param {any} state */
+/** @param {DashboardState} state */
 export function renderFeed(state) {
   const archive = renderArchiveLetters(state);
   if (!state.feed.length) {
@@ -544,10 +571,10 @@ export function renderFeed(state) {
   return `${renderLiveLetters(state)}${archive ? `\n${archive}` : ''}`;
 }
 
-/** @param {any} state */
+/** @param {DashboardState} state */
 function renderLiveLetters(state) {
   return state.feed
-    .map((/** @type {any} */ entry) => {
+    .map((/** @type {FeedEntry} */ entry) => {
       const a = entry.alert;
       const letter = entry.letter
         ? `<a class="feed__letter" href="/outbox/${encodeURIComponent(entry.letter)}.html" target="_blank" rel="noopener">Read the letter</a>`
@@ -564,14 +591,14 @@ function renderLiveLetters(state) {
     .join('\n');
 }
 
-/** @param {any} detail @param {string} [nowIso] @param {{ disputes?: boolean; confirm?: 'replace' | 'break' | null }} [options] */
+/** @param {GhostDetail} detail @param {string} [nowIso] @param {{ disputes?: boolean; confirm?: 'replace' | 'break' | null }} [options] */
 export function renderDetail(detail, nowIso, options = {}) {
-  const shortFields = detail.fields.filter((/** @type {any} */ f) => !f.long);
-  const longFields = detail.fields.filter((/** @type {any} */ f) => f.long);
+  const shortFields = detail.fields.filter((/** @type {FieldRow} */ f) => !f.long);
+  const longFields = detail.fields.filter((/** @type {FieldRow} */ f) => f.long);
   const sealed = Boolean(detail.pact && detail.pact.state === 'sealed');
   const fieldRows = shortFields
     .map(
-      (/** @type {any} */ f) => `<tr data-changed="${f.changed}"${sealed && f.pact !== undefined && f.pact !== f.now ? ' data-pact-differs="true"' : ''}><th scope="row">${esc(f.label)}</th><td class="now">${esc(f.now)}</td><td class="before">${f.before === null ? '<span class="muted">—</span>' : f.changed ? esc(f.before) : '<span class="muted">unchanged</span>'}</td>${
+      (/** @type {FieldRow} */ f) => `<tr data-changed="${f.changed}"${sealed && f.pact !== undefined && f.pact !== f.now ? ' data-pact-differs="true"' : ''}><th scope="row">${esc(f.label)}</th><td class="now">${esc(f.now)}</td><td class="before">${f.before === null ? '<span class="muted">—</span>' : f.changed ? esc(f.before) : '<span class="muted">unchanged</span>'}</td>${
         sealed ? `<td class="pact-value">${f.pact === undefined || f.pact === null ? '<span class="muted">—</span>' : esc(f.pact)}</td>` : ''
       }</tr>`,
     )
@@ -580,10 +607,10 @@ export function renderDetail(detail, nowIso, options = {}) {
     ? `<table class="values"><thead><tr><th scope="col">Watched value</th><th scope="col">Now</th><th scope="col">Before the last change</th>${sealed ? `<th scope="col">${esc((options.pactCopy || DEFAULT_PACT_COPY).valueColumn)}</th>` : ''}</tr></thead><tbody>${fieldRows}</tbody></table>`
     : '';
   const blocks = longFields
-    .map((/** @type {any} */ f) => {
+    .map((/** @type {FieldRow} */ f) => {
       const body = f.segments
         ? f.segments
-            .map((/** @type {any} */ s) => (s.type === 'added' ? `<ins>${esc(s.text)}</ins>` : s.type === 'removed' ? `<del>${esc(s.text)}</del>` : esc(s.text)))
+            .map((/** @type {WordSegment} */ s) => (s.type === 'added' ? `<ins>${esc(s.text)}</ins>` : s.type === 'removed' ? `<del>${esc(s.text)}</del>` : esc(s.text)))
             .join(' ')
         : esc(f.now);
       return `<section class="textblock" data-changed="${f.changed}"><h3>${esc(f.label)}${f.changed ? ' <span class="muted">(changes marked)</span>' : ''}</h3><p>${body}</p></section>`;
@@ -592,9 +619,9 @@ export function renderDetail(detail, nowIso, options = {}) {
   const fields = table + blocks;
   const lists = detail.lists
     .map(
-      (/** @type {any} */ l) => `<section class="seance__list"><h3>${esc(l.label)} <span class="muted">(${l.count} on page)</span></h3><ul>${l.items
+      (/** @type {ListView} */ l) => `<section class="seance__list"><h3>${esc(l.label)} <span class="muted">(${l.count} on page)</span></h3><ul>${l.items
         .slice(0, 12)
-        .map((/** @type {any} */ i) => `<li data-new="${i.isNew}">${i.isNew ? '<span class="new-tag">new</span>' : ''}${esc(i.description)}</li>`)
+        .map((/** @type {ListItem} */ i) => `<li data-new="${i.isNew}">${i.isNew ? '<span class="new-tag">new</span>' : ''}${esc(i.description)}</li>`)
         .join('')}</ul></section>`,
     )
     .join('');
@@ -602,7 +629,7 @@ export function renderDetail(detail, nowIso, options = {}) {
   const alerts = detail.alerts.length
     ? detail.alerts
         .map(
-          (/** @type {any} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div>${a.stealth ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>` : ''}<p>${esc(a.summary)}</p>${renderPactNote(a)}${renderReceipt(a.receipt)}${options.disputes ? renderRaiseButton({ ...a, watchId: detail.id, watchName: detail.name }) : ''}<p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
+          (/** @type {AlertView} */ a) => `<li class="log__item" data-acknowledged="${a.acknowledged}" data-severity="${esc(a.severity)}"><span class="sev" data-severity="${esc(a.severity)}">${esc(SEVERITY_WORDS[/** @type {keyof typeof SEVERITY_WORDS} */ (a.severity)])}</span><div>${a.stealth ? `<p class="stealth"><span class="stealth__tag">Bait and switch</span> ${esc(a.stealth)}</p>` : ''}<p>${esc(a.summary)}</p>${renderPactNote(a)}${renderReceipt(a.receipt)}${options.disputes ? renderRaiseButton({ ...a, watchId: detail.id, watchName: detail.name }) : ''}<p class="muted small">${esc(clockTime(a.createdAt))} · rule: ${esc(a.ruleLabel)}${a.letter ? ` · <a href="/outbox/${encodeURIComponent(a.letter)}.html" target="_blank" rel="noopener">letter</a>` : ''}</p></div></li>`,
         )
         .join('')
     : '<li class="muted">No alerts yet. The ghost has nothing to report.</li>';
@@ -634,14 +661,14 @@ ${lists}
 <section><h3>Haunting log</h3><ul class="log">${alerts}</ul></section>`;
 }
 
-/** One line above the stones that says what the reader is looking at. @param {any} state */
+/** One line above the stones that says what the reader is looking at. @param {DashboardState} state */
 export function renderIntro(state) {
   const thing = state.app.motif === 'house' ? 'house' : 'stone';
   const pact = state.app.pacts ? '; its pact keeps what the page said on the day you signed up' : '';
   return `Each ${thing} watches one page. Its ghost wakes only for changes that matter${pact}.`;
 }
 
-/** Full first paint, rendered on the server. @param {any} state @param {{ css: string; theme: Record<string, string>; demo?: boolean }} assets */
+/** Full first paint, rendered on the server. @param {DashboardState} state @param {{ css: string; theme: Record<string, string>; demo?: boolean }} assets */
 export function renderPage(state, assets) {
   const themeVars = Object.entries(assets.theme)
     .map(([k, v]) => `--${k}:${esc(v)};`)
@@ -682,7 +709,7 @@ export function renderPage(state, assets) {
   </div>
 </header>
 <a class="night-banner" href="#feed-title" id="night-banner" hidden></a>
-<a class="feed-pill" href="#feed-title" id="feed-pill">${esc(state.app.feedName || 'Spirit mail')} <span id="feed-pill-count">${state.feed.filter((/** @type {any} */ e) => !e.acknowledged).length}</span></a>
+<a class="feed-pill" href="#feed-title" id="feed-pill">${esc(state.app.feedName || 'Spirit mail')} <span id="feed-pill-count">${state.feed.filter((/** @type {PastEntry} */ e) => !e.acknowledged).length}</span></a>
 <main class="layout">
   <div class="crypt">
     <p class="crypt__intro" id="crypt-intro">${renderIntro(state)}</p>
