@@ -9,7 +9,7 @@
 | Lines Kiro added | 11,141 (calls 3 to 14; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
 | Tests Kiro added | 267 Vitest and 29 Playwright (suite counts before and after each call) |
 | MCP calls | 24 (context7; calls 8 to 14), each with its arguments in the transcript |
-| Hand changes to Kiro's code | 2: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; and Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into |
+| Hand changes to Kiro's code | 3: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into; and the static site's verify page, fixed after call 14 to load the replay shim and read the snapshot its link names, so it works with no server (12 lines added, 2 removed) |
 <!-- kiro-numbers:end -->
 
 ## Kiro features at a glance

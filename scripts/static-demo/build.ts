@@ -283,7 +283,10 @@ try {
   await write('ui/style.css', css);
   const verify = await call('GET', '/verify');
   if (verify.status !== 200) throw new Error(`The demo did not serve the verify page (${verify.status})`);
-  await write('verify.html', portable(verify.text));
+  // The verify page reads the pact's snapshot from /api, which only the replay shim can answer here.
+  const verifyScript = '<script type="module" src="/ui/verify.js">';
+  if (!verify.text.includes(verifyScript)) throw new Error('the verify page no longer loads /ui/verify.js');
+  await write('verify.html', portable(verify.text).replace(verifyScript, `<script type="module" src="/ui/shim.js"></script>\n${verifyScript}`));
   for (const name of ['app.js', 'render.js', 'verify.js', 'verify-core.js']) await write(`ui/${name}`, (await call('GET', `/ui/${name}`)).text);
   for (const font of css.matchAll(/url\('\/ui\/fonts\/([\w-]+\.woff2)'\)/g)) {
     const response = await fetch(`${origin}/ui/fonts/${font[1]}`);

@@ -19,7 +19,14 @@ window.fetch = async (input, init) => {
   if (url.origin !== location.origin || !url.pathname.startsWith('/api/')) return realFetch(input, init);
   const snapshot = /^\/api\/ghosts\/([a-z0-9-]+)\/pact\/snapshot$/.exec(url.pathname);
   if (snapshot) {
-    // The recorded pact names the current hash; the build saved that snapshot's exact bytes under it.
+    // The verify page names the hash it expects. Each recorded stop sealed its own copy of the demo
+    // pact, and the build saved each snapshot's exact bytes under its SHA-256, so try that one first.
+    const wanted = new URLSearchParams(location.search).get('sha256') ?? '';
+    if (/^[0-9a-f]{64}$/.test(wanted)) {
+      const saved = await realFetch(`/pact-files/${snapshot[1]}/${wanted}.json`);
+      if (saved.ok) return saved;
+    }
+    // Otherwise the recorded pact names the current hash; the build saved that snapshot's bytes under it.
     const { body } = await (await replay).handle('GET', `/api/ghosts/${snapshot[1]}/pact`);
     const sha256 = body && body.pact && body.pact.sha256;
     return sha256 ? realFetch(`/pact-files/${snapshot[1]}/${sha256}.json`) : new Response('{"error":"No readable pact"}', { status: 404 });
