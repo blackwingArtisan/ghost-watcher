@@ -2,6 +2,12 @@
 
 ## 2026-11-22
 
+- **The ghost testifies, by Kiro (call 14).** A `/verify` page recomputes a pact's SHA-256 in the
+  browser and says whether it matches, linked from every dispute pack. Kiro also closed the last open
+  tasks of the skeleton spec, including a guard that stops any Vitest test from fetching beyond this
+  machine.
+- **A faster static build.** Stops that show the same thing share one recording: 41 stops in under
+  six minutes, where the build had not finished the third night after nine.
 - **Slow drift and the bonus clock, by Kiro (call 13).** Fernwick, a fifth Bonus Crypt page, trims
   its bonus in steps too small to wake the ghost; on the third night the pact flags the whole drift.
   A bonus clock counts the days left, flags "Bonus due, not posted" with a letter, and a weekly

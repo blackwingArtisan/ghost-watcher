@@ -3,12 +3,12 @@
 <!-- kiro-numbers:start -->
 | Kiro, by the numbers | |
 | --- | --- |
-| `kiro-cli` calls | 13 (calls 1 to 13), each with an explicit list of trusted tools, never `--trust-all-tools` |
-| Time in Kiro | 141 minutes (calls 3 to 13; calls 1 and 2 were timed only roughly, about 15 minutes together) |
-| Credits | 252.66 (calls 3 to 13, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
-| Lines Kiro added | 9,991 (calls 3 to 13; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
-| Tests Kiro added | 247 Vitest and 23 Playwright (suite counts before and after each call) |
-| MCP calls | 22 (context7; calls 8 to 12), each with its arguments in the transcript |
+| `kiro-cli` calls | 14 (calls 1 to 14), each with an explicit list of trusted tools, never `--trust-all-tools` |
+| Time in Kiro | 161 minutes (calls 3 to 14; calls 1 and 2 were timed only roughly, about 15 minutes together) |
+| Credits | 280.12 (calls 3 to 14, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
+| Lines Kiro added | 11,141 (calls 3 to 14; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
+| Tests Kiro added | 267 Vitest and 29 Playwright (suite counts before and after each call) |
+| MCP calls | 24 (context7; calls 8 to 14), each with its arguments in the transcript |
 | Hand changes to Kiro's code | 2: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; and Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into |
 <!-- kiro-numbers:end -->
 
@@ -16,7 +16,7 @@
 
 | Feature | Where | Evidence |
 | --- | --- | --- |
-| Specs | `.kiro/specs/ghost-watcher-kit/` (the skeleton), `.kiro/specs/seal-the-pact/` (the headline feature) and `.kiro/specs/lease-pact/` (the same pact for a lease) | Kiro wrote all three: [call 2](#call-2-spec-generation-three-files-written), [session 2](docs/kiro-sessions/session-2-seal-the-pact-spec.md), [session 8](docs/kiro-sessions/session-8-lease-pact.md); requirement 12 added in [session 6](docs/kiro-sessions/session-6-pact-copy.md), requirement 13 in [session 9](docs/kiro-sessions/session-9-seal-ceremony.md), requirements 14 and 15 in [session 10](docs/kiro-sessions/session-10-drift-clock.md) |
+| Specs | `.kiro/specs/ghost-watcher-kit/` (the skeleton), `.kiro/specs/seal-the-pact/` (the headline feature) and `.kiro/specs/lease-pact/` (the same pact for a lease) | Kiro wrote all three: [call 2](#call-2-spec-generation-three-files-written), [session 2](docs/kiro-sessions/session-2-seal-the-pact-spec.md), [session 8](docs/kiro-sessions/session-8-lease-pact.md); requirement 12 added in [session 6](docs/kiro-sessions/session-6-pact-copy.md), requirement 13 in [session 9](docs/kiro-sessions/session-9-seal-ceremony.md), requirements 14 and 15 in [session 10](docs/kiro-sessions/session-10-drift-clock.md), requirement 16 and the last open skeleton tasks in [session 11](docs/kiro-sessions/session-11-verify-kit.md) |
 | Steering | `.kiro/steering/`: `product.md`, `structure.md`, `tech.md` (always), `testing.md` and `pact.md` (scoped with `fileMatch`) | The scoped files were written by Kiro in [session 5](docs/kiro-sessions/session-5-test-clock.md) and [session 6](docs/kiro-sessions/session-6-pact-copy.md) after it checked the front matter with context7 |
 | Hooks | `.kiro/hooks/test-on-save.json`, `full-suite-on-stop.json` | The Stop hook ran the full suite after call 3 and caught a stale assertion that Kiro fixed ([call 3 follow-up](#follow-up-after-the-stop-hooks-full-suite-run)) |
 | Agent hook | `.kiro/hooks/money-guard.json` restates the integer-cents rule when money code is saved | Written by Kiro in [call 3](#call-3-spec-review-money-and-contact-url-kiro-cli-v3) |
@@ -307,7 +307,8 @@ running Playwright afterwards are shortened to `[...]`.
 ### Not done
 
 - Section 21 tasks 21.3 to 21.11 are recorded but not built; they are gaps found in review, outside
-  the two requested implementation tasks. Task 19.4 stays open until 21.6 is done.
+  the two requested implementation tasks. Task 19.4 stays open until 21.6 is done. All of them were built
+  and checked in call 14 ([session 11](docs/kiro-sessions/session-11-verify-kit.md)).
 - The README screenshots in `docs/` were not regenerated.
 - Verified at the end of this pass: `npm run typecheck` and `npm run test:unit` pass.
 
@@ -369,4 +370,5 @@ the full suite before every commit and from a fresh clone before every push.
 | 11: lease pact | Spec-driven (7 requirements, 61 criteria, 9 tasks): made the pact a template feature with per-app vocabulary and added the Larkspur Flats lease pact to Haunted Listings, with its landlord letters | 13.9 min | 36.40 | 1,191 | 2 | [session 8](docs/kiro-sessions/session-8-lease-pact.md) |
 | 12: seal ceremony | Spec-driven (requirement 13, 24 criteria, tasks 40 to 48): the wax-seal ceremony, an unsealed demo stone, the seal in the static recording, and the ceremony and dispute-pack media scenes | 15.4 min | 33.37 | 700 | 4 | [session 9](docs/kiro-sessions/session-9-seal-ceremony.md) |
 | 13: drift and clock | Spec-driven (requirements 14 and 15, tasks 49 to 56): the Fernwick slow-drift fixture and pact shriek, the bonus clock with its due letter and posted mark, and the weekly digest; no context7 tools were listed in this session | 14.0 min | 22.19 | 600 | 0 | [session 10](docs/kiro-sessions/session-10-drift-clock.md) |
+| 14: verify and kit | Spec-driven (requirement 16, 23 criteria): the /verify page that rechecks a pact's SHA-256 in the browser; then the open ghost-watcher-kit tasks 19.4 and 21.3 to 21.11, including a loopback-only fetch guard for every Vitest test | 19.6 min | 27.46 | 1,150 | 2 | [session 11](docs/kiro-sessions/session-11-verify-kit.md) |
 <!-- kiro-calls:end -->

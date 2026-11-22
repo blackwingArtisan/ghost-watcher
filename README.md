@@ -43,7 +43,7 @@ Crypt and Haunted Listings), each a single `app.ts` on the shared skeleton.
 | Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code. [`.kiro/specs/seal-the-pact/`](.kiro/specs/seal-the-pact/): the headline feature, specced and then built by Kiro. [`.kiro/specs/lease-pact/`](.kiro/specs/lease-pact/): the same pact for a lease in Haunted Listings, specced and built by Kiro |
 | Steering and hooks | [`.kiro/steering/`](.kiro/steering/) (always included) and [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and Kiro's `money-guard` agent hook |
 | Who wrote what | [KIRO-LOG.md](KIRO-LOG.md#who-wrote-what) |
-| Tests | `npm test`: type-check, 444 Vitest tests and 40 Playwright tests, all against `127.0.0.1` |
+| Tests | `npm test`: type-check, 464 Vitest tests and 45 Playwright tests, all against `127.0.0.1` |
 
 ### Try it in 60 seconds
 
@@ -89,7 +89,9 @@ days, so the first night already reads "Oct 10, the day you applied" against "No
 now" (the date depends on the day you run it), and the demo pact links a copy kept by the local stand-in
 Wayback Machine, dated on the pact date (the real Internet Archive cannot back-date a copy). One
 stone, Bramblewick, starts with no pact, so you can seal one yourself: the ghost stamps a red wax
-seal and shows the full hash, on the live site too.
+seal and shows the full hash, on the live site too. Anyone can check that hash later: the dispute
+pack's **Verify it** link opens a page that recomputes the SHA-256 in the browser and says whether it
+matches the pact.
 
 ![Bramblewick just after "I applied today": a red wax seal with the ghost crest under the Pact sealed badge, the date and the full SHA-256 of the page as it read that day](docs/seal-ceremony.png)
 
@@ -177,12 +179,12 @@ features were written against Kiro's spec with another AI coding assistant.
 <!-- kiro-numbers:start -->
 | Kiro, by the numbers | |
 | --- | --- |
-| `kiro-cli` calls | 13 (calls 1 to 13), each with an explicit list of trusted tools, never `--trust-all-tools` |
-| Time in Kiro | 141 minutes (calls 3 to 13; calls 1 and 2 were timed only roughly, about 15 minutes together) |
-| Credits | 252.66 (calls 3 to 13, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
-| Lines Kiro added | 9,991 (calls 3 to 13; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
-| Tests Kiro added | 247 Vitest and 23 Playwright (suite counts before and after each call) |
-| MCP calls | 22 (context7; calls 8 to 12), each with its arguments in the transcript |
+| `kiro-cli` calls | 14 (calls 1 to 14), each with an explicit list of trusted tools, never `--trust-all-tools` |
+| Time in Kiro | 161 minutes (calls 3 to 14; calls 1 and 2 were timed only roughly, about 15 minutes together) |
+| Credits | 280.12 (calls 3 to 14, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
+| Lines Kiro added | 11,141 (calls 3 to 14; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
+| Tests Kiro added | 267 Vitest and 29 Playwright (suite counts before and after each call) |
+| MCP calls | 24 (context7; calls 8 to 14), each with its arguments in the transcript |
 | Hand changes to Kiro's code | 2: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; and Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into |
 <!-- kiro-numbers:end -->
 
