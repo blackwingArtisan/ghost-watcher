@@ -1,5 +1,7 @@
 # Ghost Watcher
 
+**Live demo: [ghost-watcher.pages.dev](https://ghost-watcher.pages.dev/)** (a static recording of the Bonus Crypt; press **Let a night pass**)
+
 **Banks edit the fine print at night. Ghost Watcher keeps the receipts.**
 
 **Bonus never paid? Show the bank its own terms from the day you applied.** Ghost Watcher watches the
@@ -46,7 +48,7 @@ Everything runs on your machine against an invented bank site. No accounts, keys
 Without `?night=1`, click **Let a night pass** (or press <kbd>N</kbd>); **Rewind to calm** starts
 over. `npm run listing` opens Haunted Listings on port 3132.
 
-The live site is a static recording of this demo (`npm run build:static`), so it watches no real
+The [live site](https://ghost-watcher.pages.dev/) is a static recording of this demo (`npm run build:static`), so it watches no real
 pages; watching real pages needs the Node server (`npm run bonus`).
 
 ## What one night looks like (demo data, invented banks)
