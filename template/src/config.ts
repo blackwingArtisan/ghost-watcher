@@ -4,6 +4,9 @@
  *
  *   GHOST_DATA_DIR         where local data lives (default ./.ghost-data)
  *   GHOST_STORE            file (default) | memory | s3      (s3 needs GHOST_S3_BUCKET)
+ *   GHOST_PACT_BUCKET      with s3: a bucket with S3 Object Lock where pacts are written (COMPLIANCE mode)
+ *   GHOST_PACT_PREFIX      key prefix in that bucket (default: the store prefix)
+ *   GHOST_PACT_RETENTION_DAYS  days a sealed pact stays locked (default 365)
  *   GHOST_ALERTS           outbox (default) | console | ses | webhook, comma-separated (ses needs
  *                          GHOST_SES_FROM; webhook needs GHOST_WEBHOOK_URL)
  *   GHOST_WEBHOOK_URL      where webhook alerts go: an ntfy topic URL, a Discord or Slack webhook, or
@@ -69,7 +72,7 @@ function int(env: Env, name: string, fallback: number): number {
   return value;
 }
 
-async function makeBlobStore(env: Env, app: GhostApp, dataDir: string, clients: CloudClients): Promise<{ blobs: BlobStore; label: string }> {
+async function makeBlobStore(env: Env, app: GhostApp, dataDir: string, clients: CloudClients, clock: Clock): Promise<{ blobs: BlobStore; label: string }> {
   const kind = env.GHOST_STORE ?? 'file';
   switch (kind) {
     case 'file': {
@@ -84,9 +87,23 @@ async function makeBlobStore(env: Env, app: GhostApp, dataDir: string, clients: 
       if (!bucket) throw new ConfigError('GHOST_STORE=s3 needs GHOST_S3_BUCKET.');
       const { S3BlobStore } = await import('./store/s3');
       const prefix = env.GHOST_S3_PREFIX ?? `ghost-watcher/${app.id}/`;
+      const plain = new S3BlobStore({ bucket, prefix, clientConfig: env.AWS_REGION ? { region: env.AWS_REGION } : {}, ...(clients.s3 ? { client: clients.s3 } : {}) });
+      const pactBucket = env.GHOST_PACT_BUCKET?.trim();
+      if (!pactBucket) return { blobs: plain, label: `s3 (s3://${bucket}/${prefix})` };
+      const days = int(env, 'GHOST_PACT_RETENTION_DAYS', 365);
+      if (!Number.isInteger(days) || days < 1) throw new ConfigError(`GHOST_PACT_RETENTION_DAYS must be a whole number of days, at least 1, got "${env.GHOST_PACT_RETENTION_DAYS}".`);
+      const { S3ObjectLockBlobStore, PactRoutingBlobStore } = await import('./store/s3-lock');
+      const locked = new S3ObjectLockBlobStore({
+        bucket: pactBucket,
+        prefix: env.GHOST_PACT_PREFIX ?? prefix,
+        retentionDays: days,
+        clock,
+        ...(env.AWS_REGION ? { region: env.AWS_REGION } : {}),
+        ...(clients.s3Lock ? { clientFactory: () => clients.s3Lock as S3Like } : {}),
+      });
       return {
-        blobs: new S3BlobStore({ bucket, prefix, clientConfig: env.AWS_REGION ? { region: env.AWS_REGION } : {}, ...(clients.s3 ? { client: clients.s3 } : {}) }),
-        label: `s3 (s3://${bucket}/${prefix})`,
+        blobs: new PactRoutingBlobStore(plain, locked),
+        label: `s3 (s3://${bucket}/${prefix}), pacts locked in s3://${pactBucket} for ${days} days`,
       };
     }
     default:
@@ -228,6 +245,8 @@ export function visitsThirdParty(url: string): boolean {
 /** Cloud clients a caller may supply instead of the real AWS SDK ones. Tests pass fakes here. */
 export interface CloudClients {
   s3?: S3Like;
+  /** Client for the Object Lock pact bucket. */
+  s3Lock?: S3Like;
   ses?: SesLike;
 }
 
@@ -285,7 +304,7 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
       minHostGapMs: int(env, 'GHOST_HOST_GAP_MS', 1000),
       timeoutMs: int(env, 'GHOST_TIMEOUT_MS', 15_000),
     });
-  const { blobs, label: storeLabel } = await makeBlobStore(env, app, dataDir, options.clients ?? {});
+  const { blobs, label: storeLabel } = await makeBlobStore(env, app, dataDir, options.clients ?? {}, clock);
   const store = new GhostStore(blobs);
   // Pages a reader sealed in an earlier run come back as ghosts. The list is a copy, so `baseApp` is never touched.
   const known = new Set(app.watches.map((w) => w.id));

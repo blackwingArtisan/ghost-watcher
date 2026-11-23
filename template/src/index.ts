@@ -91,7 +91,7 @@ export {
 export { sealPact, breakPact, seedDemoPacts, type DatedArchiver, type SealDeps, type SealOptions, type SealResult } from './sealing';
 export { Runner, backoffMs, nextEligibleAt, type CheckResult, type CheckOptions } from './runner';
 export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } from './app';
-export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env } from './config';
+export { loadDeps, ConfigError, isPlaceholderContact, isReservedHost, visitsThirdParty, type GhostDeps, type Env, type CloudClients, type LoadOptions } from './config';
 export { createDashboardServer, listen, type DashboardOptions } from './server';
 export { checkRequest, allowedHostSet, parseHostList, hostnameOf, LOOPBACK_HOSTS, type GuardVerdict } from './guard';
 export { dashboardState, forDashboard, ghostDetail, ghostView, sortFeed, letterRank, ROUND_GAP_MS, type DashboardState, type GhostView, type GhostDetail, type PactView } from './view';
@@ -99,6 +99,7 @@ export { runCli, parseFlags, describeResult, type CliOptions } from './cli';
 // Cloud adapters (opt-in). Importing them loads the AWS SDK, so they are exported from their own paths
 // in `config.ts` and here only as types.
 export type { S3BlobStore } from './store/s3';
+export type { S3ObjectLockBlobStore, PactRoutingBlobStore, PactLockError, S3ObjectLockBlobStoreOptions } from './store/s3-lock';
 export type { SesEmailAlertSink } from './alerts/ses';
 export { WebhookAlertSink, buildWebhookRequest, compactText, detectWebhookFormat, type WebhookFormat, type WebhookRequest } from './alerts/webhook';
 export {

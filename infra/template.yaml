@@ -1,0 +1,212 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Ghost Watcher nightly check. EventBridge Scheduler invokes one Lambda function a night; sealed pacts go to an S3 Object Lock bucket in compliance mode.
+
+Parameters:
+  AppName:
+    Type: String
+    Default: bonus-watch
+    AllowedValues:
+      - bonus-watch
+      - listing-watch
+  ContactUrl:
+    Type: String
+    Description: A page a site operator can visit. Sent in the User-Agent. Required for real sites.
+  PactRetentionDays:
+    Type: Number
+    Default: 365
+    MinValue: 1
+    Description: Days a sealed pact stays locked in compliance mode. Nobody can shorten or remove it.
+  AlertSinks:
+    Type: String
+    Default: ses
+    AllowedValues:
+      - ses
+      - webhook
+  SesIdentity:
+    Type: String
+    Default: alerts.example.com
+    Description: The verified SES identity (domain or address) that sends alert email.
+  SesFrom:
+    Type: String
+    Default: alerts@example.com
+  WebhookUrl:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Used only when AlertSinks is webhook. May contain a secret token.
+
+Resources:
+  DataBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  PactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      ObjectLockEnabled: true
+      ObjectLockConfiguration:
+        ObjectLockEnabled: Enabled
+        Rule:
+          DefaultRetention:
+            Mode: COMPLIANCE
+            Days: !Ref PactRetentionDays
+      VersioningConfiguration:
+        Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  CheckLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 14
+
+  CheckFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: ghost-watcher-nightly
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: WriteOwnLogs
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub '${CheckLogGroup.Arn}:*'
+              - Sid: SnapshotsRead
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt DataBucket.Arn
+              - Sid: SnapshotsReadWrite
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource: !Sub '${DataBucket.Arn}/*'
+              - Sid: PactsList
+                Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt PactBucket.Arn
+              - Sid: PactsWriteOnce
+                Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:PutObjectRetention
+                Resource: !Sub '${PactBucket.Arn}/*'
+              - Sid: SendAlertEmail
+                Effect: Allow
+                Action:
+                  - ses:SendEmail
+                Resource: !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${SesIdentity}'
+
+  CheckFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: false
+        Target: es2022
+        Sourcemap: false
+        EntryPoints:
+          - handler.ts
+    Properties:
+      CodeUri: .
+      Handler: handler.handler
+      Runtime: nodejs20.x
+      Architectures:
+        - arm64
+      MemorySize: 256
+      Timeout: 300
+      ReservedConcurrentExecutions: 1
+      Role: !GetAtt CheckFunctionRole.Arn
+      LoggingConfig:
+        LogGroup: !Ref CheckLogGroup
+      Environment:
+        Variables:
+          GHOST_APP: !Ref AppName
+          GHOST_STORE: s3
+          GHOST_S3_BUCKET: !Ref DataBucket
+          GHOST_PACT_BUCKET: !Ref PactBucket
+          GHOST_PACT_RETENTION_DAYS: !Ref PactRetentionDays
+          GHOST_ALERTS: !Ref AlertSinks
+          GHOST_SES_FROM: !Ref SesFrom
+          GHOST_WEBHOOK_URL: !Ref WebhookUrl
+          GHOST_CONTACT_URL: !Ref ContactUrl
+          GHOST_DATA_DIR: /tmp/ghost-data
+
+  SchedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: scheduler.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: invoke-check-function
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource: !GetAtt CheckFunction.Arn
+
+  NightlySchedule:
+    Type: AWS::Scheduler::Schedule
+    Properties:
+      Description: Run one Ghost Watcher check pass a night.
+      ScheduleExpression: cron(0 7 * * ? *)
+      ScheduleExpressionTimezone: UTC
+      State: ENABLED
+      FlexibleTimeWindow:
+        Mode: 'OFF'
+      Target:
+        Arn: !GetAtt CheckFunction.Arn
+        RoleArn: !GetAtt SchedulerRole.Arn
+        RetryPolicy:
+          MaximumRetryAttempts: 1
+          MaximumEventAgeInSeconds: 3600
+
+Outputs:
+  PactBucketName:
+    Value: !Ref PactBucket
+  DataBucketName:
+    Value: !Ref DataBucket
+  CheckFunctionName:
+    Value: !Ref CheckFunction
