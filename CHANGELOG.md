@@ -2,6 +2,11 @@
 
 ## 2026-11-22
 
+- **Nightly on AWS, by Kiro (call 16), not deployed.** A spec, a Lambda handler for the nightly
+  check, a SAM template with an EventBridge Scheduler schedule, and an S3 Object Lock adapter that
+  keeps each sealed pact snapshot in compliance mode. Everything is tested against fake clients; no
+  AWS command was run. A follow-up hand change locks only the hash-named snapshots, so the posted
+  mark, a replacement and a broken pact still work on the locked bucket.
 - **Seal any page, by Kiro (call 15).** Paste a public address or press the "Seal this page"
   bookmarklet: the ghost reads it once through robots.txt, seals its readable text and watches it.
   Pages that render only in the browser are refused plainly; added pages survive a restart.

@@ -22,7 +22,7 @@ The fastest look: `npm install && npm run bonus`, open http://127.0.0.1:3130/?ni
 
 | Claim | Evidence |
 | --- | --- |
-| Tested end to end | `npm test`: type-check, 493 Vitest tests, 52 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
+| Tested end to end | `npm test`: type-check, 519 Vitest tests, 52 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
 | Fewer false alarms, measured | `npm run noise`: 12 alerts, none false, none missed, against 115 (103 false) from a whole-page watcher on the same responses; pinned by `template/test/noise.test.ts` |
 | Measured on real pages | Three public bank bonus pages through 35 Wayback copies: 29 alerts from a whole-page watcher, 10 from Ghost Watcher, including a $300 to $200 bonus cut and a terms change under an unchanged headline ([docs/real-pages.md](docs/real-pages.md#result-november-2026), built by Kiro in a vibe-coding session) |
 | Money is exact | Integer cents and BigInt-safe arithmetic in `template/src/normalize.ts`, tests in `template/test/money.test.ts` (built by Kiro) |
@@ -44,13 +44,13 @@ features at a glance and the who-wrote-what table.
 <!-- kiro-numbers:start -->
 | Kiro, by the numbers | |
 | --- | --- |
-| `kiro-cli` calls | 15 (calls 1 to 15), each with an explicit list of trusted tools, never `--trust-all-tools` |
-| Time in Kiro | 175 minutes (calls 3 to 15; calls 1 and 2 were timed only roughly, about 15 minutes together) |
-| Credits | 297.88 (calls 3 to 15, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
-| Lines Kiro added | 12,366 (calls 3 to 15; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
-| Tests Kiro added | 296 Vitest and 36 Playwright (suite counts before and after each call) |
+| `kiro-cli` calls | 16 (calls 1 to 16), each with an explicit list of trusted tools, never `--trust-all-tools` |
+| Time in Kiro | 201 minutes (calls 3 to 16; calls 1 and 2 were timed only roughly, about 15 minutes together) |
+| Credits | 304.77 (calls 3 to 16, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
+| Lines Kiro added | 13,363 (calls 3 to 16; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
+| Tests Kiro added | 321 Vitest and 36 Playwright (suite counts before and after each call) |
 | MCP calls | 28 (context7; calls 8 to 15), each with its arguments in the transcript |
-| Hand changes to Kiro's code | 3: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into; and the static site's verify page, fixed after call 14 to load the replay shim and read the snapshot its link names, so it works with no server (12 lines added, 2 removed) |
+| Hand changes to Kiro's code | 4: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into; the static site's verify page, fixed after call 14 to load the replay shim and read the snapshot its link names, so it works with no server (12 lines added, 2 removed); and the Object Lock router, narrowed after call 16 to lock only the hash-named pact snapshots so the posted mark, a replacement and a broken pact still work on the locked bucket (97 lines added, 39 removed, mostly tests and spec text) |
 <!-- kiro-numbers:end -->
 
 ## Design
@@ -74,6 +74,7 @@ features at a glance and the who-wrote-what table.
 | Proof anyone can check | The dispute pack's "Verify it" link opens `/verify`, which recomputes the pact's SHA-256 in the browser with `crypto.subtle` and shows "Matches the pact sealed <date>" or "Does not match" (`template/src/ui/verify-core.js`, `e2e/verify.spec.ts`) |
 | Seal any page, no code | Paste an address or press the bookmarklet: the ghost reads the page once through robots.txt, seals its readable text and watches it; browser-rendered pages are refused plainly (`.kiro/specs/seal-any-page/`, `template/src/readable.ts`, `e2e/sealing-any-page.spec.ts`) |
 | One pact, any promise | An app's pact vocabulary sets the button, letters and authority line: Haunted Listings seals a lease with "I signed the lease" and writes the landlord letter (`template/src/pact-vocabulary.ts`, `apps/listing-watch/test/lease-pact.test.ts`, `e2e/lease-pact.spec.ts`) |
+| Nightly on AWS, ready but not deployed | One Lambda on an EventBridge Scheduler schedule runs the nightly check; sealed pact snapshots go to an S3 Object Lock bucket in compliance mode, so nobody can alter them before their retain-until date. Built and tested against fake clients only; the SAM template has never been deployed (`.kiro/specs/nightly-on-aws/`, `infra/`, `template/src/store/s3-lock.ts`) |
 | What general watchers do not do | Comparison with changedetection.io, Visualping, Distill and the bonus-hunting community ([README](README.md#why-not-what-you-already-use)) |
 
 ## Presentation

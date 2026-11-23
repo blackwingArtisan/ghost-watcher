@@ -3,20 +3,20 @@
 <!-- kiro-numbers:start -->
 | Kiro, by the numbers | |
 | --- | --- |
-| `kiro-cli` calls | 15 (calls 1 to 15), each with an explicit list of trusted tools, never `--trust-all-tools` |
-| Time in Kiro | 175 minutes (calls 3 to 15; calls 1 and 2 were timed only roughly, about 15 minutes together) |
-| Credits | 297.88 (calls 3 to 15, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
-| Lines Kiro added | 12,366 (calls 3 to 15; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
-| Tests Kiro added | 296 Vitest and 36 Playwright (suite counts before and after each call) |
+| `kiro-cli` calls | 16 (calls 1 to 16), each with an explicit list of trusted tools, never `--trust-all-tools` |
+| Time in Kiro | 201 minutes (calls 3 to 16; calls 1 and 2 were timed only roughly, about 15 minutes together) |
+| Credits | 304.77 (calls 3 to 16, read with `/usage` before and after each call; calls 1 and 2 were not recorded) |
+| Lines Kiro added | 13,363 (calls 3 to 16; `git show --numstat` on Kiro's commits, transcripts and `KIRO-LOG.md` excluded) |
+| Tests Kiro added | 321 Vitest and 36 Playwright (suite counts before and after each call) |
 | MCP calls | 28 (context7; calls 8 to 15), each with its arguments in the transcript |
-| Hand changes to Kiro's code | 3: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into; and the static site's verify page, fixed after call 14 to load the replay shim and read the snapshot its link names, so it works with no server (12 lines added, 2 removed) |
+| Hand changes to Kiro's code | 4: a date assumption in a Kiro-written test, loosened after call 7 (5 lines added, 2 removed) before Kiro fixed the cause in call 8; Kiro's agent test, widened after call 10 to accept the format kiro-cli 3.5 rewrites agent files into; the static site's verify page, fixed after call 14 to load the replay shim and read the snapshot its link names, so it works with no server (12 lines added, 2 removed); and the Object Lock router, narrowed after call 16 to lock only the hash-named pact snapshots so the posted mark, a replacement and a broken pact still work on the locked bucket (97 lines added, 39 removed, mostly tests and spec text) |
 <!-- kiro-numbers:end -->
 
 ## Kiro features at a glance
 
 | Feature | Where | Evidence |
 | --- | --- | --- |
-| Specs | `.kiro/specs/ghost-watcher-kit/` (the skeleton), `.kiro/specs/seal-the-pact/` (the headline feature), `.kiro/specs/lease-pact/` (the same pact for a lease) and `.kiro/specs/seal-any-page/` (sealing any public page) | Kiro wrote all four: [call 2](#call-2-spec-generation-three-files-written), [session 2](docs/kiro-sessions/session-2-seal-the-pact-spec.md), [session 8](docs/kiro-sessions/session-8-lease-pact.md), [session 12](docs/kiro-sessions/session-12-seal-any-page.md); requirement 12 added in [session 6](docs/kiro-sessions/session-6-pact-copy.md), requirement 13 in [session 9](docs/kiro-sessions/session-9-seal-ceremony.md), requirements 14 and 15 in [session 10](docs/kiro-sessions/session-10-drift-clock.md), requirement 16 and the last open skeleton tasks in [session 11](docs/kiro-sessions/session-11-verify-kit.md) |
+| Specs | `.kiro/specs/ghost-watcher-kit/` (the skeleton), `.kiro/specs/seal-the-pact/` (the headline feature), `.kiro/specs/lease-pact/` (the same pact for a lease) `.kiro/specs/seal-any-page/` (sealing any public page) and `.kiro/specs/nightly-on-aws/` (the nightly check on AWS, built against fakes, not deployed) | Kiro wrote all five: [call 2](#call-2-spec-generation-three-files-written), [session 2](docs/kiro-sessions/session-2-seal-the-pact-spec.md), [session 8](docs/kiro-sessions/session-8-lease-pact.md), [session 12](docs/kiro-sessions/session-12-seal-any-page.md), [session 13](docs/kiro-sessions/session-13-aws-kit.md); requirement 12 added in [session 6](docs/kiro-sessions/session-6-pact-copy.md), requirement 13 in [session 9](docs/kiro-sessions/session-9-seal-ceremony.md), requirements 14 and 15 in [session 10](docs/kiro-sessions/session-10-drift-clock.md), requirement 16 and the last open skeleton tasks in [session 11](docs/kiro-sessions/session-11-verify-kit.md) |
 | Steering | `.kiro/steering/`: `product.md`, `structure.md`, `tech.md` (always), `testing.md` and `pact.md` (scoped with `fileMatch`) | The scoped files were written by Kiro in [session 5](docs/kiro-sessions/session-5-test-clock.md) and [session 6](docs/kiro-sessions/session-6-pact-copy.md) after it checked the front matter with context7 |
 | Hooks | `.kiro/hooks/test-on-save.json`, `full-suite-on-stop.json` | The Stop hook ran the full suite after call 3 and caught a stale assertion that Kiro fixed ([call 3 follow-up](#follow-up-after-the-stop-hooks-full-suite-run)) |
 | Agent hook | `.kiro/hooks/money-guard.json` restates the integer-cents rule when money code is saved | Written by Kiro in [call 3](#call-3-spec-review-money-and-contact-url-kiro-cli-v3) |
@@ -372,4 +372,5 @@ the full suite before every commit and from a fresh clone before every push.
 | 13: drift and clock | Spec-driven (requirements 14 and 15, tasks 49 to 56): the Fernwick slow-drift fixture and pact shriek, the bonus clock with its due letter and posted mark, and the weekly digest; no context7 tools were listed in this session | 14.0 min | 22.19 | 600 | 0 | [session 10](docs/kiro-sessions/session-10-drift-clock.md) |
 | 14: verify and kit | Spec-driven (requirement 16, 23 criteria): the /verify page that rechecks a pact's SHA-256 in the browser; then the open ghost-watcher-kit tasks 19.4 and 21.3 to 21.11, including a loopback-only fetch guard for every Vitest test | 19.6 min | 27.46 | 1,150 | 2 | [session 11](docs/kiro-sessions/session-11-verify-kit.md) |
 | 15: seal any page | Spec-driven (seal-any-page: 9 requirements, 46 criteria, 12 tasks): the Seal a page form and bookmarklet, readable-text extraction with cheerio, the plain refusal for pages that render in the browser, and added pages that survive a restart | 14.4 min | 17.76 | 1,225 | 4 | [session 12](docs/kiro-sessions/session-12-seal-any-page.md) |
+| 16: nightly on AWS | Spec-driven (nightly-on-aws: 5 requirements, 29 criteria, 7 tasks), built against fakes and never deployed: an S3 Object Lock adapter for sealed pacts, a Lambda handler for the nightly check, and a SAM template with an EventBridge Scheduler schedule; stopped by the 25-minute limit after its checks passed | 25.2 min | 6.89 | 997 | 0 | [session 13](docs/kiro-sessions/session-13-aws-kit.md) |
 <!-- kiro-calls:end -->
