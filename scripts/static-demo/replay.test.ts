@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { READ_ONLY_MESSAGE, createReplay } from './replay.js';
+import { READ_ONLY_MESSAGE, SEAL_PAGE_MESSAGE, createReplay } from './replay.js';
 
 const bodies: Record<string, unknown> = {
   s0: { app: { night: 0 }, generatedAt: '2026-11-01T00:00:00.000Z', ghosts: [] },
@@ -94,5 +94,12 @@ describe('static demo replay', () => {
     expect(await r.handle('GET', '/api/state')).toEqual({ status: 200, body: bodies.s0 });
     expect((await r.handle('POST', '/api/ghosts/bram/pact')).status).toBe(201);
     expect(await r.handle('POST', '/api/demo/fresh-pact')).toEqual({ status: 200, body: { state: 'none', removed: false } });
+  });
+
+  it('(ANY 8.1) the form on the static site is told plainly that sealing a new page needs the local server', async () => {
+    const r = replay();
+    expect(await r.handle('POST', '/api/pages')).toEqual({ status: 409, body: { code: 'read-only', error: SEAL_PAGE_MESSAGE } });
+    expect(SEAL_PAGE_MESSAGE).toContain('needs the local server');
+    expect((await r.handle('GET', '/api/pages')).status).toBe(405);
   });
 });

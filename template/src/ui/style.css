@@ -2573,3 +2573,32 @@ body[data-shriek='true'] .ghost[data-severity='shriek'][data-rising='true'] .gho
 .dispute__verify {
   margin: 12px 0 0;
 }
+
+/* Seal a page */
+.seal-page {
+  margin: 0 0 1.4rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--sky) 80%, #000);
+  color: var(--moon, #f3ecd2);
+}
+.seal-page h2 { margin: 0 0 .3rem; font-size: 1.15rem; }
+.seal-page label { display: block; margin: .6rem 0 .25rem; font-weight: 600; }
+.seal-page__row { display: flex; gap: .6rem; flex-wrap: wrap; }
+.seal-page__row input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: .6rem .75rem;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--moon, #f3ecd2) 55%, transparent);
+  background: #0b0a12;
+  color: #f3ecd2;
+  font: inherit;
+}
+.seal-page__row input:focus-visible,
+.seal-page__bookmarklet:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.seal-page__message { min-height: 1.4em; margin: .6rem 0 .4rem; overflow-wrap: anywhere; }
+.seal-page__message[data-kind="refused"] { color: #ffd4a8; }
+.seal-page__message[data-kind="sealed"] { color: var(--accent); }
+.seal-page__bookmarklet { color: var(--accent); text-decoration: underline; font-weight: 600; }

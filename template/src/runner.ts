@@ -6,7 +6,7 @@ import type { GhostApp } from './app';
 import type { Clock } from './clock';
 import { diff, isEmptyDiff, type Diff, type Snapshot } from './diff';
 import { extract, type Extraction } from './extract';
-import type { Fetcher } from './fetcher';
+import type { Fetcher, FetchOutcome } from './fetcher';
 import { buildPastTimeline, pastChangeCount, type HistorySource, type PastTimeline } from './history';
 import { pageFingerprint } from './noise';
 import { comparePact } from './pact';
@@ -57,6 +57,8 @@ export interface RunnerDeps {
 export interface CheckOptions {
   /** Skip the per-URL interval and error back-off (an explicit "check now"). robots.txt still applies. */
   force?: boolean;
+  /** A page already fetched for this watch (sealing a new page), used instead of fetching it again. */
+  outcome?: FetchOutcome;
 }
 
 /** Back-off after consecutive errors: 15 min, 30 min, 1 h ... capped at 24 h. */
@@ -118,7 +120,7 @@ export class Runner {
       };
     }
 
-    const outcome = await fetcher.fetchPage(watch.url);
+    const outcome = options.outcome ?? (await fetcher.fetchPage(watch.url));
     const attemptAt = outcome.fetchedAt;
     status.lastAttemptAt = attemptAt;
     status.checks += 1;

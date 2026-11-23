@@ -29,6 +29,7 @@ import type { GhostApp } from './app';
 import { systemClock, type Clock } from './clock';
 import { PoliteFetcher, buildUserAgent, type Fetcher } from './fetcher';
 import { WAYBACK_BASE, WaybackHistorySource, type HistorySource } from './history';
+import { loadAddedPages, pageWatch } from './pages';
 import { SavePageNowArchiver, type PageArchiver } from './receipts';
 import { ConsoleAlertSink, FanOutAlertSink, OutboxAlertSink } from './alerts/sinks';
 import { WEBHOOK_FORMATS, WebhookAlertSink, type WebhookFormat } from './alerts/webhook';
@@ -272,7 +273,7 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
     alertTo: env.GHOST_ALERT_TO ? env.GHOST_ALERT_TO.split(',').map((s) => s.trim()).filter(Boolean) : baseApp.alertTo,
     watches:
       intervalOverride === undefined || intervalOverride === ''
-        ? baseApp.watches
+        ? [...baseApp.watches]
         : baseApp.watches.map((w) => ({ ...w, intervalMs: int(env, 'GHOST_INTERVAL_MINUTES', 0) * 60_000 })),
   };
 
@@ -286,6 +287,9 @@ export async function loadDeps(baseApp: GhostApp, options: LoadOptions = {}): Pr
     });
   const { blobs, label: storeLabel } = await makeBlobStore(env, app, dataDir, options.clients ?? {});
   const store = new GhostStore(blobs);
+  // Pages a reader sealed in an earlier run come back as ghosts. The list is a copy, so `baseApp` is never touched.
+  const known = new Set(app.watches.map((w) => w.id));
+  for (const page of await loadAddedPages(blobs)) if (!known.has(page.id)) app.watches.push(pageWatch(page));
   const { sink, outbox, label: alertLabel } = await makeSink(env, dataDir, options.clients ?? {});
   const { history, label: historyLabel } = makeHistory(env, userAgent, Boolean(contactUrl));
   const { archive, label: receiptLabel } = makeArchive(env, userAgent, Boolean(contactUrl));

@@ -1,5 +1,5 @@
 // Dashboard client: keeps the graveyard live, opens séances, and sends "check now" and "lay to rest".
-import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderSealCeremony, renderStats, renderTally, shortHash } from './render.js';
+import { noiseSummary, renderDetail, renderDispute, renderFeed, renderGraveyard, renderSealCeremony, bookmarkletHref, sealPrefill, renderStats, renderTally, shortHash } from './render.js';
 
 /**
  * @typedef {import('./render.js').FeedEntry} FeedEntry
@@ -488,4 +488,60 @@ if (state.app.demo && freshPact) {
       if (response.ok) await refresh();
     }).catch(() => undefined);
   }
+}
+
+// Seal a page: paste an address, press "I applied today". The bookmarklet opens this page with `?seal=<address>`.
+const sealForm = /** @type {HTMLFormElement | null} */ (document.getElementById('seal-page-form'));
+if (sealForm) {
+  const input = /** @type {HTMLInputElement} */ ($('#seal-page-url'));
+  const button = /** @type {HTMLButtonElement} */ ($('#seal-page-button'));
+  const message = $('#seal-page-message');
+  const bookmarklet = document.getElementById('seal-page-bookmarklet');
+  if (bookmarklet) bookmarklet.setAttribute('href', bookmarkletHref(location.origin));
+  const prefill = sealPrefill(new URLSearchParams(location.search).get('seal'));
+  if (prefill) {
+    input.value = prefill;
+    button.focus();
+    message.textContent = 'Address filled in from the page you were on. Press "I applied today" to seal it.';
+  }
+  sealForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const url = input.value.trim();
+    if (!url) {
+      message.dataset.kind = 'refused';
+      message.textContent = 'Paste the address of the page first.';
+      input.focus();
+      return;
+    }
+    button.disabled = true;
+    delete message.dataset.kind;
+    message.textContent = 'The ghost is looking at the page...';
+    void (async () => {
+      try {
+        const response = await fetch('/api/pages', {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (response.ok) {
+          message.dataset.kind = 'sealed';
+          message.textContent = `Sealed: ${data.name}. The ghost will tell you when its words change.${data.archive && data.archive.note ? ` ${data.archive.note}` : ''}`;
+          input.value = '';
+          await refresh();
+          await openSeance(data.ghostId);
+        } else {
+          message.dataset.kind = 'refused';
+          message.dataset.code = data.code || '';
+          message.textContent = data.error || `The page could not be sealed (${response.status}).`;
+          if (data.code === 'page-exists' && data.ghostId) await openSeance(data.ghostId);
+        }
+      } catch (error) {
+        message.dataset.kind = 'refused';
+        message.textContent = `The dashboard could not be reached (${(error instanceof Error ? error.message : String(error)).slice(0, 80)}).`;
+      } finally {
+        button.disabled = false;
+      }
+    })();
+  });
 }

@@ -6,6 +6,7 @@ import * as cheerio from 'cheerio';
 import type { Cheerio, CheerioAPI } from 'cheerio';
 import type { AnyNode } from 'domhandler';
 import { normalizeValue, normalizeWhitespace, textOf, type MaybeValue } from './normalize';
+import { READABLE_SELECTOR, readableText } from './readable';
 import type { FieldKind, ListSpec, Watch } from './watch';
 
 export interface ListItem {
@@ -27,6 +28,11 @@ interface ReadSpec {
 }
 
 function readRaw($: CheerioAPI, scope: Cheerio<AnyNode>, spec: ReadSpec): string | null {
+  // `:readable` watches the page's whole readable text (see readable.ts) instead of one element.
+  if (spec.selector === READABLE_SELECTOR) {
+    const text = readableText($.html());
+    return text === '' ? null : text;
+  }
   const element = spec.selector === ':self' ? scope.first() : scope.find(spec.selector).first();
   if (element.length === 0) return null;
   let raw: string | undefined;

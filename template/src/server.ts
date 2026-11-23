@@ -12,6 +12,7 @@
  *   DELETE /api/ghosts/:id/pact         break the pact
  *   GET  /api/ghosts/:id/pact/snapshot  the stored snapshot bytes the pact's SHA-256 covers
  *   GET  /verify                        the verify page: recompute a SHA-256 in the browser
+ *   POST /api/pages                     seal any page: body `{"url":"https://..."}` adds a ghost and seals it
  *   POST /api/check-all                 check every watch now
  *   POST /api/demo/next-night           demo mode only: advance the fixture site, then check every watch
  *   POST /api/demo/rewind               demo mode only: back to the first sighting
@@ -32,6 +33,7 @@ import { allowedHostSet, checkRequest } from './guard';
 import { disputePack } from './dispute';
 import { bonusClockLetter, bonusClockView } from './bonus-clock';
 import { shownUrl } from './watch';
+import { sealAnyPage } from './pages';
 import { disputesEnabledFor, pactEnabledFor, resolvePactVocabulary } from './pact-vocabulary';
 import { breakPact, sealPact } from './sealing';
 import { dashboardState, forDashboard, ghostDetail, pactViewOf, pactViewOfReading } from './view';
@@ -76,6 +78,9 @@ function send(res: ServerResponse, status: number, body: string | Buffer, type: 
 
 /** Largest request body the pact routes accept. */
 export const MAX_JSON_BODY_BYTES = 1024;
+
+/** Largest body `POST /api/pages` accepts: one address. */
+export const MAX_PAGE_BODY_BYTES = 4096;
 
 /** The verify page may fetch a saved copy from an archive (https) or from a local stand-in. */
 export const VERIFY_CSP =
@@ -206,6 +211,24 @@ export function createDashboardServer(deps: GhostDeps, options: DashboardOptions
       return;
     }
 
+    if (path === '/api/pages') {
+      if (method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
+      if (deps.app.copy.pacts !== true) return json(res, 404, { error: 'Not found' });
+      const body = await readJsonBody(req, MAX_PAGE_BODY_BYTES);
+      if (!body.ok) return json(res, body.status, { error: body.error });
+      const result = await sealAnyPage(deps, typeof body.value.url === 'string' ? body.value.url : '');
+      if (result.status === 'refused') {
+        const status = result.code === 'page-exists' || result.code === 'busy' ? 409 : result.code === 'needs-contact' ? 403 : 422;
+        return json(res, status, { code: result.code, error: result.message, ...(result.ghostId ? { ghostId: result.ghostId } : {}) });
+      }
+      return json(res, 201, {
+        state: 'sealed',
+        ghostId: result.watch.id,
+        name: result.watch.name,
+        pact: pactViewOf(result.pact),
+        archive: { saved: result.pact.archive.archiveUrl !== null, note: result.pact.archive.note ?? null },
+      });
+    }
     if (method === 'POST' && path === '/api/check-all') {
       const results = await deps.runner.checkAll({ force: true });
       return json(res, 200, { results: results.map(publicResult) });

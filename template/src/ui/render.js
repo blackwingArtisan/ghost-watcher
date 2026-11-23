@@ -472,6 +472,44 @@ export function renderGhostCard(ghost, nowIso, pactWords = DEFAULT_PACT_COPY) {
 }
 
 /** @param {DashboardState} state */
+/**
+ * The bookmarklet: opens the dashboard's own origin with the current tab's address in `seal`, and sends
+ * nothing else. The dashboard fills its form with it; the reader still presses the button.
+ * @param {string} origin
+ */
+export function bookmarkletHref(origin) {
+  return `javascript:(function(){window.open(${JSON.stringify(`${origin}/?seal=`)}+encodeURIComponent(location.href),'_blank')})()`;
+}
+
+/** The address a `?seal=` parameter carries, when it is a plain http or https address. @param {string | null} raw */
+export function sealPrefill(raw) {
+  if (!raw) return '';
+  try {
+    const url = new URL(raw);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
+/** The "Seal a page" form, for apps that offer pacts. @param {any} state */
+export function renderSealPage(state) {
+  if (!state.app.pacts) return '';
+  return `<section class="seal-page" id="seal-page" aria-labelledby="seal-page-title">
+    <h2 id="seal-page-title">Seal a page</h2>
+    <p class="muted small">Paste the address of a public offer page and press the button on the day you apply. The ghost reads the page once, keeps its text as your pact, and tells you when the words change.</p>
+    <form class="seal-page__form" id="seal-page-form" novalidate>
+      <label for="seal-page-url">Page address</label>
+      <div class="seal-page__row">
+        <input id="seal-page-url" name="url" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://bank.example/offer" aria-describedby="seal-page-message">
+        <button type="submit" class="btn btn--seal" id="seal-page-button">I applied today</button>
+      </div>
+    </form>
+    <p class="small seal-page__message" id="seal-page-message" role="status" aria-live="polite"></p>
+    <p class="small muted">Or drag <a class="seal-page__bookmarklet" id="seal-page-bookmarklet" href="#seal-page">Seal this page</a> to your bookmarks bar, then press it on any offer page.</p>
+  </section>`;
+}
+
 export function renderGraveyard(state) {
   const cards = state.ghosts.map((/** @type {GhostView} */ g) => renderGhostCard(g, state.generatedAt, state.app.pactCopy || DEFAULT_PACT_COPY)).join('\n');
   // Haunted Listings is a street, and a street has a lamp at the end of it.
@@ -713,6 +751,7 @@ export function renderPage(state, assets) {
 <main class="layout">
   <div class="crypt">
     <p class="crypt__intro" id="crypt-intro">${renderIntro(state)}</p>
+    ${renderSealPage(state)}
     <section class="graveyard" id="graveyard" aria-label="Watched pages">${renderGraveyard(state)}</section>
     <p class="tally" id="tally">${renderTally(state)}</p>
   </div>

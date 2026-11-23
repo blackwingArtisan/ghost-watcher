@@ -194,6 +194,47 @@ function cinderhollow(ctx: PageContext): string {
   );
 }
 
+/**
+ * A plain article page for "seal any page": readable text with the usual noise around it (cookie banner,
+ * navigation, an ad slot, a "page generated" stamp, a request id, a dated `time` element). Version 2 changes
+ * one sentence of the terms and adds one.
+ */
+function loyaltyTerms(ctx: PageContext): string {
+  const later = ctx.version >= 2;
+  const deposit = later ? '$3,000' : '$2,000';
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Hollowmere Credit Union: Welcome bonus terms</title>
+<script>window.__session = "${ctx.requestNumber}-${ctx.now.getTime().toString(36)}";</script></head>
+<body>
+<div id="cookie-banner">We use cookies. <button>Accept</button> Request ${ctx.requestNumber}.</div>
+<nav><a href="/">Home</a> <a href="/guides/loyalty-terms">Offers</a> <a href="/">Sign in</a></nav>
+<div class="ad-slot">Sponsored: ${ctx.requestNumber % 2 === 0 ? 'Ask about our haunted home loans' : 'Free coin counting on Thursdays'}.</div>
+<main>
+<article>
+<h1>Hollowmere welcome bonus terms</h1>
+<time datetime="${ctx.now.toISOString()}">${ctx.now.toUTCString()}</time>
+<p>Open a Hollowmere Everyday account and earn a $ 200.00 welcome bonus. The offer is for new members only.</p>
+<p>Receive direct deposits totaling ${deposit} within 60 days of opening the account to qualify.</p>
+<ul>
+<li>Keep a balance of at least $500 for 90 days.</li>
+<li>The bonus is paid within 30 days after you qualify.</li>${later ? '\n<li>Accounts closed within 180 days forfeit the bonus.</li>' : ''}
+</ul>
+<p>Hollowmere is an invented institution for software demos, not a real credit union.</p>
+</article>
+</main>
+<footer>Page generated ${ctx.now.toISOString()} · request id ${ctx.requestNumber.toString(16).padStart(6, '0')}</footer>
+</body></html>`;
+}
+
+/** A page whose content is built by a script in the browser: the server sends an empty shell. */
+function appShell(ctx: PageContext): string {
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Hollowmere app</title></head>
+<body><div id="root"></div><noscript>Please enable JavaScript.</noscript>
+<script>document.getElementById('root').textContent = 'Offers load here ${ctx.requestNumber}';</script>
+</body></html>`;
+}
+
 export const bonusSite: FixtureSite = {
   name: 'bonus-watch',
   versions: 4,
@@ -215,6 +256,8 @@ Disallow: /
     { path: '/mossgate/nightfall-card', title: 'Mossgate Card Co.: Nightfall Rewards Card', render: mossgate },
     { path: '/fernwick/premier-savings', title: 'Fernwick Trust: Premier Savings', render: fernwick },
     { path: '/members/cinderhollow/offers', title: 'Cinderhollow National Bank: member offers (disallowed by robots.txt)', render: cinderhollow },
+    { path: '/guides/loyalty-terms', title: 'Hollowmere: welcome bonus terms (article, for sealing any page)', render: loyaltyTerms },
+    { path: '/guides/app-shell', title: 'Hollowmere: app shell (renders in the browser)', render: appShell },
   ],
 };
 

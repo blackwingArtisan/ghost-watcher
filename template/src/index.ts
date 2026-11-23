@@ -74,6 +74,20 @@ export {
   type PactReading,
   type PactRecord,
 } from './pact';
+export { readableText, pageTitle, MIN_READABLE_CHARS, READABLE_SELECTOR } from './readable';
+export {
+  sealAnyPage,
+  loadAddedPages,
+  normalizePageUrl,
+  pageIdFor,
+  pageWatch,
+  ADDED_TAG,
+  JS_RENDERED_MESSAGE,
+  MAX_ADDED_PAGES,
+  type AddedPage,
+  type SealPageRefusal,
+  type SealPageResult,
+} from './pages';
 export { sealPact, breakPact, seedDemoPacts, type DatedArchiver, type SealDeps, type SealOptions, type SealResult } from './sealing';
 export { Runner, backoffMs, nextEligibleAt, type CheckResult, type CheckOptions } from './runner';
 export { defineApp, DEFAULT_THEME, type GhostApp, type Theme, type AppCopy } from './app';

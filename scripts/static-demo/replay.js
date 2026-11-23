@@ -16,6 +16,10 @@
 export const READ_ONLY_MESSAGE =
   'This live demo replays a recorded night, so pacts cannot be sealed or broken here. Run it locally to try that: npm install && npm run bonus.';
 
+/** What the "Seal a page" form says on the static site, where no page can be fetched. */
+export const SEAL_PAGE_MESSAGE =
+  'Sealing a new page needs the local server. This live demo replays a recording. Run it locally: npm install && npm run bonus.';
+
 /**
  * Builds the API handler for one recording.
  * @param {ReplayManifest} manifest
@@ -68,6 +72,7 @@ export function createReplay(manifest, load) {
       }
       // The flag that clears a pact needs the live server; the recording starts with the stone unsealed.
       if (method === 'POST' && path === '/api/demo/fresh-pact') return reply(200, { state: 'none', removed: false });
+      if (path === '/api/pages') return method === 'POST' ? reply(409, { code: 'read-only', error: SEAL_PAGE_MESSAGE }) : reply(405, { error: 'Method not allowed' });
       if (method === 'POST' && path === '/api/check-all') return reply(200, await recorded('POST /api/check-all'));
 
       const ghost = /^\/api\/ghosts\/([a-z0-9-]+)(?:\/(check|acknowledge|pact))?$/.exec(path);
