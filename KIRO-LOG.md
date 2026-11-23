@@ -22,7 +22,7 @@
 | Agent hook | `.kiro/hooks/money-guard.json` restates the integer-cents rule when money code is saved | Written by Kiro in [call 3](#call-3-spec-review-money-and-contact-url-kiro-cli-v3) |
 | Custom agent | `.kiro/agents/pact-keeper.json`, scoped to the pact code with its steering as resources | Written by Kiro and checked with `kiro-cli agent validate` in [session 6](docs/kiro-sessions/session-6-pact-copy.md) |
 | Vibe coding | `real-pages/app.ts` and the real-pages result | Kiro chose three real bonus pages and wrote their watches from a goal and network rules alone, with no spec ([session 7](docs/kiro-sessions/session-7-real-pages.md)) |
-| MCP | `.kiro/settings/mcp.json` (context7) | Every call from session 5 on makes real context7 calls; each transcript shows the arguments |
+| MCP | `.kiro/settings/mcp.json` (context7 and aws-docs) | Sessions 5 to 9, 11 and 12 made 28 real context7 calls, and each transcript shows the arguments; in sessions 10 and 13 no MCP tools reached the session, so they made none |
 
 ## What Kiro built
 
@@ -358,7 +358,7 @@ added, 2 removed), and Kiro then fixed the cause.
 ## Calls 8 and later (kiro-cli 3.5, 2026-11-22)
 
 Each call ran headless with `--output-format stream-json`, so every transcript keeps each tool
-call's arguments and exit code, and each call made real context7 MCP calls. The developer reran
+call's arguments and exit code, and every call except 13 and 16 made real context7 MCP calls. The developer reran
 the full suite before every commit and from a fresh clone before every push.
 
 <!-- kiro-calls:start -->
@@ -367,10 +367,10 @@ the full suite before every commit and from a fresh clone before every push.
 | 8: test clock | Gave every Kiro-written test reading the manual clock, added a clock-hygiene test and the scoped `testing.md` steering | 6.5 min | 11.33 | 196 | 6 | [session 5](docs/kiro-sessions/session-5-test-clock.md) |
 | 9: pact copy | Requirement 12 of seal-the-pact: plainer pact notes and letters, a display address in letters, the turned-away stone, a dated demo archive copy, `pact.md` steering and the `pact-keeper` agent | 19.7 min | 37.56 | 1,068 | 8 | [session 6](docs/kiro-sessions/session-6-pact-copy.md) |
 | 10: real pages | Vibe-coded (no spec): picked three robots-allowed, server-rendered bonus pages, wrote `real-pages/app.ts` and replayed their Wayback copies. Stopped by the 25-minute cap during its last Playwright run; the developer wrote the result section from the saved output | 25.1 min | 27.52 | 269 | 2 | [session 7](docs/kiro-sessions/session-7-real-pages.md) |
-| 11: lease pact | Spec-driven (7 requirements, 61 criteria, 9 tasks): made the pact a template feature with per-app vocabulary and added the Larkspur Flats lease pact to Haunted Listings, with its landlord letters | 13.9 min | 36.40 | 1,191 | 2 | [session 8](docs/kiro-sessions/session-8-lease-pact.md) |
+| 11: lease pact | Spec-driven (7 requirements, 55 criteria, 9 tasks): made the pact a template feature with per-app vocabulary and added the Larkspur Flats lease pact to Haunted Listings, with its landlord letters | 13.9 min | 36.40 | 1,191 | 2 | [session 8](docs/kiro-sessions/session-8-lease-pact.md) |
 | 12: seal ceremony | Spec-driven (requirement 13, 24 criteria, tasks 40 to 48): the wax-seal ceremony, an unsealed demo stone, the seal in the static recording, and the ceremony and dispute-pack media scenes | 15.4 min | 33.37 | 700 | 4 | [session 9](docs/kiro-sessions/session-9-seal-ceremony.md) |
 | 13: drift and clock | Spec-driven (requirements 14 and 15, tasks 49 to 56): the Fernwick slow-drift fixture and pact shriek, the bonus clock with its due letter and posted mark, and the weekly digest; no context7 tools were listed in this session | 14.0 min | 22.19 | 600 | 0 | [session 10](docs/kiro-sessions/session-10-drift-clock.md) |
 | 14: verify and kit | Spec-driven (requirement 16, 23 criteria): the /verify page that rechecks a pact's SHA-256 in the browser; then the open ghost-watcher-kit tasks 19.4 and 21.3 to 21.11, including a loopback-only fetch guard for every Vitest test | 19.6 min | 27.46 | 1,150 | 2 | [session 11](docs/kiro-sessions/session-11-verify-kit.md) |
-| 15: seal any page | Spec-driven (seal-any-page: 9 requirements, 46 criteria, 12 tasks): the Seal a page form and bookmarklet, readable-text extraction with cheerio, the plain refusal for pages that render in the browser, and added pages that survive a restart | 14.4 min | 17.76 | 1,225 | 4 | [session 12](docs/kiro-sessions/session-12-seal-any-page.md) |
+| 15: seal any page | Spec-driven (seal-any-page: 9 requirements, 45 criteria, 12 tasks): the Seal a page form and bookmarklet, readable-text extraction with cheerio, the plain refusal for pages that render in the browser, and added pages that survive a restart | 14.4 min | 17.76 | 1,225 | 4 | [session 12](docs/kiro-sessions/session-12-seal-any-page.md) |
 | 16: nightly on AWS | Spec-driven (nightly-on-aws: 5 requirements, 29 criteria, 7 tasks), built against fakes and never deployed: an S3 Object Lock adapter for sealed pacts, a Lambda handler for the nightly check, and a SAM template with an EventBridge Scheduler schedule; stopped by the 25-minute limit after its checks passed | 25.2 min | 6.89 | 997 | 0 | [session 13](docs/kiro-sessions/session-13-aws-kit.md) |
 <!-- kiro-calls:end -->

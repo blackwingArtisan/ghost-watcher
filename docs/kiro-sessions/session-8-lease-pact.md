@@ -3,7 +3,7 @@
 - Tool: kiro-cli 3.5.0, v3 engine, non-interactive, default agent
 - Command: `GHOST_E2E_PORT=4230 kiro-cli chat --v3 --no-interactive --trust-workspace --trust-tools=fs_read,fs_write,run_command,@context7 --output-format stream-json "<prompt>" </dev/null` (not `--trust-all-tools`)
 - Duration: 13.9 minutes; exit code 0; credits used: 36.40 (`/usage` read 529.98 used before and 566.38 after)
-- Mode: spec-driven. Kiro wrote `.kiro/specs/lease-pact/` (7 requirements, 61 EARS criteria, 9 tasks) before the code, and ticked each task as its tests passed.
+- Mode: spec-driven. Kiro wrote `.kiro/specs/lease-pact/` (7 requirements, 55 EARS criteria, 9 tasks; Kiro's summary below says 61, but the file holds 55) before the code, and ticked each task as its tests passed.
 - MCP calls: 2 to context7 (1 `resolve-library-id`, 1 `query-docs`) on Playwright screenshot options, shown below with their arguments.
 - Generic, not copied: the pact's words and letters moved into `template/src/pact-vocabulary.ts`. The Bonus Crypt keeps the default bank wording, and its existing tests pass unchanged.
 - Ports: the Haunted Listings demo needed two more e2e servers, so `GHOST_E2E_PORT` now covers base+0 to base+7. The developer updated the port notes in `docs/details.md`, `.kiro/steering/tech.md` and `playwright.config.ts` to match.

@@ -4,8 +4,11 @@ Ghost Watcher is a **Skeleton Crew** entry: one template (`template/`) and two a
 (`apps/bonus-watch`, the Bonus Crypt, and `apps/listing-watch`, Haunted Listings). Every number below
 can be reproduced from this repository with the command next to it.
 
-The fastest look: `npm install && npm run bonus`, open http://127.0.0.1:3130/?night=1, then press
-**Raise the dead** on the Bait and switch letter.
+**Live demo: [ghost-watcher.pages.dev](https://ghost-watcher.pages.dev/)**, a static recording of the Bonus Crypt
+(press **Let a night pass**).
+
+The fastest look on your machine: `npm install && npm run bonus`, open http://127.0.0.1:3130/?night=1,
+then press **Raise the dead** on the Bait and switch letter.
 
 ## Potential impact
 
@@ -22,7 +25,7 @@ The fastest look: `npm install && npm run bonus`, open http://127.0.0.1:3130/?ni
 
 | Claim | Evidence |
 | --- | --- |
-| Tested end to end | `npm test`: type-check, 519 Vitest tests, 52 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
+| Tested end to end | `npm test`: type-check, 521 Vitest tests, 52 Playwright tests (including axe-core WCAG 2.1 AA scans, phone width, keyboard use, reduced motion and the cross-origin guard). CI runs the same in `.github/workflows/test.yml` |
 | Fewer false alarms, measured | `npm run noise`: 12 alerts, none false, none missed, against 115 (103 false) from a whole-page watcher on the same responses; pinned by `template/test/noise.test.ts` |
 | Measured on real pages | Three public bank bonus pages through 35 Wayback copies: 29 alerts from a whole-page watcher, 10 from Ghost Watcher, including a $300 to $200 bonus cut and a terms change under an unchanged headline ([docs/real-pages.md](docs/real-pages.md#result-november-2026), built by Kiro in a vibe-coding session) |
 | Money is exact | Integer cents and BigInt-safe arithmetic in `template/src/normalize.ts`, tests in `template/test/money.test.ts` (built by Kiro) |
@@ -30,8 +33,8 @@ The fastest look: `npm install && npm run bonus`, open http://127.0.0.1:3130/?ni
 | Proof that holds up | SHA-256 over the exact stored bytes plus an Internet Archive Save Page Now copy (`template/src/receipts.ts`); `shasum -a 256` on the snapshot files reproduces the hashes |
 | Ports and adapters | Storage, alerts, history, receipts and fetching sit behind ports, with local defaults and opt-in S3, SES and webhook adapters ([docs/details.md](docs/details.md#adapters-local-vs-real)) |
 
-**Kiro.** Kiro specced and built Seal the pact end to end (`.kiro/specs/seal-the-pact/`, 91 EARS
-criteria, 27 tasks; transcripts in `docs/kiro-sessions/`). A date assumption in one Kiro-written
+**Kiro.** Kiro specced and built Seal the pact end to end (`.kiro/specs/seal-the-pact/`, 16 requirements,
+203 EARS criteria and 64 tasks; transcripts in `docs/kiro-sessions/`). A date assumption in one Kiro-written
 test surfaced three days later; Kiro fixed the cause in call 8. It also wrote
 the EARS requirements, design and task list (`.kiro/specs/ghost-watcher-kit/`),
 reviewed them against the code, built integer-cents money and the contact-URL policy, and wrote the

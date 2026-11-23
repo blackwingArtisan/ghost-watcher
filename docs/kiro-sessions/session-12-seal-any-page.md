@@ -3,7 +3,7 @@
 - Tool: kiro-cli 3.5.0, v3 engine, non-interactive, default agent
 - Command: `GHOST_E2E_PORT=4230 kiro-cli chat --v3 --no-interactive --trust-workspace --trust-tools=fs_read,fs_write,run_command,@context7 --output-format stream-json "<prompt>" </dev/null` (not `--trust-all-tools`)
 - Duration: 14.4 minutes; exit code 0; credits used: 17.76 (`/usage` read 879.92 used before and 897.68 after)
-- Mode: spec-driven. Kiro wrote `.kiro/specs/seal-any-page/` (9 requirements, 46 EARS criteria ANY 1.1 to 9.4, 12 tasks with a traceability table) before the code, and ticked each task as its checks passed.
+- Mode: spec-driven. Kiro wrote `.kiro/specs/seal-any-page/` (9 requirements, 45 EARS criteria ANY 1.1 to 9.4, 12 tasks with a traceability table; Kiro's summary below says 46, but the file holds 45) before the code, and ticked each task as its checks passed.
 - MCP calls: 4 to context7 (2 `resolve-library-id`, 2 `query-docs`) on cheerio's `remove()` and `text()`, shown below with their arguments.
 - Steering kept: no headless browser. A page that renders in the browser is refused with a plain message instead of being sealed empty; a page robots.txt disallows is refused without being requested; a real host needs `GHOST_CONTACT_URL`.
 - Flaky run noted by Kiro: its baseline Vitest run had the two CLI end-to-end tests time out at 30 s; they passed in every later run, including the developer's.

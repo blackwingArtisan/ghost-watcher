@@ -41,9 +41,9 @@ Crypt and Haunted Listings), each a single `app.ts` on the shared skeleton.
 | 60 seconds | `npm install && npm run bonus`, open http://127.0.0.1:3130/?night=1 (the night passes as it loads), then **Raise the dead** on the Bait and switch letter |
 | Criteria to evidence | [JUDGES.md](JUDGES.md): each judging criterion mapped to files, commands and numbers |
 | Spec | [`.kiro/specs/ghost-watcher-kit/`](.kiro/specs/ghost-watcher-kit/): EARS requirements, design and task list written by Kiro, then reviewed by Kiro against the code. [`.kiro/specs/seal-the-pact/`](.kiro/specs/seal-the-pact/): the headline feature, specced and then built by Kiro. [`.kiro/specs/lease-pact/`](.kiro/specs/lease-pact/): the same pact for a lease in Haunted Listings, specced and built by Kiro. [`.kiro/specs/seal-any-page/`](.kiro/specs/seal-any-page/): sealing any public page with no code, specced and built by Kiro. [`.kiro/specs/nightly-on-aws/`](.kiro/specs/nightly-on-aws/): the nightly check as one Lambda on a schedule, with sealed pact snapshots in an S3 Object Lock bucket, specced and built by Kiro against fake clients and not deployed ([`infra/`](infra/README.md)) |
-| Steering and hooks | [`.kiro/steering/`](.kiro/steering/) (always included) and [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and Kiro's `money-guard` agent hook |
+| Steering and hooks | [`.kiro/steering/`](.kiro/steering/) (three files always included, two scoped to the files they cover) and [`.kiro/hooks/`](.kiro/hooks/): tests on save, the full suite on Stop (it caught a stale assertion that Kiro then fixed), and Kiro's `money-guard` agent hook |
 | Who wrote what | [KIRO-LOG.md](KIRO-LOG.md#who-wrote-what) |
-| Tests | `npm test`: type-check, 519 Vitest tests and 52 Playwright tests, all against `127.0.0.1` |
+| Tests | `npm test`: type-check, 521 Vitest tests and 52 Playwright tests, all against `127.0.0.1` |
 
 ### Try it in 60 seconds
 
@@ -172,7 +172,7 @@ sources are in [docs/details.md](docs/details.md#what-only-ghost-watcher-does) a
 ## Built with Kiro
 
 Kiro specced and built the headline feature, **Seal the pact**: it wrote
-`.kiro/specs/seal-the-pact/` (91 EARS criteria, 27 tasks) and then all of its code and tests in
+`.kiro/specs/seal-the-pact/` (16 requirements, 203 EARS criteria and 64 tasks) and then all of its code and tests in
 `kiro-cli` sessions. A date assumption in one Kiro-written test surfaced three days later; Kiro
 fixed the cause with a test clock and scoped steering (call 8). Kiro also wrote the spec the
 skeleton is built against, reviewed it against the code, built the integer-cents money change, the contact-URL policy and the overridable e2e ports, and wrote
