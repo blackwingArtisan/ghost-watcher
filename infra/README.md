@@ -1,7 +1,7 @@
 # Nightly on AWS
 
 An EventBridge Scheduler schedule invokes one Lambda function a night. The function runs
-`Runner.checkAll`, writes snapshots to a data bucket, writes sealed pacts to an S3 Object Lock bucket
+`Runner.checkAll`, writes snapshots to a data bucket, writes each sealed pact snapshot to an S3 Object Lock bucket
 in compliance mode, and sends alerts through SES or a webhook. See
 `.kiro/specs/nightly-on-aws/` for the requirements and design.
 
@@ -16,7 +16,7 @@ AWS (the tests use fake clients). You run these yourself, later, with your own c
   the app at real pages and set `ContactUrl` to a page a site operator can visit.
 - Verify the SES identity (`SesIdentity`, `SesFrom`) and move the account out of the SES sandbox, or
   use `AlertSinks=webhook` with `WebhookUrl`.
-- Know that Object Lock in compliance mode cannot be undone. A sealed pact cannot be altered or deleted
+- Know that Object Lock in compliance mode cannot be undone. A sealed pact snapshot cannot be altered or deleted
   by anyone, including the root user, until its retention date. `PactRetentionDays` defaults to 365.
   Try a value of 1 first.
 - The pact bucket and data bucket have `DeletionPolicy: Retain`, so deleting the stack leaves them.

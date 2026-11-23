@@ -1,8 +1,13 @@
 /**
  * Object Lock adapter for sealed pacts. Opt-in (`GHOST_PACT_BUCKET` with `GHOST_STORE=s3`); never
  * built by the default configuration. Every write carries `ObjectLockMode: COMPLIANCE` and a
- * retain-until date taken from the injected clock, and a pact that exists is never overwritten or
+ * retain-until date taken from the injected clock, and a stored document is never overwritten or
  * deleted through this adapter. The S3 client comes from an injectable factory so tests pass fakes.
+ *
+ * Only the hash-named snapshot documents (`pacts/<watch>/<sha256>.json`) are locked: they are the
+ * evidence, and their name already fixes their bytes. The small `pact.json` record that points at the
+ * current snapshot stays in the ordinary store, so the posted mark, a replacement and a broken pact
+ * still work, while every snapshot ever sealed stays readable and unaltered until its retain-until date.
  */
 import { GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import type { Clock } from '../clock';
@@ -68,7 +73,10 @@ export class S3ObjectLockBlobStore implements BlobStore {
   }
 
   async put(key: string, body: string): Promise<void> {
-    if ((await this.get(key)) !== null) throw new PactLockError(`The pact document ${key} is sealed and cannot be overwritten.`);
+    const existing = await this.get(key);
+    // A hash-named document with the same bytes is already sealed; writing it again changes nothing.
+    if (existing === body) return;
+    if (existing !== null) throw new PactLockError(`The pact document ${key} is sealed and cannot be overwritten.`);
     const retainUntil = new Date(this.clock.now().getTime() + this.retentionDays * DAY_MS);
     await this.s3().send(
       new PutObjectCommand({
@@ -96,15 +104,19 @@ export class S3ObjectLockBlobStore implements BlobStore {
     return keys.sort();
   }
 
+  /**
+   * Sends no `DeleteObject`: Object Lock keeps the bytes until their retain-until date, and removing
+   * the `pact.json` record is what replaces or breaks a pact. The document stays readable as evidence.
+   */
   async delete(key: string): Promise<void> {
     assertKey(key);
-    throw new PactLockError(`The pact document ${key} is sealed and cannot be deleted.`);
   }
 }
 
 const PACT_PREFIX = 'pacts/';
+const SEALED_SNAPSHOT = /^pacts\/[^/]+\/[0-9a-f]{64}\.json$/;
 
-/** Sends `pacts/` keys to the locked store and every other key to the ordinary one. */
+/** Sends hash-named pact snapshots to the locked store and every other key to the ordinary one. */
 export class PactRoutingBlobStore implements BlobStore {
   constructor(
     private readonly rest: BlobStore,
@@ -112,7 +124,7 @@ export class PactRoutingBlobStore implements BlobStore {
   ) {}
 
   private route(key: string): BlobStore {
-    return key.startsWith(PACT_PREFIX) ? this.pacts : this.rest;
+    return SEALED_SNAPSHOT.test(key) ? this.pacts : this.rest;
   }
 
   get(key: string): Promise<string | null> {
@@ -128,9 +140,8 @@ export class PactRoutingBlobStore implements BlobStore {
   }
 
   async list(prefix: string): Promise<string[]> {
-    if (prefix.startsWith(PACT_PREFIX)) return this.pacts.list(prefix);
     const rest = await this.rest.list(prefix);
-    if (!PACT_PREFIX.startsWith(prefix)) return rest;
-    return [...rest, ...(await this.pacts.list(prefix))].sort();
+    if (!prefix.startsWith(PACT_PREFIX) && !PACT_PREFIX.startsWith(prefix)) return rest;
+    return [...new Set([...rest, ...(await this.pacts.list(prefix))])].sort();
   }
 }

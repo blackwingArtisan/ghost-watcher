@@ -15,7 +15,7 @@
 | AWS 1.1–1.4 | `infra/test/template.test.ts` | 5, 7 |
 | AWS 2.1, 2.2, 2.4, 2.6 | `infra/test/handler.test.ts` | 4, 7 |
 | AWS 2.3, 2.5 | `infra/test/handler.test.ts` | 4, 7 |
-| AWS 3.1–3.7, 3.9 | `template/test/s3-lock.test.ts` | 2, 7 |
+| AWS 3.1–3.7, 3.9, 3.10 | `template/test/s3-lock.test.ts` | 2, 7 |
 | AWS 3.8 | `template/test/s3-lock.test.ts` | 3, 7 |
 | AWS 4.1–4.8 | `infra/test/template.test.ts` | 5, 7 |
 | AWS 5.1 | `infra/test/template.test.ts` (README check) | 6, 7 |

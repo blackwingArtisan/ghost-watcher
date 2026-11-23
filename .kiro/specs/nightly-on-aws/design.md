@@ -16,8 +16,8 @@ flowchart LR
 
 | Decision | Choice | Why |
 |---|---|---|
-| Store routing | `PactRoutingBlobStore` sends `pacts/` keys to `S3ObjectLockBlobStore`, everything else to the existing `S3BlobStore` | Reuses `GhostStore` and the S3 adapter unchanged (AWS 3.6, 3.8). |
-| Overwrites | Pre-check with a read, plus `IfNoneMatch: *` on the put | Refuses in code and again at the service (AWS 3.3, 3.4). A sealed pact is immutable, so "replace" and "break" are refused on the locked bucket, and the posted mark (`markBonusPosted`) is refused too. |
+| Store routing | `PactRoutingBlobStore` sends hash-named snapshots (`pacts/<watch>/<sha256>.json`) to `S3ObjectLockBlobStore`, everything else, the `pact.json` record included, to the existing `S3BlobStore` | Reuses `GhostStore` and the S3 adapter unchanged (AWS 3.6, 3.8). The snapshot is the evidence and its name fixes its bytes; the record only points at it, so it may change. |
+| Overwrites | Pre-check with a read, plus `IfNoneMatch: *` on the put | Refuses in code and again at the service (AWS 3.3, 3.4). Because only snapshots are locked, the posted mark, a replacement and a broken pact still work, and every snapshot ever sealed stays readable until its retain-until date (AWS 3.5, 3.10). |
 | Retention | Per-object `ObjectLockRetainUntilDate` from the injected `Clock`, plus a bucket default | The code states the date explicitly; the bucket default covers writes from any other tool (AWS 3.2, 4.1). |
 | Client | `clientFactory: () => S3Like`, called on first use | Tests pass fakes, nothing builds an SDK client at import (AWS 3.7). |
 | Handler | `createHandler(options)` returns the Lambda function; `handler` is the default instance | Tests inject app, clock, fetcher and clients (AWS 2.6). |

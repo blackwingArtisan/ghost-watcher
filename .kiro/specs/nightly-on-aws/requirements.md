@@ -35,15 +35,16 @@ ubiquitous). Tests name the criterion in the title, for example `(AWS 3.2) ...`.
 
 ### Requirement 3: Object Lock pact adapter
 
-3.1 WHEN a pact document is written, THE SYSTEM SHALL send `ObjectLockMode: COMPLIANCE` on the `PutObject` call.
-3.2 WHEN a pact document is written, THE SYSTEM SHALL send `ObjectLockRetainUntilDate` equal to the injected clock's time plus the retention period in days.
-3.3 IF a pact key already exists, THEN THE SYSTEM SHALL refuse the write and send no `PutObject`.
+3.1 WHEN a hash-named pact snapshot document is written, THE SYSTEM SHALL send `ObjectLockMode: COMPLIANCE` on the `PutObject` call.
+3.2 WHEN a hash-named pact snapshot document is written, THE SYSTEM SHALL send `ObjectLockRetainUntilDate` equal to the injected clock's time plus the retention period in days.
+3.3 IF a pact snapshot key already exists with other bytes, THEN THE SYSTEM SHALL refuse the write and send no `PutObject`; the same bytes again are a no-op.
 3.4 THE SYSTEM SHALL send `IfNoneMatch: *` on every pact write, so a race cannot overwrite a pact.
-3.5 IF a delete is attempted on a pact key, THEN THE SYSTEM SHALL refuse it and send no `DeleteObject`.
-3.6 WHEN a key is outside `pacts/`, THE SYSTEM SHALL write it to the ordinary snapshot store with no lock parameters.
+3.5 IF a delete is attempted on a pact snapshot key, THEN THE SYSTEM SHALL send no `DeleteObject` and leave the document readable.
+3.6 WHEN a key is the `pact.json` record or outside `pacts/`, THE SYSTEM SHALL write it to the ordinary snapshot store with no lock parameters.
 3.7 THE SYSTEM SHALL build its S3 client through an injectable factory, and only on first use.
 3.8 WHERE `GHOST_PACT_BUCKET` is set with `GHOST_STORE=s3`, THE SYSTEM SHALL route pacts to that bucket through `loadDeps`.
 3.9 IF the retention period is not a positive whole number of days, THEN THE SYSTEM SHALL fail with a configuration error.
+3.10 WHEN a pact is sealed, marked posted, replaced or broken on the locked bucket, THE SYSTEM SHALL complete the operation and keep every sealed snapshot unaltered.
 
 ### Requirement 4: Infrastructure template
 
