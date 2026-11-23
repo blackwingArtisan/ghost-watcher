@@ -2,6 +2,9 @@
 
 ## 2026-11-22
 
+- **Seal any page, by Kiro (call 15).** Paste a public address or press the "Seal this page"
+  bookmarklet: the ghost reads it once through robots.txt, seals its readable text and watches it.
+  Pages that render only in the browser are refused plainly; added pages survive a restart.
 - **The ghost testifies, by Kiro (call 14).** A `/verify` page recomputes a pact's SHA-256 in the
   browser and says whether it matches, linked from every dispute pack. Kiro also closed the last open
   tasks of the skeleton spec, including a guard that stops any Vitest test from fetching beyond this
